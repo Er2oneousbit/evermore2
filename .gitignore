@@ -1,0 +1,24 @@
+# Godot 4 cache / editor state (regenerated automatically on open)
+.godot/
+.import/
+
+# Export output and credentials (never commit export presets with passwords)
+export/
+build/
+export_credentials.cfg
+
+# Mono / C# (only matters if C# is ever added)
+.mono/
+data_*/
+mono_crash.*.json
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.tmp
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# NOTE: do NOT ignore *.import or *.uid files. Godot 4 needs them in git
+# so every machine maps assets and scripts to the same IDs.

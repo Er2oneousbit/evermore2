@@ -1,0 +1,46 @@
+# =============================================================================
+# game_state.gd  (autoload: GameState)
+# -----------------------------------------------------------------------------
+# WHAT:  The current run's state: player-chosen names, current realm, and
+#        story flags. Everything the SaveManager will eventually serialize.
+# WHY:   One obvious place to look when asking "what does the game currently
+#        believe is true?"
+#
+# FLAGS: simple key -> value pairs for story progress, e.g.
+#   GameState.set_flag("big_yard.vacuum_defeated", true)
+#   if GameState.get_flag("big_yard.vacuum_defeated"): ...
+#   Convention: "<realm>.<thing>" so flags group nicely in save files.
+#
+# Written with help from Claude (Anthropic) via Claude Code.
+# Made with ❤️ from your friendly hacker - er2oneousbit
+# =============================================================================
+extends Node
+
+## Player-chosen names. Empty means "not chosen yet, use the default".
+var kid_name := ""
+var dog_name := ""
+
+## Key from names.json for the realm the player is in, e.g. "realm_big_yard".
+var current_realm := "realm_big_yard"
+
+var _flags: Dictionary = {}
+
+
+## Display name for the kid (player choice, or the default from names.json).
+func get_kid_name() -> String:
+	return kid_name if not kid_name.is_empty() else Names.text("kid_default")
+
+
+## Display name for the dog (player choice, or the shelter's name for him).
+func get_dog_name() -> String:
+	return dog_name if not dog_name.is_empty() else Names.text("dog_default")
+
+
+func set_flag(flag: String, value: Variant = true) -> void:
+	_flags[flag] = value
+	EventBus.flag_changed.emit(flag, value)
+	Debug.log_verbose("Flag set: %s = %s" % [flag, value])
+
+
+func get_flag(flag: String, default: Variant = false) -> Variant:
+	return _flags.get(flag, default)

@@ -1,0 +1,33 @@
+{
+  "_comment": "Every proper noun in the game lives here. Code calls Names.text(\"key\"). Never hardcode these strings in scripts or scenes. Keys starting with _ are comments and are never displayed.",
+
+  "game_title": "Secret of Evermore 2: Return to Evermore",
+  "world": "Evermore",
+  "town": "Podunk",
+
+  "_section_characters": "---- Characters ----",
+  "kid_default": "Kid",
+  "dog_default": "Biscuit",
+  "professor": "Professor Sidney Ruffleberg",
+  "professor_echo": "The Professor's Echo",
+  "robot": "Carltron",
+  "npc_gnome_alchemist": "Gnorman",
+  "npc_mailman": "The Mailman",
+
+  "_section_realms": "---- Realms ----",
+  "realm_hub": "The Mansion That Was",
+  "realm_big_yard": "The Big Yard",
+  "realm_saltreach": "Saltreach",
+  "realm_frostheim": "Frostheim",
+  "realm_vernia": "Vernia",
+  "realm_grand_carlton": "The Grand Carlton",
+  "realm_off_switch": "The Off Switch",
+
+  "_section_dog_forms": "---- Dog forms ----",
+  "dog_form_big_yard": "Sir Goodboy",
+  "dog_form_saltreach": "Newfoundland",
+  "dog_form_frostheim": "Malamute",
+  "dog_form_vernia": "Saint Bernard",
+  "dog_form_grand_carlton": "Borzoi",
+  "dog_form_off_switch": "Shelter Mutt"
+}

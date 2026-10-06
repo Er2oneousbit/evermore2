@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://realms/big_yard/prototype_yard.gd" id="1_yard"]
+[ext_resource type="PackedScene" path="res://actors/kid/kid.tscn" id="2_kid"]
+[ext_resource type="PackedScene" path="res://actors/dog/dog.tscn" id="3_dog"]
+
+[node name="PrototypeYard" type="Node2D"]
+script = ExtResource("1_yard")
+
+[node name="CanvasModulate" type="CanvasModulate" parent="."]
+
+[node name="Solids" type="StaticBody2D" parent="."]
+
+[node name="World" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Kid" parent="World" instance=ExtResource("2_kid")]
+
+[node name="Dog" parent="World" instance=ExtResource("3_dog")]
+target_path = NodePath("../Kid")

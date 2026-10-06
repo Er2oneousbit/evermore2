@@ -1,0 +1,17 @@
+# Keeps VS Code and the Godot editor agreeing on formatting.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# GDScript style guide: tabs for indentation.
+[*.gd]
+indent_style = tab
+indent_size = 4
+
+[*.{md,json,yml,yaml}]
+indent_style = space
+indent_size = 2

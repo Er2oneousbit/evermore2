@@ -1,0 +1,13 @@
+# Normalize line endings so Windows and Linux checkouts produce identical diffs.
+* text=auto eol=lf
+
+# Binary assets: never touch line endings, never try to diff.
+*.png binary
+*.jpg binary
+*.ase binary
+*.aseprite binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
