@@ -13,7 +13,7 @@ with real sun shadows, light shafts through the trees, tilt-shift blur, a
 reflective pond and drifting cloud shadows. It runs pixel-perfect on any
 monitor, from a Steam Deck to a 48:9 triple-wide.
 
-> **Early prototype (v0.3.0).** A kid explores a backyard at day, golden hour
+> **Early prototype.** A kid explores a backyard at day, golden hour
 > and night, with his dog following him. No combat, menus or story yet. See the
 > [roadmap](docs/ROADMAP.md) for what's next.
 
