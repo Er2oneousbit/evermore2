@@ -1,0 +1,16 @@
+[gd_resource type="NoiseTexture2D" load_steps=2 format=3]
+
+; Big soft blobs for drifting cloud shadows (color_grade.gdshader). Seamless,
+; so the clouds tile forever as the wind moves them.
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_clouds"]
+seed = 1965
+frequency = 0.012
+fractal_octaves = 3
+fractal_gain = 0.45
+
+[resource]
+width = 256
+height = 256
+seamless = true
+noise = SubResource("FastNoiseLite_clouds")

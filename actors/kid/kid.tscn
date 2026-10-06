@@ -1,19 +1,22 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://actors/kid/kid.gd" id="1_kid"]
 [ext_resource type="Script" path="res://systems/camera/game_camera.gd" id="2_cam"]
+[ext_resource type="Script" path="res://systems/animation/lpc_sprite.gd" id="3_lpc"]
+[ext_resource type="Texture2D" path="res://assets/characters/kid/kid_lpc.png" id="4_sheet"]
+[ext_resource type="Texture2D" path="res://assets/fx/soft_shadow.tres" id="5_shadow"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_feet"]
-size = Vector2(8, 5)
+size = Vector2(14, 8)
 
 [sub_resource type="Gradient" id="Gradient_light"]
-offsets = PackedFloat32Array(0, 1)
-colors = PackedColorArray(1, 0.94, 0.78, 1, 1, 0.94, 0.78, 0)
+offsets = PackedFloat32Array(0, 0.55, 1)
+colors = PackedColorArray(1, 0.94, 0.8, 1, 1, 0.9, 0.72, 0.45, 1, 0.9, 0.72, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_light"]
 gradient = SubResource("Gradient_light")
-width = 160
-height = 160
+width = 320
+height = 320
 fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(0.5, 0)
@@ -23,13 +26,26 @@ collision_layer = 2
 motion_mode = 1
 script = ExtResource("1_kid")
 
+[node name="Shadow" type="Sprite2D" parent="."]
+z_index = -10
+modulate = Color(1, 1, 1, 0.55)
+scale = Vector2(0.75, 0.3)
+texture = ExtResource("5_shadow")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("4_sheet")
+script = ExtResource("3_lpc")
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -2)
+position = Vector2(0, -3)
 shape = SubResource("RectangleShape2D_feet")
 
 [node name="Flashlight" type="PointLight2D" parent="."]
 color = Color(1, 0.95, 0.85, 1)
-energy = 1.2
+energy = 1.3
+shadow_enabled = true
+shadow_filter = 1
+shadow_filter_smooth = 2.0
 texture = SubResource("GradientTexture2D_light")
 
 [node name="Camera2D" type="Camera2D" parent="."]

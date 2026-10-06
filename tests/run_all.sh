@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# =============================================================================
+# run_all.sh  -  Run every headless smoke test (Linux / macOS / CI)
+# -----------------------------------------------------------------------------
+# USAGE:  tests/run_all.sh [path/to/godot]        (or set GODOT=...)
+# RUNS:   smoke_follow at 30, 60 and 120 RENDER fps (physics stays at 60 Hz;
+#         this proves nothing depends on the render frame rate, e.g. a 144 Hz
+#         monitor), smoke_visuals, smoke_aspect. No display needed. For the live ultrawide checks use run_aspect_matrix.sh.
+# EXIT:   0 if everything passed, 1 otherwise.
+#
+# Written with help from Claude (Anthropic) via Claude Code.
+# Made with ❤️ from your friendly hacker - er2oneousbit
+# =============================================================================
+set -u
+GODOT="${1:-${GODOT:-godot}}"
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+if ! command -v "$GODOT" >/dev/null 2>&1 && [ ! -x "$GODOT" ]; then
+  echo "ERROR: Godot not found at '$GODOT'. Pass the path as the first argument." >&2
+  exit 1
+fi
+
+fail=0
+run() {  # run <label> <scene> [extra godot args...]
+  local label="$1" scene="$2"; shift 2
+  printf '%-22s ' "$label"
+  local out
+  out=$(timeout 300 "$GODOT" --headless --path "$PROJECT_DIR" --audio-driver Dummy "$@" "$scene" 2>&1)
+  local code=$?
+  if [ $code -eq 0 ] && echo "$out" | grep -q '\[TEST\] PASS'; then
+    echo "PASS  $(echo "$out" | grep -o '\[TEST\] PASS.*' | sed 's/\[TEST\] PASS *//')"
+  else
+    echo "FAIL (exit $code)"
+    echo "$out" | grep -E '\[TEST\] FAIL|SCRIPT ERROR|^ERROR' | sed 's/^/      /'
+    fail=1
+  fi
+}
+
+run "follow @30fps"  res://tests/smoke_follow.tscn --fixed-fps 30
+run "follow @60fps"  res://tests/smoke_follow.tscn --fixed-fps 60
+run "follow @120fps" res://tests/smoke_follow.tscn --fixed-fps 120
+run "visuals"        res://tests/smoke_visuals.tscn --fixed-fps 60
+run "aspect (math)"  res://tests/smoke_aspect.tscn
+
+[ $fail -eq 0 ] && echo "ALL TESTS PASSED" || echo "SOME TESTS FAILED"
+exit $fail

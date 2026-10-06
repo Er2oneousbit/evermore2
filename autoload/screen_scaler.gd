@@ -5,20 +5,21 @@
 #        21:9, 32:9, 48:9 triple-wide, Steam Deck, whatever.
 #
 # HOW:   1. Pick the biggest WHOLE-NUMBER scale where at least the base view
-#           (384x216) still fits. Whole numbers keep every pixel crisp.
+#           (640x360) still fits. Whole numbers keep every pixel crisp.
 #        2. Make the game's view as big as the window allows at that scale.
 #           Wider screen = more world visible sideways. Taller = more vertical.
 #        Leftover black border is always smaller than one scaled pixel.
 #
 # WHY NOT GODOT'S BUILT-IN "expand" + "integer"? Tested at 5120x1440: it sized
 #        the view for a 6.67x scale, then drew it at 6x, leaving 256 px black
-#        bars left/right AND 72 px top/bottom. This does the math correctly.
+#        bars left/right AND 72 px top/bottom (measured back when the base was
+#        384x216). This does the math correctly at any base size.
 #
 # EXAMPLES (window -> scale -> visible game area in base pixels):
-#        1920x1080 -> 5x ->  384x216      3440x1440 -> 6x ->  573x240
-#        2560x1440 -> 6x ->  426x240      5120x1440 -> 6x ->  853x240
-#        3840x1080 -> 5x ->  768x216      7680x1440 -> 6x -> 1280x240
-#        1280x800  -> 3x ->  426x266      3840x2160 -> 10x -> 384x216
+#        1920x1080 -> 3x ->  640x360      3440x1440 -> 4x ->  860x360
+#        2560x1440 -> 4x ->  640x360      5120x1440 -> 4x -> 1280x360
+#        3840x2160 -> 6x ->  640x360      7680x1440 -> 4x -> 1920x360
+#        1280x800  -> 2x ->  640x400      5760x1080 -> 3x -> 1920x360
 #
 # OPTIONAL CAP: set max_aspect (e.g. 32.0 / 9.0) to pillarbox anything wider.
 #        0 = no cap (default). Meant for a future video-settings menu.
@@ -33,7 +34,7 @@ signal view_changed(view_size: Vector2i, scale: int)
 
 ## The smallest game area any player ever sees. Gameplay must be designed to
 ## work inside this "safe frame" (see docs/art-spec.md).
-const BASE_SIZE := Vector2i(384, 216)
+const BASE_SIZE := Vector2i(640, 360)
 
 ## Widest allowed aspect ratio (width / height). 0 = unlimited.
 var max_aspect := 0.0:

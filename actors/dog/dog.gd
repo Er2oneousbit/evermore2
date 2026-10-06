@@ -29,6 +29,10 @@
 #   (stuck, or the kid took a path the dog can't), it warps next to the kid.
 #   Past `hard_warp_distance` it warps regardless. F4 forces a warp.
 #
+# ART:   $Sprite is an AnimalSprite showing assets/characters/dog/dog_lpc.png
+#   (an LPC shiba recolored into a brown brindle mutt by tools/art/build_art.py).
+#   FOLLOW = walk cycle, CATCH_UP = run, IDLE/STAY = standing.
+#
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
 # =============================================================================
@@ -41,33 +45,33 @@ enum State { IDLE, FOLLOW, CATCH_UP, STAY }
 ## Who to follow. Set in the level scene; falls back to the "kid" group.
 @export var target_path: NodePath
 ## The dog stops when it is this close to the kid (px).
-@export var follow_distance := 22.0
+@export var follow_distance := 36.0
 ## Once IDLE, the kid must get this much farther than follow_distance before
 ## the dog gets up again. This dead zone (hysteresis) stops stop-go stutter.
-@export var resume_margin := 14.0
+@export var resume_margin := 22.0
 ## Within this distance past follow_distance the dog eases off its speed, so it
 ## settles into a smooth trail behind a walking kid instead of bumping into
 ## follow_distance and stopping every few steps.
-@export var slowdown_range := 28.0
+@export var slowdown_range := 44.0
 ## Beyond this distance the dog sprints.
-@export var catch_up_distance := 90.0
+@export var catch_up_distance := 150.0
 ## Sprinting continues until the gap closes to catch_up_distance minus this.
-@export var catch_up_margin := 20.0
+@export var catch_up_margin := 32.0
 ## Beyond this distance the dog warps to the kid, but ONLY while off-screen.
-## On ultrawide monitors the dog can be visible 600+ px away; teleporting in
+## On ultrawide monitors the dog can be visible 900+ px away; teleporting in
 ## plain sight looks broken, so a visible dog sprints instead.
-@export var warp_distance := 260.0
+@export var warp_distance := 480.0
 ## Beyond this distance the dog warps even if visible (truly lost/stuck).
-@export var hard_warp_distance := 2000.0
-@export var walk_speed := 82.0
-@export var sprint_speed := 135.0
-@export var acceleration := 1400.0
+@export var hard_warp_distance := 3200.0
+@export var walk_speed := 124.0
+@export var sprint_speed := 210.0
+@export var acceleration := 2200.0
 ## Distance the kid must move before a new crumb is dropped (px).
-@export var crumb_spacing := 6.0
+@export var crumb_spacing := 10.0
 ## Hard cap on trail length so memory never grows unbounded.
-@export var max_crumbs := 96
+@export var max_crumbs := 120
 ## How close the dog must get to a crumb before moving to the next one.
-@export var crumb_reached_radius := 4.0
+@export var crumb_reached_radius := 6.0
 ## How often (seconds) the dog looks for a straight-line shortcut along its
 ## trail ("string pulling"). Lower = smoother corners, slightly more CPU.
 @export var shortcut_interval := 0.1
@@ -85,14 +89,15 @@ var _trail: Array[Vector2] = []  # global positions, oldest first
 var _shortcut_timer := 0.0
 var _shape_query := PhysicsShapeQueryParameters2D.new()
 
+## Movement speed (px/s) that matches the walk cycle at 1x playback; raise it
+## if the paws look like they slide, lower it if they moonwalk.
+@export var walk_anim_speed := 70.0
+
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _on_screen: VisibleOnScreenNotifier2D = $OnScreen
+@onready var _sprite: AnimalSprite = $Sprite
 
-# Placeholder palette: brindle shelter mutt, orange shelter tag.
-const COLOR_SHADOW := Color(0, 0, 0, 0.35)
-const COLOR_COAT := Color("7a5a3a")
-const COLOR_STRIPE := Color("4e3824")
-const COLOR_TAG := Color("ff8c1a")
+# Debug trail colors (F3 overlay).
 const COLOR_TRAIL := Color(1, 0.55, 0.1, 0.8)
 const COLOR_TRAIL_NEXT := Color(1, 1, 0.2, 1)
 
@@ -118,6 +123,7 @@ func _physics_process(delta: float) -> void:
 	if state == State.STAY:
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
 		move_and_slide()
+		_update_animation()
 		queue_redraw()
 		return
 
@@ -156,6 +162,7 @@ func _physics_process(delta: float) -> void:
 			facing = dir
 
 	move_and_slide()
+	_update_animation()
 	queue_redraw()
 
 
@@ -269,6 +276,23 @@ func _next_waypoint() -> Vector2:
 	return _trail.front() if not _trail.is_empty() else _target.global_position
 
 
+## Walk while following, run while catching up, stand otherwise. Playback
+## speed follows actual speed so the paws plant instead of skating.
+func _update_animation() -> void:
+	var speed := velocity.length()
+	if speed < 8.0:
+		_sprite.speed_scale = 1.0
+		# Idle faces the kid, so a waiting dog looks like it's paying attention.
+		var look := global_position.direction_to(_target.global_position) if is_instance_valid(_target) else facing
+		_sprite.play(&"idle", look)
+	elif state == State.CATCH_UP:
+		_sprite.speed_scale = speed / sprint_speed
+		_sprite.play(&"run", facing)
+	else:
+		_sprite.speed_scale = speed / walk_anim_speed
+		_sprite.play(&"walk", facing)
+
+
 func _set_state(new_state: State) -> void:
 	if new_state == state:
 		return
@@ -278,29 +302,12 @@ func _set_state(new_state: State) -> void:
 
 
 # -----------------------------------------------------------------------------
-# Placeholder art (~20x12 px dog) + debug trail drawing
+# Debug drawing: the breadcrumb trail (only while the F3 overlay is on)
 # -----------------------------------------------------------------------------
 func _draw() -> void:
-	# Debug: draw the breadcrumb trail when the overlay is on.
-	if Debug.overlay_visible and not _trail.is_empty():
-		for i in _trail.size():
-			var p := to_local(_trail[i])
-			var c := COLOR_TRAIL_NEXT if i == 0 else COLOR_TRAIL
-			draw_rect(Rect2(p - Vector2(1, 1), Vector2(2, 2)), c)
-
-	var dir_x := -1.0 if facing.x < 0.0 else 1.0  # flip left/right
-
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.4))
-	draw_circle(Vector2.ZERO, 10.0, COLOR_SHADOW)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-	draw_rect(Rect2(-8, -4, 3, 4), COLOR_STRIPE)                 # back leg
-	draw_rect(Rect2(5, -4, 3, 4), COLOR_STRIPE)                  # front leg
-	draw_rect(Rect2(-9, -11, 18, 8), COLOR_COAT)                 # body
-	draw_rect(Rect2(-3, -11, 2, 8), COLOR_STRIPE)                # brindle stripes
-	draw_rect(Rect2(2, -11, 2, 8), COLOR_STRIPE)
-	draw_rect(Rect2(dir_x * 8 - 3, -16, 7, 7), COLOR_COAT)       # head
-	draw_rect(Rect2(dir_x * 8 - 2, -19, 2, 3), COLOR_STRIPE)     # ear up
-	draw_rect(Rect2(dir_x * 8 + 2, -17, 3, 3), COLOR_STRIPE)     # floppy notched ear
-	draw_rect(Rect2(dir_x * 6 - 1, -9, 2, 2), COLOR_TAG)         # shelter tag
-	draw_rect(Rect2(-dir_x * 10 - 1, -13, 2, 4), COLOR_COAT)     # tail
+	if not Debug.overlay_visible or _trail.is_empty():
+		return
+	for i in _trail.size():
+		var p := to_local(_trail[i])
+		var c := COLOR_TRAIL_NEXT if i == 0 else COLOR_TRAIL
+		draw_rect(Rect2(p - Vector2(1, 1), Vector2(2, 2)), c)

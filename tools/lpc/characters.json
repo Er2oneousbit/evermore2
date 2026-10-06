@@ -1,0 +1,9 @@
+{
+  "_comment": "LPC generator recipes (the URL hash from the web generator). Rebuild with: node tools/lpc/build_character.js <key> <out dir>, then copy sheet.png to 'output' and credits.* to 'credits'.",
+  "kid": {
+    "notes": "Teen body (he's 13), small head, messy chestnut hair, red longsleeve, blue jeans, white sneakers. Red pops against the Big Yard greens.",
+    "output": "assets/characters/kid/kid_lpc.png",
+    "hash": "#sex=teen&body=Body_Color_light&head=Human_Male_Small_light&expression=Neutral_light&hair=Messy2_chestnut&clothes=Longsleeve_2_red&legs=Pants_blue&shoes=Revised_Shoes_white",
+    "credits": "credits/kid/"
+  }
+}

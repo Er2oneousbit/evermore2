@@ -1,0 +1,12 @@
+Dog sprite (assets/characters/dog/dog_lpc.png, dog_lpc_shadow.png)
+==================================================================
+
+Shiba dog by Sevarihk, adapted for LPC by tapatilorenzo.
+Pack: [LPC] Bears, deer, lions and more (tapatilorenzo; shiba dog by Sevarihk)
+https://opengameart.org/content/lpc-bears-deer-lions-and-more
+License: CC-BY 4.0
+Copyright/Attribution Notice (from the page): Adapted from work by Sevarihk under CC-BY 4.0
+license, including the shiba dog, shark, giant rat, walking mushroom, and underwater tile sprites.
+
+Modifications by this project: recolored from golden to brown with brindle stripes
+(tools/art/build_art.py, build_dog).

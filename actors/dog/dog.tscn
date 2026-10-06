@@ -1,18 +1,27 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://actors/dog/dog.gd" id="1_dog"]
+[ext_resource type="Script" path="res://systems/animation/animal_sprite.gd" id="2_anim"]
+[ext_resource type="Texture2D" path="res://assets/characters/dog/dog_lpc.png" id="3_sheet"]
+[ext_resource type="Texture2D" path="res://assets/characters/dog/dog_lpc_shadow.png" id="4_shadow"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_paws"]
-size = Vector2(10, 5)
+size = Vector2(16, 8)
 
 [node name="Dog" type="CharacterBody2D"]
 collision_layer = 4
 motion_mode = 1
 script = ExtResource("1_dog")
 
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("3_sheet")
+script = ExtResource("2_anim")
+shadow_texture = ExtResource("4_shadow")
+shadow_alpha = 0.45
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -2)
+position = Vector2(0, -3)
 shape = SubResource("RectangleShape2D_paws")
 
 [node name="OnScreen" type="VisibleOnScreenNotifier2D" parent="."]
-rect = Rect2(-12, -20, 24, 22)
+rect = Rect2(-24, -40, 48, 42)

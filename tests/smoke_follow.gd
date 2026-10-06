@@ -20,17 +20,26 @@
 extends Node
 
 const YARD_SCENE := preload("res://realms/big_yard/prototype_yard.tscn")
-const TILE := 16
+const YardScript := preload("res://realms/big_yard/prototype_yard.gd")
+const TILE := YardScript.TILE
 
-## Tile coordinates the kid walks through, in order. This route goes through
-## the fence gaps of the maze, so the dog has to follow corners exactly.
+## Tile coordinates the kid walks through, in order. The kid spawns at (3,5)
+## with the dog sitting just down-right at (4,6). The first two legs dip
+## below the dog and then head east past it: the crumbs nearest the dog are
+## BEHIND it, which is exactly what made the old follow AI walk backward
+## (string pulling fixes it; the backtrack check below proves it). Then the
+## route goes through the fenced pen: in at the top gap, around the stub wall,
+## through the inner wall's gap, out the side exit, so the dog has to follow
+## every corner. (Pen layout: rows 10-22, cols 0-18 of LAYOUT.)
 const ROUTE: Array[Vector2i] = [
-	Vector2i(3, 7), Vector2i(9, 7), Vector2i(9, 12), Vector2i(12, 14),
-	Vector2i(12, 16), Vector2i(25, 16), Vector2i(25, 13), Vector2i(30, 13),
-	Vector2i(25, 13), Vector2i(25, 16), Vector2i(20, 20),
+	Vector2i(3, 7), Vector2i(8, 7), Vector2i(7, 9), Vector2i(7, 12), Vector2i(7, 14),
+	Vector2i(16, 14), Vector2i(16, 18), Vector2i(22, 18), Vector2i(22, 16),
+	Vector2i(24, 16),
 ]
+## Where the kid walks while the dog is told to stay.
+const STAY_WALK_TO := Vector2i(28, 18)
 ## Dog may lag behind while sprinting, but never more than this (px).
-const MAX_ALLOWED_GAP := 120.0
+const MAX_ALLOWED_GAP := 200.0
 ## Give up on a waypoint after this many seconds (kid stuck = test bug).
 const WAYPOINT_TIMEOUT := 8.0
 ## Max dog state changes allowed while the kid walks the route nonstop. A dog
@@ -79,10 +88,10 @@ func _run() -> void:
 	var route_gap := _max_gap
 	_release_all()
 	await _wait(2.0)
-	_check(dog_min_x >= dog_start_x - 4.0, "dog backtracked %.1f px left at the start (stale crumbs)" % (dog_start_x - dog_min_x))
+	_check(dog_min_x >= dog_start_x - 6.0, "dog backtracked %.1f px left at the start (stale crumbs)" % (dog_start_x - dog_min_x))
 	_check(route_changes <= MAX_ROUTE_STATE_CHANGES, "dog changed state %d times while kid walked (stutter? max %d)" % [route_changes, MAX_ROUTE_STATE_CHANGES])
 	_check(_dog.state == Dog.State.IDLE, "dog should be IDLE after kid stops (was %s)" % _dog.get_state_name())
-	_check(_dist() <= _dog.follow_distance + 6.0, "dog should end next to kid (dist %.1f)" % _dist())
+	_check(_dist() <= _dog.follow_distance + 10.0, "dog should end next to kid (dist %.1f)" % _dist())
 	_check(_dog.warp_count == 0, "dog needed %d safety warps during the route" % _dog.warp_count)
 	_check(route_gap <= MAX_ALLOWED_GAP, "dog fell %.1f px behind (max %.1f)" % [route_gap, MAX_ALLOWED_GAP])
 
@@ -90,14 +99,14 @@ func _run() -> void:
 	_tap("dog_toggle_stay")
 	await _wait(0.1)
 	var stay_pos := _dog.global_position
-	await _walk_to(Vector2i(28, 20))
+	await _walk_to(STAY_WALK_TO)
 	_release_all()
 	await _wait(0.3)
 	_check(_dog.state == Dog.State.STAY, "dog should be in STAY")
 	_check(_dog.global_position.distance_to(stay_pos) < 2.0, "dog moved while told to stay")
 	_tap("dog_toggle_stay")
 	await _wait(3.0)
-	_check(_dist() <= _dog.follow_distance + 6.0, "dog should rejoin kid after stay (dist %.1f)" % _dist())
+	_check(_dist() <= _dog.follow_distance + 10.0, "dog should rejoin kid after stay (dist %.1f)" % _dist())
 
 	# --- 3. Night + flashlight -----------------------------------------------
 	_tap("debug_cycle_time")  # golden -> night
@@ -127,7 +136,7 @@ func _run() -> void:
 func _walk_to(tile: Vector2i) -> void:
 	var target := Vector2(tile.x * TILE + TILE * 0.5, tile.y * TILE + TILE * 0.5)
 	var elapsed := 0.0
-	while _kid.global_position.distance_to(target) > 3.0:
+	while _kid.global_position.distance_to(target) > 4.0:
 		var dir := _kid.global_position.direction_to(target)
 		_press_axis("move_right", "move_left", dir.x)
 		_press_axis("move_down", "move_up", dir.y)

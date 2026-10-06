@@ -1,0 +1,17 @@
+[gd_resource type="GradientTexture2D" load_steps=2 format=3]
+
+; Soft round drop shadow shared by every actor and prop. Scale the Sprite2D
+; that uses it (e.g. scale = (0.75, 0.3)) to get a flat ellipse on the ground.
+; 64x64, black, fully dark in the middle, fading out toward the edge.
+
+[sub_resource type="Gradient" id="Gradient_shadow"]
+offsets = PackedFloat32Array(0, 0.45, 1)
+colors = PackedColorArray(0.05, 0.04, 0.08, 1, 0.05, 0.04, 0.08, 0.75, 0.05, 0.04, 0.08, 0)
+
+[resource]
+gradient = SubResource("Gradient_shadow")
+width = 64
+height = 64
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)

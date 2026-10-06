@@ -33,7 +33,7 @@ it's not decided yet. **Locked** = agreed, don't change without discussion.
 | Realms | 5 realms + hub + finale. **None of the original realms reused** |
 | Ruffleberg | Survived 1995, **died in 2014** |
 | Carltron | Never died. **Powered down** by Ruffleberg because of the unstable v2 chip |
-| Style | 2D pixel art, "Modern SNES" (see art-spec.md) |
+| Style | 2D pixel art, "Modern SNES" built on the LPC library: 32 px tiles, 640x360 base (see art-spec.md) |
 | Engine | Godot 4 |
 
 ## 3. Lore: the v2 chip
@@ -222,6 +222,10 @@ being left behind, and the kid makes sure neither one is.
 - Alchemy ingredient tree and formula list for the new realms
 - Economy: currencies, Free Harbor trade routes, exchange behaviors
 - Dialogue script for the prologue
+- Dog sprite: the current one is an LPC shiba recolored brown brindle (a
+  stand-in). He still needs the notched floppy ear, one ear up, and the orange
+  "Kennel 13" tag, which means a hand edit in LPC style
+- Squirrel Army sprites: no LPC squirrel exists; draw one in LPC style
 
 ---
 Written with help from Claude (Anthropic) via Claude Code.

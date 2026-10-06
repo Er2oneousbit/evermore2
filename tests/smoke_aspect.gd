@@ -2,15 +2,16 @@
 # smoke_aspect.gd  -  Ultrawide / any-monitor scaling test
 # -----------------------------------------------------------------------------
 # PART A (always runs, headless OK): ScreenScaler.compute() against a table of
-#   real monitors, plus invariants: integer scale, view never below 384x216,
+#   real monitors, plus invariants: integer scale, view never below 640x360,
 #   black border always smaller than one scaled pixel.
 #
 # PART B (needs a real display or Xvfb; skipped in --headless): checks the
 #   LIVE window it was launched at:
 #   - the game view matches the math
 #   - black bars measured from an actual screen capture are < 1 scaled pixel
-#   - no grey "void" (the engine clear color) anywhere in the capture, i.e.
-#     the realm's apron art really covers everything a wide screen can see
+#   - no "void" anywhere in the capture: the test clears the screen to pure
+#     magenta, so any magenta left means the realm's apron art doesn't cover
+#     everything a wide screen can see
 #   - kid teleported to all 4 map corners: camera never shows past the apron
 #   - map narrower than the screen: camera stays centered on it
 #   - HUD SafeFrame is centered and capped at its aspect
@@ -33,24 +34,28 @@ const YardScript := preload("res://realms/big_yard/prototype_yard.gd")
 
 ## [window size, expected scale, expected view]. Real monitors, small to huge.
 const MONITORS := [
-	[Vector2i(1280, 800), 3, Vector2i(426, 266)],     # Steam Deck (16:10)
-	[Vector2i(1366, 768), 3, Vector2i(455, 256)],     # budget laptop
-	[Vector2i(1024, 768), 2, Vector2i(512, 384)],     # 4:3
-	[Vector2i(1920, 1080), 5, Vector2i(384, 216)],    # 1080p 16:9 (exact base)
-	[Vector2i(2560, 1440), 6, Vector2i(426, 240)],    # 1440p 16:9
-	[Vector2i(3840, 2160), 10, Vector2i(384, 216)],   # 4K 16:9
-	[Vector2i(2560, 1080), 5, Vector2i(512, 216)],    # 21:9 ultrawide
-	[Vector2i(3440, 1440), 6, Vector2i(573, 240)],    # 21:9 ultrawide 1440p
-	[Vector2i(3840, 1600), 7, Vector2i(548, 228)],    # 24:10 ultrawide
-	[Vector2i(5120, 2160), 10, Vector2i(512, 216)],   # 21:9 5K2K
-	[Vector2i(3840, 1080), 5, Vector2i(768, 216)],    # 32:9 super ultrawide
-	[Vector2i(5120, 1440), 6, Vector2i(853, 240)],    # 32:9 super ultrawide 1440p
-	[Vector2i(7680, 2160), 10, Vector2i(768, 216)],   # 32:9 57-inch dual 4K
-	[Vector2i(5760, 1080), 5, Vector2i(1152, 216)],   # 48:9 triple 1080p
-	[Vector2i(7680, 1440), 6, Vector2i(1280, 240)],   # 48:9 triple 1440p
+	[Vector2i(1280, 800), 2, Vector2i(640, 400)],     # Steam Deck (16:10)
+	[Vector2i(1366, 768), 2, Vector2i(683, 384)],     # budget laptop
+	[Vector2i(1024, 768), 1, Vector2i(1024, 768)],    # 4:3 (small: 1x, sees extra world)
+	[Vector2i(1920, 1080), 3, Vector2i(640, 360)],    # 1080p 16:9 (exact base)
+	[Vector2i(2560, 1440), 4, Vector2i(640, 360)],    # 1440p 16:9 (exact base)
+	[Vector2i(3840, 2160), 6, Vector2i(640, 360)],    # 4K 16:9 (exact base)
+	[Vector2i(2560, 1080), 3, Vector2i(853, 360)],    # 21:9 ultrawide
+	[Vector2i(3440, 1440), 4, Vector2i(860, 360)],    # 21:9 ultrawide 1440p
+	[Vector2i(3840, 1600), 4, Vector2i(960, 400)],    # 24:10 ultrawide
+	[Vector2i(5120, 2160), 6, Vector2i(853, 360)],    # 21:9 5K2K
+	[Vector2i(3840, 1080), 3, Vector2i(1280, 360)],   # 32:9 super ultrawide
+	[Vector2i(5120, 1440), 4, Vector2i(1280, 360)],   # 32:9 super ultrawide 1440p
+	[Vector2i(7680, 2160), 6, Vector2i(1280, 360)],   # 32:9 57-inch dual 4K
+	[Vector2i(5760, 1080), 3, Vector2i(1920, 360)],   # 48:9 triple 1080p
+	[Vector2i(7680, 1440), 4, Vector2i(1920, 360)],   # 48:9 triple 1440p
+	[Vector2i(1280, 720), 2, Vector2i(640, 360)],     # 720p / default window
 	[Vector2i(640, 360), 1, Vector2i(640, 360)],      # tiny window
-	[Vector2i(64, 64), 1, Vector2i(384, 216)],        # headless dummy window
+	[Vector2i(64, 64), 1, Vector2i(640, 360)],        # headless dummy window
 ]
+
+## Sentinel clear color for the void check (see _part_b_live).
+const VOID_COLOR := Color(1.0, 0.0, 1.0)
 
 var _failures: PackedStringArray = []
 var _shot_dir := OS.get_environment("EVERMORE_SHOT_DIR")
@@ -90,7 +95,7 @@ func _part_a_math() -> void:
 
 	# Optional cap: 32:9 capped to 21:9 -> pillarboxed, still >= base.
 	var capped := ScalerScript.compute(Vector2i(5120, 1440), 21.0 / 9.0)
-	_check(capped["view"] == Vector2i(560, 240), "cap 21:9 on 5120x1440: %s" % capped["view"])
+	_check(capped["view"] == Vector2i(840, 360), "cap 21:9 on 5120x1440: %s" % capped["view"])
 	print("[TEST] part A: %d monitors checked" % MONITORS.size())
 
 
@@ -98,6 +103,10 @@ func _part_a_math() -> void:
 # PART B: the live window
 # -----------------------------------------------------------------------------
 func _part_b_live() -> void:
+	# Clear to pure magenta while testing: no art uses it, so any magenta in
+	# the capture is guaranteed to be "nothing drawn here" (the engine's
+	# default grey can also come from anti-aliased HUD text, a false alarm).
+	RenderingServer.set_default_clear_color(VOID_COLOR)
 	var yard := YARD_SCENE.instantiate()
 	add_child(yard)
 	var kid: Kid = yard.get_node("World/Kid")
@@ -123,8 +132,9 @@ func _part_b_live() -> void:
 		for side: String in bars:
 			_check(bars[side] < s, "black bar %s = %d px (must be < %d)" % [side, bars[side], s])
 		print("[TEST] part B: measured bars %s (scale %d)" % [bars, s])
-		var void_px := _count_void_pixels(screen, win, bars)
-		_check(void_px == 0, "%d sampled pixels show the empty void (missing apron art?)" % void_px)
+		var void_hits := _find_void_pixels(screen, win, bars)
+		_check(void_hits.is_empty(), "%d sampled pixels show the empty void (missing apron art?) first at %s"
+				% [void_hits.size(), void_hits.slice(0, 5)])
 		_save_shot(screen, "aspect_%dx%d" % [win.x, win.y])
 	else:
 		print("[TEST] (screen capture unavailable; bar check skipped)")
@@ -132,7 +142,7 @@ func _part_b_live() -> void:
 	# 3. Corners: camera never shows past the apron; narrow maps stay centered.
 	var map := Rect2(0, 0, YardScript.LAYOUT[0].length() * YardScript.TILE,
 			YardScript.LAYOUT.size() * YardScript.TILE)
-	var apron := map.grow(YardScript.APRON_PX)
+	var apron := map.grow(YardScript.APRON_TILES * YardScript.TILE)
 	var corners := [map.position + Vector2(24, 24), Vector2(map.end.x - 24, 24),
 			Vector2(24, map.end.y - 24), map.end - Vector2(24, 24)]
 	for c: Vector2 in corners:
@@ -177,20 +187,21 @@ func _measure_black_bars(img: Image, win: Vector2i) -> Dictionary:
 	return bars
 
 
-## Samples the capture on a grid (inside the black bars) and counts pixels
-## matching the engine clear color, which only shows where nothing is drawn.
-func _count_void_pixels(img: Image, win: Vector2i, bars: Dictionary) -> int:
-	var clear: Color = ProjectSettings.get_setting("rendering/environment/defaults/default_clear_color")
+## Samples the capture on a grid (inside the black bars) and returns the
+## screen positions of pixels matching the sentinel clear color, which only
+## shows where nothing is drawn. Tolerance covers the color grade and
+## vignette shifting the magenta a little.
+func _find_void_pixels(img: Image, win: Vector2i, bars: Dictionary) -> Array[Vector2i]:
 	var x0: int = bars["left"]
 	var x1: int = mini(img.get_width(), win.x) - bars["right"]
 	var y0: int = bars["top"]
 	var y1: int = mini(img.get_height(), win.y) - bars["bottom"]
-	var hits := 0
+	var hits: Array[Vector2i] = []
 	for y in range(y0, y1, 8):
 		for x in range(x0, x1, 8):
 			var c := img.get_pixel(x, y)
-			if absf(c.r - clear.r) < 0.01 and absf(c.g - clear.g) < 0.01 and absf(c.b - clear.b) < 0.01:
-				hits += 1
+			if c.r > 0.55 and c.b > 0.55 and c.g < 0.25:
+				hits.append(Vector2i(x, y))
 	return hits
 
 

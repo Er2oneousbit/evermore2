@@ -1,0 +1,15 @@
+[gd_resource type="GradientTexture2D" load_steps=2 format=3]
+
+; Tiny soft glowing dot (fireflies, sparkles). Bright core, soft halo.
+
+[sub_resource type="Gradient" id="Gradient_glow"]
+offsets = PackedFloat32Array(0, 0.25, 0.6, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.9, 1, 1, 1, 0.25, 1, 1, 1, 0)
+
+[resource]
+gradient = SubResource("Gradient_glow")
+width = 9
+height = 9
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)

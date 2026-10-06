@@ -22,3 +22,6 @@ Thumbs.db
 
 # NOTE: do NOT ignore *.import or *.uid files. Godot 4 needs them in git
 # so every machine maps assets and scripts to the same IDs.
+
+# Art pipeline download cache (tools/art/build_art.py re-downloads it)
+tools/art/.cache/
