@@ -23,5 +23,17 @@ Thumbs.db
 # NOTE: do NOT ignore *.import or *.uid files. Godot 4 needs them in git
 # so every machine maps assets and scripts to the same IDs.
 
+# Local Claude Code notes (personal; the repo is public)
+CLAUDE.md
+
+# Claude Code's working copies for parallel agents (git worktrees)
+.claude/worktrees/
+
+# Throwaway probe scripts and scenes while investigating (never committed)
+/tests/_*
+
+# Logs
+*.log
+
 # Art pipeline download cache (tools/art/build_art.py re-downloads it)
 tools/art/.cache/

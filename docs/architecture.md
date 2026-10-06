@@ -181,17 +181,9 @@ it and confirming the test fails:
 
 ## 6. Roadmap
 
-| Milestone | Contents |
-|---|---|
-| **Prototype 0** (done) | Kid movement, dog follow, Y-sort, lighting, debug tools, smoke test |
-| **Prototype 0.1** (done) | Any-screen scaling (16:9 to 48:9), GameCamera, apron, HUD SafeFrame, aspect tests |
-| **Prototype 0.2** (done) | Real art: LPC kid/dog/tiles/props at 32 px, art pipeline + credits, Atmosphere (grade, clouds, particles), animated water |
-| **Prototype 0.3** (done) | HD-2D view: 3D world from the 2D realm, sun shadows, volumetric light shafts, tilt-shift DoF, reflective pond, F6 to compare |
-| Prototype 1 | Combat: weapon swing + charge meter, a squirrel enemy (LPC-style art), hit-stop, damage numbers |
-| Prototype 2 | Ring menu + first alchemy formula (data-driven `.tres` resources) |
-| Prototype 3 | The real Big Yard map painted in the editor; HD-2D height (stairs, ledges, a raised patio); wading in shallow water |
-| Prototype 4 | Mission 1 vertical slice: alternating kid/dog control, the Vacuum boss |
-| Later | Save system, dialogue, hub mansion, prologue |
+Moved to [ROADMAP.md](ROADMAP.md): the plan, what's next, decisions, and a
+"Done" entry per version. Developer setup and the release checklist are in
+[DEVELOPMENT.md](DEVELOPMENT.md).
 
 ---
 Written with help from Claude (Anthropic) via Claude Code.

@@ -13,6 +13,10 @@
 # =============================================================================
 set -u
 GODOT="${1:-${GODOT:-godot}}"
+# Frame cap: a test whose script fails to compile never quits on its own.
+# Real runs need a few thousand frames; past this cap the run ends without
+# a PASS line and counts as a failure, in seconds instead of a long timeout.
+MAX_FRAMES=20000
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 if ! command -v "$GODOT" >/dev/null 2>&1 && [ ! -x "$GODOT" ]; then
   echo "ERROR: Godot not found at '$GODOT'. Pass the path as the first argument." >&2
@@ -24,7 +28,7 @@ run() {  # run <label> <scene> [extra godot args...]
   local label="$1" scene="$2"; shift 2
   printf '%-22s ' "$label"
   local out
-  out=$(timeout 300 "$GODOT" --headless --path "$PROJECT_DIR" --audio-driver Dummy "$@" "$scene" 2>&1)
+  out=$(timeout 300 "$GODOT" --headless --path "$PROJECT_DIR" --audio-driver Dummy --quit-after "$MAX_FRAMES" "$@" "$scene" 2>&1)
   local code=$?
   if [ $code -eq 0 ] && echo "$out" | grep -q '\[TEST\] PASS'; then
     echo "PASS  $(echo "$out" | grep -o '\[TEST\] PASS.*' | sed 's/\[TEST\] PASS *//')"

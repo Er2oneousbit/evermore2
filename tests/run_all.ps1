@@ -38,6 +38,10 @@ if ((Split-Path -Leaf $Godot) -notmatch 'console') {
 }
 
 $projectDir = Resolve-Path (Join-Path $PSScriptRoot "..")
+# Frame cap: a test whose script fails to compile never quits on its own.
+# Real runs need a few thousand frames; past this cap the run ends without
+# a PASS line and counts as a failure, in seconds instead of hanging.
+$maxFrames = 20000
 $tests = @(
     @{ Label = "follow @30fps";  Scene = "res://tests/smoke_follow.tscn";  Args = @("--fixed-fps", "30") },
     @{ Label = "follow @60fps";  Scene = "res://tests/smoke_follow.tscn";  Args = @("--fixed-fps", "60") },
@@ -50,10 +54,17 @@ $tests = @(
 $failed = $false
 foreach ($t in $tests) {
     Write-Host ("{0,-22} " -f $t.Label) -NoNewline
-    $godotArgs = @("--headless", "--path", $projectDir, "--audio-driver", "Dummy") + $t.Args + @($t.Scene)
+    $godotArgs = @("--headless", "--path", $projectDir, "--audio-driver", "Dummy", "--quit-after", $maxFrames) + $t.Args + @($t.Scene)
     $output = & $Godot @godotArgs 2>&1 | Out-String
     if ($LASTEXITCODE -eq 0 -and $output -match '\[TEST\] PASS(.*)') {
         Write-Host "PASS $($Matches[1].Trim())" -ForegroundColor Green
+    }
+    elseif ($output -match 'SCRIPT ERROR') {
+        # Usually a script that fails to compile: the test hit the frame cap.
+        Write-Host "FAIL (script error)" -ForegroundColor Red
+        $output -split "`n" | Where-Object { $_ -match 'SCRIPT ERROR' } | Select-Object -First 5 |
+            ForEach-Object { Write-Host "      $_" }
+        $failed = $true
     }
     elseif ($LASTEXITCODE -eq 0) {
         # Exit 0 but no test output: almost always the GUI exe instead of *_console.exe.

@@ -1,0 +1,47 @@
+# Continuous integration: the headless smoke tests on every push (any
+# branch). Not on pull requests: the project does not take them (they are
+# closed, see close-pull-requests.yml).
+#
+# The tests need no GPU (Godot's headless renderer draws nothing), so they
+# check logic and structure: the dog's follow AI at three frame rates, the
+# art plumbing, the HD-2D view mirroring the 2D game, the scaling math.
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the older, still-running check.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Keep in step with the version the project is developed on (docs/DEVELOPMENT.md).
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download Godot ${{ env.GODOT_VERSION }}
+        run: |
+          url="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl -fsSL -o godot.zip "$url"
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" >> "$GITHUB_ENV"
+
+      # Import builds the .godot cache and registers class_name scripts. It
+      # does NOT compile scripts nothing loads, so it can't catch parse
+      # errors; the tests do (a broken script fails its test in seconds).
+      - name: Import the project
+        run: '"$GODOT" --headless --path . --import > /dev/null 2>&1 || true'
+
+      - name: Headless smoke tests
+        run: tests/run_all.sh "$GODOT"

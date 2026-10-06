@@ -1,5 +1,5 @@
 # =============================================================================
-# debug_overlay.gd  -  F3 overlay: FPS, positions, dog AI state, realm
+# debug_overlay.gd  -  F3 overlay: version, FPS, positions, dog AI state, realm
 # -----------------------------------------------------------------------------
 # WHAT:  A text panel drawn above everything (CanvasLayer 100). Owned by the
 #        Debug autoload, so it exists in every scene automatically.
@@ -33,7 +33,9 @@ func _process(delta: float) -> void:
 
 func _build_text() -> String:
 	var lines: PackedStringArray = []
-	lines.append("FPS %d  |  %s" % [Engine.get_frames_per_second(), Names.text(GameState.current_realm)])
+	# Version first: bug reports ask players to copy these top lines.
+	lines.append("v%s  FPS %d  |  %s" % [ProjectSettings.get_setting("application/config/version", "?"),
+			Engine.get_frames_per_second(), Names.text(GameState.current_realm)])
 	var win := get_tree().root.size
 	lines.append("win %dx%d  view %dx%d @%dx" % [win.x, win.y, ScreenScaler.view_size.x, ScreenScaler.view_size.y, ScreenScaler.scale])
 	lines.append("%s  (%s)" % ["HD-2D view" if ScreenScaler.native_3d else "2D view", RenderingServer.get_current_rendering_method()])
