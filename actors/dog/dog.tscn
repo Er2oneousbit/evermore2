@@ -13,3 +13,6 @@ script = ExtResource("1_dog")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -2)
 shape = SubResource("RectangleShape2D_paws")
+
+[node name="OnScreen" type="VisibleOnScreenNotifier2D" parent="."]
+rect = Rect2(-12, -20, 24, 22)

@@ -3,13 +3,20 @@
 A fan sequel to *Secret of Evermore* (Square, 1995). Top-down action RPG,
 modern pixel art, built in **Godot 4**.
 
-> **Status: Prototype 0.** A kid walks around a placeholder backyard, the dog
-> follows him, and you can flip day/night and the phone flashlight. No combat,
-> menus, or story yet. Everything is placeholder shapes drawn in code.
+> **Status: Prototype 0.1.** A kid walks around a placeholder backyard, the dog
+> follows him, and you can flip day/night and the phone flashlight. Scales
+> pixel-perfect to **any monitor: 16:9, 21:9, 32:9, 48:9 triple-wide, Steam
+> Deck**. No combat, menus, or story yet. Everything is placeholder shapes.
 
 | Golden hour + F3 overlay | Dog following through the fence maze | Night, phone flashlight on |
 |---|---|---|
 | ![golden hour](docs/screenshots/proto0_golden_hour.png) | ![maze follow](docs/screenshots/proto0_maze_follow.png) | ![night](docs/screenshots/proto0_night_flashlight.png) |
+
+**32:9 super ultrawide (5120×1440):** fills the screen, hedge "apron" past the fence, HUD pulled into the middle.
+![32:9](docs/screenshots/proto0_ultrawide_32x9.png)
+
+**48:9 triple-wide (7680×1440):**
+![48:9](docs/screenshots/proto0_triple_48x9.png)
 
 ---
 
@@ -70,7 +77,21 @@ EVERMORE_SHOT_DIR=/tmp/shots godot --path . --fixed-fps 60 res://tests/smoke_fol
 ```
 
 On Windows PowerShell, set the variable first: `$env:EVERMORE_SHOT_DIR="C:\temp\shots"`.
-Run the test before pushing anything that touches the kid, the dog, or the yard.
+
+```bash
+# Any-monitor scaling test. Headless: checks the math for 17 real monitors.
+godot --headless --path . res://tests/smoke_aspect.tscn
+# With a display: also checks the live window (bars, camera, HUD) at that size
+godot --path . --resolution 5120x1440 res://tests/smoke_aspect.tscn
+
+# Full matrix, 13 resolutions from Steam Deck to 48:9 triple-wide:
+tests/run_aspect_matrix.sh /path/to/godot [screenshot_dir]          # Linux / CI (Xvfb)
+pwsh tests/run_aspect_matrix.ps1 -Godot C:\path\to\Godot_v4.7.2-stable_win64_console.exe  # Windows
+#   older GPU / VM?  add:  -ExtraArgs "--rendering-method gl_compatibility"
+```
+
+Run the tests before pushing anything that touches the kid, the dog, the
+camera, the HUD, or the yard.
 
 ---
 
@@ -81,6 +102,7 @@ evermore2/
 ├── project.godot        Engine settings (384x216 pixel-perfect, autoloads)
 ├── autoload/            Global singletons, loaded before any scene
 │   ├── debug.gd           CLI options, logging, F3 overlay
+│   ├── screen_scaler.gd   Crisp integer scaling that fills ANY monitor shape
 │   ├── input_setup.gd     ALL key/gamepad bindings (one readable table)
 │   ├── names.gd           Every proper noun, loaded from data/names.json
 │   ├── event_bus.gd       Game-wide signals (light toggled, time changed...)
@@ -88,10 +110,13 @@ evermore2/
 ├── actors/
 │   ├── kid/               Player character
 │   └── dog/               Companion AI (breadcrumb follow + string pulling)
+├── systems/camera/      GameCamera: map bounds + centering on wide screens
 ├── realms/
 │   ├── _shared/           Pieces used by many realms (placeholder tree)
 │   └── big_yard/          Prototype 0 test map (ASCII layout, throwaway)
-├── ui/debug_overlay/    The F3 overlay
+├── ui/
+│   ├── debug_overlay/     The F3 overlay
+│   └── hud/               Placeholder HUD + SafeFrame (keeps HUD centered on ultrawide)
 ├── data/names.json      Character / place / item names (edit names HERE)
 ├── tests/               Automated smoke tests
 └── docs/                Design bible, art spec, architecture notes
@@ -102,11 +127,13 @@ evermore2/
 1. **No hardcoded names.** Characters, places, and items come from
    `Names.text("key")`, backed by `data/names.json`.
 2. **Bindings live in `autoload/input_setup.gd`**, not in Project Settings.
-3. **Origins at the feet.** Every actor/prop is drawn upward from (0, 0) so
+3. **Follow the any-screen rules** in [`docs/art-spec.md`](docs/art-spec.md) section 2
+   (safe frame, apron, GameCamera, SafeFrame HUD, distance-based enemy activation).
+4. **Origins at the feet.** Every actor/prop is drawn upward from (0, 0) so
    Y-sorting works. Put them under a node with `y_sort_enabled = true`.
-4. **Game-wide events go through `EventBus`.** Local stuff uses normal signals.
-5. **Commit `.import` and `.uid` files.** Never commit `.godot/`.
-6. **Tests pass before push.**
+5. **Game-wide events go through `EventBus`.** Local stuff uses normal signals.
+6. **Commit `.import` and `.uid` files.** Never commit `.godot/`.
+7. **Tests pass before push.**
 
 ## Docs
 

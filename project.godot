@@ -18,6 +18,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 [autoload]
 
 Debug="*res://autoload/debug.gd"
+ScreenScaler="*res://autoload/screen_scaler.gd"
 InputSetup="*res://autoload/input_setup.gd"
 Names="*res://autoload/names.gd"
 EventBus="*res://autoload/event_bus.gd"

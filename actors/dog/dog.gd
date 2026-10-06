@@ -25,8 +25,9 @@
 #   CATCH_UP  far behind; sprinting the trail
 #   STAY      player told the dog to stay (E / gamepad X); ignores the kid
 #
-# SAFETY NET: if the dog gets farther than `warp_distance` (stuck, or the kid
-#   took a path the dog can't), it warps next to the kid. F4 forces a warp.
+# SAFETY NET: if the dog gets farther than `warp_distance` AND is off-screen
+#   (stuck, or the kid took a path the dog can't), it warps next to the kid.
+#   Past `hard_warp_distance` it warps regardless. F4 forces a warp.
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -52,8 +53,12 @@ enum State { IDLE, FOLLOW, CATCH_UP, STAY }
 @export var catch_up_distance := 90.0
 ## Sprinting continues until the gap closes to catch_up_distance minus this.
 @export var catch_up_margin := 20.0
-## Beyond this distance the dog gives up walking and warps to the kid.
+## Beyond this distance the dog warps to the kid, but ONLY while off-screen.
+## On ultrawide monitors the dog can be visible 600+ px away; teleporting in
+## plain sight looks broken, so a visible dog sprints instead.
 @export var warp_distance := 260.0
+## Beyond this distance the dog warps even if visible (truly lost/stuck).
+@export var hard_warp_distance := 2000.0
 @export var walk_speed := 82.0
 @export var sprint_speed := 135.0
 @export var acceleration := 1400.0
@@ -81,6 +86,7 @@ var _shortcut_timer := 0.0
 var _shape_query := PhysicsShapeQueryParameters2D.new()
 
 @onready var _collision: CollisionShape2D = $CollisionShape2D
+@onready var _on_screen: VisibleOnScreenNotifier2D = $OnScreen
 
 # Placeholder palette: brindle shelter mutt, orange shelter tag.
 const COLOR_SHADOW := Color(0, 0, 0, 0.35)
@@ -117,7 +123,7 @@ func _physics_process(delta: float) -> void:
 
 	var dist := global_position.distance_to(_target.global_position)
 
-	if dist > warp_distance:
+	if dist > hard_warp_distance or (dist > warp_distance and not _on_screen.is_on_screen()):
 		warp_to_target()
 		return
 

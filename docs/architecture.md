@@ -10,6 +10,7 @@ How the code is organized, why, and what comes next.
 GAME
 ├── Autoloads (global singletons, loaded in this order)
 │   ├── Debug        CLI options, leveled logging, F3 overlay          [done]
+│   ├── ScreenScaler Integer scaling that fills any monitor shape       [done]
 │   ├── InputSetup   Every key/gamepad binding in one table             [done]
 │   ├── Names        Proper nouns from data/names.json                  [done]
 │   ├── EventBus     Game-wide signals                                  [done]
@@ -25,6 +26,8 @@ GAME
 │   └── Enemies      State machine: idle → patrol → chase → attack      [todo]
 │
 ├── Systems
+│   ├── GameCamera   World bounds; centers maps narrower than screen    [done]
+│   ├── SafeFrame    Keeps HUD in a centered, aspect-capped area        [done]
 │   ├── Alchemy      Formula + Ingredient resources, mastery            [todo]
 │   ├── RingMenu     The radial menu                                    [todo]
 │   ├── DogForms     Per-realm form resources                           [todo]
@@ -48,6 +51,7 @@ GAME
 | Logging via `Debug.log_info/verbose/warn/error` | Greppable prefixes, `--verbose` gating |
 | Static typing in GDScript | Catches mistakes at parse time, faster code |
 | Commit `.import` + `.uid` files, never `.godot/` | Stable asset IDs across machines |
+| Follow the any-screen rules in art-spec.md section 2 | 16:9 through 48:9 must all play right |
 
 ### Physics layers
 
@@ -70,8 +74,10 @@ The kid and the dog only collide with **world**, so they never block each other.
 4. **Anti-stutter:** a dead zone before getting up again (`resume_margin`),
    easing near the target gap (`slowdown_range`), and a walk/sprint dead zone
    (`catch_up_margin`).
-5. **Safety net:** beyond `warp_distance` the dog warps to the kid. `warp_count`
-   shows on the F3 overlay; it should stay 0 in normal play.
+5. **Safety net:** beyond `warp_distance` the dog warps to the kid, but only
+   while off-screen (on ultrawide he can be visible 600+ px away, and a visible
+   dog sprints instead). Past `hard_warp_distance` he warps regardless.
+   `warp_count` shows on the F3 overlay; it should stay 0 in normal play.
 
 `tests/smoke_follow.gd` checks all of this. Each fix was verified by disabling
 it and confirming the test fails:
@@ -87,6 +93,7 @@ it and confirming the test fails:
 | Milestone | Contents |
 |---|---|
 | **Prototype 0** (done) | Kid movement, dog follow, Y-sort, lighting, debug tools, smoke test |
+| **Prototype 0.1** (done) | Any-screen scaling (16:9 to 48:9), GameCamera, apron, HUD SafeFrame, aspect tests |
 | Prototype 1 | Combat: weapon swing + charge meter, one enemy type, hit-stop, damage |
 | Prototype 2 | Ring menu + first alchemy formula (data-driven `.tres` resources) |
 | Prototype 3 | Real tileset + TileMapLayer for the Big Yard; first real sprites |

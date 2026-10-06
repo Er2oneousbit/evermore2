@@ -14,6 +14,12 @@
 #   ,  flowerbed (walkable)   T  tree (Y-sorted, trunk is solid)
 #   K  kid spawn              D  dog spawn
 #
+# APRON: decor drawn OUTSIDE the playable map (hedges and lawn beyond the
+#   fence). Ultrawide screens (32:9, 48:9) see past the map edges; the apron
+#   fills that space with world instead of a void. Every realm needs one.
+#   APRON_PX must be at least (widest view - map width) / 2. Widest view at a
+#   sane scale is ~1280 px (7680x1440 at 6x), so 1024 is plenty for any map.
+#
 # WHAT TO TEST HERE:
 #   - Walk behind/in front of trees: Y-sorting (feet decide draw order).
 #   - Run through the fenced maze: the dog should follow your exact path.
@@ -65,6 +71,11 @@ const TIME_ORDER: Array[String] = ["day", "golden", "night"]
 ## Seconds to blend between tints.
 const TIME_BLEND := 0.6
 
+## How far (px) the decorative apron extends past every map edge.
+const APRON_PX := 1024
+## Apron decor grid: one possible bush per cell.
+const APRON_CELL := 24
+
 # Placeholder ground palette (golden-hour backyard).
 const COLOR_GRASS_A := Color("5f9e3a")
 const COLOR_GRASS_B := Color("58953a")
@@ -74,6 +85,9 @@ const COLOR_WATER := Color("2f6f9f")
 const COLOR_WATER_LIGHT := Color("5aa0cf")
 const COLOR_DIRT := Color("6b4a2f")
 const COLOR_FLOWERS: Array[Color] = [Color("ff6b8a"), Color("ffd84a"), Color("f2f2f2")]
+const COLOR_APRON_GRASS := Color("4f8a34")
+const COLOR_HEDGE_DARK := Color("2c5a26")
+const COLOR_HEDGE := Color("3a7330")
 
 ## Start in golden hour: that's the Big Yard's identity.
 var _time_index := 1
@@ -163,20 +177,23 @@ func _add_tree(base: Vector2) -> void:
 
 
 func _set_camera_limits() -> void:
-	var cam := _kid.get_node_or_null("Camera2D") as Camera2D
+	var cam := _kid.get_node_or_null("Camera2D") as GameCamera
 	if cam == null:
-		Debug.log_warn("Kid has no Camera2D child; camera limits not set")
+		Debug.log_warn("Kid has no GameCamera child; camera bounds not set")
 		return
-	cam.limit_left = 0
-	cam.limit_top = 0
-	cam.limit_right = LAYOUT[0].length() * TILE
-	cam.limit_bottom = LAYOUT.size() * TILE
+	cam.set_world_bounds(_map_rect())
+
+
+## The playable map area in world pixels.
+func _map_rect() -> Rect2:
+	return Rect2(0, 0, LAYOUT[0].length() * TILE, LAYOUT.size() * TILE)
 
 
 # -----------------------------------------------------------------------------
 # Ground drawing (drawn by this node, so it renders under everything in World)
 # -----------------------------------------------------------------------------
 func _draw() -> void:
+	_draw_apron()
 	for y in LAYOUT.size():
 		var row := LAYOUT[y]
 		for x in row.length():
@@ -190,6 +207,27 @@ func _draw() -> void:
 					_draw_water(r, x, y)
 				",":
 					_draw_flowerbed(r, x, y)
+
+
+## Lawn + hedges outside the fence. Deterministic hash, so it never flickers
+## or changes between runs. Skips cells that overlap the playable map.
+func _draw_apron() -> void:
+	var map := _map_rect()
+	draw_rect(map.grow(APRON_PX), COLOR_APRON_GRASS)
+	var cells := ceili((map.size.x + APRON_PX * 2) / APRON_CELL)
+	var rows := ceili((map.size.y + APRON_PX * 2) / APRON_CELL)
+	for cy in rows:
+		for cx in cells:
+			var p := Vector2(cx * APRON_CELL - APRON_PX, cy * APRON_CELL - APRON_PX)
+			if map.grow(APRON_CELL).has_point(p):
+				continue
+			var h := (cx * 73856093) ^ (cy * 19349663)
+			if absi(h) % 100 >= 35:
+				continue
+			var jitter := Vector2(absi(h) % 9, absi(h >> 4) % 9)
+			var r := 7.0 + float(absi(h >> 8) % 5)
+			draw_circle(p + jitter, r, COLOR_HEDGE_DARK)
+			draw_circle(p + jitter + Vector2(-2, -2), r - 3.0, COLOR_HEDGE)
 
 
 func _draw_fence(r: Rect2) -> void:

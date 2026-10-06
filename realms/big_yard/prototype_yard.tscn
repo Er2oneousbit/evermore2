@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://realms/big_yard/prototype_yard.gd" id="1_yard"]
 [ext_resource type="PackedScene" path="res://actors/kid/kid.tscn" id="2_kid"]
 [ext_resource type="PackedScene" path="res://actors/dog/dog.tscn" id="3_dog"]
+[ext_resource type="PackedScene" path="res://ui/hud/hud.tscn" id="4_hud"]
 
 [node name="PrototypeYard" type="Node2D"]
 script = ExtResource("1_yard")
@@ -18,3 +19,5 @@ y_sort_enabled = true
 
 [node name="Dog" parent="World" instance=ExtResource("3_dog")]
 target_path = NodePath("../Kid")
+
+[node name="HUD" parent="." instance=ExtResource("4_hud")]

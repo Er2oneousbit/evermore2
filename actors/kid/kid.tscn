@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://actors/kid/kid.gd" id="1_kid"]
+[ext_resource type="Script" path="res://systems/camera/game_camera.gd" id="2_cam"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_feet"]
 size = Vector2(8, 5)
@@ -33,4 +34,5 @@ texture = SubResource("GradientTexture2D_light")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
+script = ExtResource("2_cam")
 position_smoothing_speed = 6.0

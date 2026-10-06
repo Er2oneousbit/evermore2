@@ -34,6 +34,8 @@ func _process(delta: float) -> void:
 func _build_text() -> String:
 	var lines: PackedStringArray = []
 	lines.append("FPS %d  |  %s" % [Engine.get_frames_per_second(), Names.text(GameState.current_realm)])
+	var win := get_tree().root.size
+	lines.append("win %dx%d  view %dx%d @%dx" % [win.x, win.y, ScreenScaler.view_size.x, ScreenScaler.view_size.y, ScreenScaler.scale])
 
 	var kid := get_tree().get_first_node_in_group("kid") as Node2D
 	var dog := get_tree().get_first_node_in_group("dog") as Dog
