@@ -10,6 +10,7 @@ WHAT:  Takes the ORIGINAL art packs (downloaded from OpenGameArt, cached in
          assets/props/big_yard/*.png                      trees, bushes, rocks...
          data/props/big_yard/*.tres                       PropData per prop
          assets/characters/dog/dog_lpc*.png               the dog (recolored)
+         assets/textures/hd/*.png                         3D fence wood (HD-2D view)
          credits/<pack>/...                               license + credit files
 
        The outputs are committed to git, so nobody NEEDS to run this to play.
@@ -24,7 +25,7 @@ USAGE:
   python3 tools/art/build_art.py --offline  build from the cache only
   python3 tools/art/build_art.py --list     list packs, licenses, cache status
   python3 tools/art/build_art.py --only props,dog   rebuild some steps only
-  Steps: tileset, props, dog, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
+  Steps: tileset, props, hd, dog, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
 
 Written with help from Claude (Anthropic) via Claude Code.
 Made with love from your friendly hacker - er2oneousbit
@@ -292,6 +293,16 @@ def build_props():
         plant(f"tuft_{'abcdef'[i]}", tufts, (x, 0, 32, 32), decal=True)
 
 
+def build_hd_textures():
+    """Textures for the HD-2D view's real 3D geometry (fence posts and rails),
+    cut from the same LPC Revised tileset so the palette matches the sprites."""
+    log("HD-2D textures: fence wood from the LPC Revised tileset")
+    atlas = os.path.join(pack_dir("exterior"), "lpc-tileset-terrain-summer.png")
+    rail = crop(atlas, (1536, 32, 32, 32))  # weathered horizontal planks
+    rail.save(out_path("assets", "textures", "hd", "wood_rail.png"))
+    rail.rotate(90).save(out_path("assets", "textures", "hd", "wood_post.png"))  # grain runs up the post
+
+
 def build_dog():
     """Golden shiba -> brown brindle shelter mutt (see docs/design-bible.md #7)."""
     log("Dog: recoloring the shiba into a brown brindle mutt")
@@ -353,7 +364,7 @@ def build_credits():
             "(tools/art/build_art.py, build_dog).\n")
 
 
-STEPS = {"tileset": build_tileset, "props": build_props, "dog": build_dog, "credits": build_credits}
+STEPS = {"tileset": build_tileset, "props": build_props, "hd": build_hd_textures, "dog": build_dog, "credits": build_credits}
 
 
 def main():

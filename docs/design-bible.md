@@ -33,7 +33,7 @@ it's not decided yet. **Locked** = agreed, don't change without discussion.
 | Realms | 5 realms + hub + finale. **None of the original realms reused** |
 | Ruffleberg | Survived 1995, **died in 2014** |
 | Carltron | Never died. **Powered down** by Ruffleberg because of the unstable v2 chip |
-| Style | 2D pixel art, "Modern SNES" built on the LPC library: 32 px tiles, 640x360 base (see art-spec.md) |
+| Style | **HD-2D**: pixel-art sprites (LPC library, 32 px) in a lit 3D world, like Square Enix's Octopath Traveler / DQ3 HD-2D. Free assets only (see art-spec.md) |
 | Engine | Godot 4 |
 
 ## 3. Lore: the v2 chip

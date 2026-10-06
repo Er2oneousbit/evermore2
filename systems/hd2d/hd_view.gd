@@ -1,0 +1,732 @@
+# =============================================================================
+# hd_view.gd  -  HD-2D presentation of a 2D realm (Octopath-style look)
+# -----------------------------------------------------------------------------
+# WHAT:  Draws a 2D realm as an "HD-2D" scene: pixel-art sprites standing in a
+#        lit 3D world with real sun shadows, depth-of-field blur, bloom,
+#        volumetric light shafts, reflective water and drifting clouds.
+#
+# HOW (the important part): GAMEPLAY STAYS 2D. The realm still builds its
+#        normal 2D world (tiles, props, kid, dog, collision, AI), which keeps
+#        every system and test working unchanged. This node is a VIEW of it:
+#          - ground  : the 2D ground + decals are rendered ONCE into a texture
+#                      (pixel-perfect autotiling) and laid on a 3D plane
+#          - water   : a glossy plane over the water pixels (reflections)
+#          - props   : every 2D Prop becomes an upright sprite quad (or a flat
+#                      one for lily pads) that casts sun shadows
+#          - fences  : real 3D posts and rails (wood cut from the LPC tileset)
+#          - actors  : kid and dog sprites copy the 2D sprites' frame and
+#                      position every frame
+#          - mood    : sun/moon, sky, fog, glow, DoF per time of day, driven by
+#                      the realm's Atmosphere (F2 still cycles it)
+#        2D pixels -> 3D meters: 32 px = 1 m. 2D (x, y) -> 3D (x, 0, y).
+#
+# DEBUG: F6 flips between this HD-2D view and the classic 2D view.
+#
+# Written with help from Claude (Anthropic) via Claude Code.
+# Made with ❤️ from your friendly hacker - er2oneousbit
+# =============================================================================
+class_name HdView
+extends Node3D
+
+## Meters per 2D pixel (32 px tiles = 1 m tiles).
+const PX := 1.0 / 32.0
+
+## Render layers (bit values): contact-shadow decals only project onto the
+## ground layer. On upright sprites a decal smears into stripes.
+const GROUND_LAYER := 1
+const ACTOR_LAYER := 2
+const PROP_LAYER := 4
+
+## Depth tie-breakers (meters). In 2D, Y-sort settles "same row" ties by
+## draw order. In 3D, two upright sprites on the same row sit at the same
+## depth and z-fight (flickering stripes). So props stand a hair behind
+## their base point and actors a hair in front, kid in front of the dog.
+## Far too small to see, big enough to always break the tie.
+const PROP_DEPTH_BIAS := -0.03
+const KID_DEPTH_BIAS := 0.02
+const DOG_DEPTH_BIAS := 0.01
+
+const SPRITE_SHADER := preload("res://assets/shaders/hd_sprite.gdshader")
+const WATER_SHADER := preload("res://assets/shaders/hd_water.gdshader")
+const CLOUD_SHADER := preload("res://assets/shaders/hd_cloud_shadow.gdshader")
+const RIPPLE_NOISE := preload("res://assets/shaders/ripple_noise.tres")
+const CLOUD_NOISE := preload("res://assets/shaders/cloud_noise.tres")
+const GLOW_DOT := preload("res://assets/fx/glow_dot.tres")
+const SOFT_SHADOW := preload("res://assets/fx/soft_shadow.tres")
+const WOOD_RAIL := preload("res://assets/textures/hd/wood_rail.png")
+const WOOD_POST := preload("res://assets/textures/hd/wood_post.png")
+
+## Mood per time of day. Angles in degrees; sun_yaw ~210 = light from the
+## top-left of the screen, shadows falling toward the bottom-right.
+## Tuning lesson: tint the SUN warm and keep the AMBIENT cool, keep fog thin.
+## Warm sun + warm fog + warm ambient turns everything into orange soup.
+const PRESETS := {
+	"day": {
+		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "sun_elev": 55.0, "sun_yaw": 205.0,
+		"ambient": Color(0.62, 0.7, 0.88), "ambient_energy": 0.75,
+		"sky_top": Color(0.32, 0.55, 0.92), "sky_horizon": Color(0.78, 0.87, 0.96),
+		"fog_density": 0.0025, "fog_albedo": Color(0.92, 0.95, 1.0),
+		"exposure": 1.0, "saturation": 1.08, "contrast": 1.04, "glow": 0.3,
+		"flashlight": 0.0, "pollen": 0.4, "fireflies": 0.0, "clouds": 0.42, "dof": 0.06,
+		"water_glow": 0.3, "phone_glow": 0.0,
+	},
+	"golden": {
+		"sun_color": Color(1.0, 0.74, 0.47), "sun_energy": 2.05, "sun_elev": 20.0, "sun_yaw": 215.0,
+		"ambient": Color(0.52, 0.5, 0.74), "ambient_energy": 0.68,
+		"sky_top": Color(0.34, 0.4, 0.76), "sky_horizon": Color(1.0, 0.66, 0.42),
+		"fog_density": 0.0075, "fog_albedo": Color(1.0, 0.84, 0.64),
+		"exposure": 1.0, "saturation": 1.16, "contrast": 1.07, "glow": 0.5,
+		"flashlight": 0.4, "pollen": 1.0, "fireflies": 0.0, "clouds": 0.3, "dof": 0.08,
+		"water_glow": 0.24, "phone_glow": 0.0,
+	},
+	"night": {
+		"sun_color": Color(0.58, 0.68, 1.0), "sun_energy": 0.28, "sun_elev": 52.0, "sun_yaw": 160.0,
+		"ambient": Color(0.18, 0.22, 0.42), "ambient_energy": 0.7,
+		"sky_top": Color(0.02, 0.03, 0.09), "sky_horizon": Color(0.06, 0.09, 0.18),
+		"fog_density": 0.008, "fog_albedo": Color(0.5, 0.6, 0.95),
+		"exposure": 1.0, "saturation": 0.92, "contrast": 1.06, "glow": 0.8,
+		"flashlight": 7.0, "pollen": 0.0, "fireflies": 1.0, "clouds": 0.0, "dof": 0.08,
+		"water_glow": 0.05, "phone_glow": 0.9,
+	},
+}
+
+## The 2D realm this view draws (needs Ground, Water, World, World/Kid,
+## World/Dog and Atmosphere children, like realms/big_yard/prototype_yard).
+@export var realm_path: NodePath
+## Camera look-down angle. 35-45 is the classic HD-2D range.
+@export_range(15.0, 70.0) var camera_pitch_deg := 40.0
+## Vertical field of view. Narrow = flatter, more "diorama".
+@export_range(10.0, 60.0) var camera_fov := 28.0
+## Camera distance from the kid (meters). Sets how much of the yard you see.
+@export var camera_distance := 21.0
+## Higher = camera catches up faster.
+@export var camera_smoothing := 5.0
+## Stretch upright sprites by 1/cos(pitch) so the tilted camera doesn't
+## squash them (HD-2D games do the same).
+@export var correct_foreshortening := true
+## Wind for the cloud shadows (meters per second).
+@export var wind := Vector2(0.6, 0.25)
+
+var enabled := false
+
+var _realm: Node2D
+var _world2d: Node2D
+var _kid2d: Kid
+var _dog2d: Dog
+var _atmo: Atmosphere
+var _cam: Camera3D
+var _target := Vector3.ZERO
+var _sun: DirectionalLight3D
+var _flash: SpotLight3D
+var _phone: OmniLight3D
+var _env: Environment
+var _sky_mat: ProceduralSkyMaterial
+var _kid3d: Sprite3D
+var _dog3d: Sprite3D
+var _ground: MeshInstance3D
+var _water: MeshInstance3D
+var _clouds: MeshInstance3D
+var _cloud_mat: ShaderMaterial
+var _pollen: GPUParticles3D
+var _fireflies: GPUParticles3D
+var _y_scale := 1.0
+var _map_m := Rect2()
+var _materials: Dictionary = {}
+var _quads: Dictionary = {}
+var _from: Dictionary = {}
+var _to: Dictionary = {}
+var _tween: Tween
+var _prop_count := 0
+
+
+func _ready() -> void:
+	_realm = get_node_or_null(realm_path) as Node2D
+	if _realm == null:
+		Debug.log_error("HdView: realm_path doesn't point at a 2D realm")
+		return
+	_world2d = _realm.get_node("World")
+	_kid2d = _realm.get_node("World/Kid")
+	_dog2d = _realm.get_node("World/Dog")
+	_atmo = _realm.get_node("Atmosphere")
+	_y_scale = 1.0 / cos(deg_to_rad(camera_pitch_deg)) if correct_foreshortening else 1.0
+	if _realm.has_method("map_rect"):
+		var r: Rect2 = _realm.map_rect()
+		_map_m = Rect2(r.position * PX, r.size * PX)
+
+	_build_environment()
+	_build_camera()
+	_build_props()
+	_build_fences()
+	_build_actors()
+	_build_particles()
+	_build_clouds()
+	await _build_ground()
+
+	EventBus.time_of_day_changed.connect(func(t: String) -> void: _apply_time(t, 0.8))
+	_apply_time(_atmo.time_name, 0.0)
+	set_enabled(true)
+	Debug.log_info("HD-2D view ready (%d sprite props). F6 toggles the classic 2D view." % _prop_count)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("debug_toggle_view"):
+		set_enabled(not enabled)
+
+
+## Show the HD-2D view (true) or the classic 2D one (false).
+func set_enabled(on: bool) -> void:
+	enabled = on
+	visible = on
+	_cam.current = on
+	_world2d.visible = not on
+	for layer_name in ["Ground", "Water"]:
+		var layer := _realm.get_node_or_null(layer_name) as CanvasItem
+		if layer:
+			layer.visible = not on
+	_atmo.render_2d = not on
+	ScreenScaler.native_3d = on
+	Debug.log_verbose("HD-2D view %s" % ("on" if on else "off"))
+
+
+## 2D pixel position -> 3D meters on the ground plane.
+static func to3(p: Vector2, height := 0.0) -> Vector3:
+	return Vector3(p.x * PX, height, p.y * PX)
+
+
+## Which renderer is running decides which effects to switch on (asking a
+## lower renderer for Forward+ effects only fills the log with warnings).
+static func renderer_caps() -> Dictionary:
+	var rm := RenderingServer.get_current_rendering_method()
+	var full := rm == "forward_plus"
+	return {"volumetric_fog": full, "ssr": full, "ssao": full, "dof": rm != "gl_compatibility"}
+
+
+func _process(delta: float) -> void:
+	if not enabled or not is_instance_valid(_kid2d):
+		return
+	_sync_actor(_kid3d, _kid2d.get_node("Sprite") as Sprite2D, _kid2d.global_position, KID_DEPTH_BIAS)
+	_sync_actor(_dog3d, _dog2d.get_node("Sprite") as Sprite2D, _dog2d.global_position, DOG_DEPTH_BIAS)
+	_follow_camera(delta)
+	_aim_flashlight()
+	# Particles live in world space; keep their spawn boxes over the view.
+	var center := Vector3(_target.x, 0.0, _target.z)
+	_pollen.global_position = center + Vector3(0, 1.4, 0)
+	_fireflies.global_position = center + Vector3(0, 0.7, 0)
+	# Clouds drift with the wind and wrap around (their noise is seamless).
+	var c := _clouds.position + Vector3(wind.x, 0.0, wind.y) * delta
+	c.x = wrapf(c.x, center.x - 40.0, center.x + 40.0)
+	c.z = wrapf(c.z, center.z - 40.0, center.z + 40.0)
+	_clouds.position = c
+
+
+# -----------------------------------------------------------------------------
+# Ground: render the 2D ground (tiles + decals) once into a texture
+# -----------------------------------------------------------------------------
+func _build_ground() -> void:
+	var ground2d := _realm.get_node("Ground") as TileMapLayer
+	var water2d := _realm.get_node("Water") as TileMapLayer
+	var tile := float(ground2d.tile_set.tile_size.x) if ground2d.tile_set else 32.0
+	var used := ground2d.get_used_rect().merge(water2d.get_used_rect())
+	var rect := Rect2(ground2d.position + Vector2(used.position) * tile, Vector2(used.size) * tile)
+
+	var vp := SubViewport.new()
+	vp.size = Vector2i(rect.size)
+	vp.disable_3d = true
+	vp.transparent_bg = false
+	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var root := Node2D.new()
+	root.position = -rect.position
+	for layer: TileMapLayer in [ground2d, water2d]:
+		var copy := layer.duplicate() as TileMapLayer
+		copy.material = null  # the 3D water does its own shimmer
+		copy.visible = true
+		root.add_child(copy)
+	# Flat decals (wildflowers, tufts) become part of the ground texture.
+	for p in _world2d.get_children():
+		if p is Prop and p.data and p.data.ground_decal and p.data.frames == 1 and p.sprite:
+			var s := p.sprite.duplicate() as Sprite2D
+			s.position = p.global_position
+			s.z_index = 1
+			root.add_child(s)
+	vp.add_child(root)
+	add_child(vp)
+	var img: Image = null
+	# The headless (dummy) renderer never draws, so don't wait for a frame there.
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		await RenderingServer.frame_post_draw
+		img = vp.get_texture().get_image()
+	var tex: Texture2D
+	if img == null or img.is_empty():
+		# Headless / dummy renderer: nothing to bake. Plain green keeps it valid.
+		Debug.log_verbose("HdView: ground bake unavailable (headless?), using a flat color")
+		var fallback := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+		fallback.fill(Color(0.36, 0.6, 0.25))
+		tex = ImageTexture.create_from_image(fallback)
+	else:
+		tex = ImageTexture.create_from_image(img)
+	vp.queue_free()
+
+	var plane := PlaneMesh.new()
+	plane.size = rect.size * PX
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = tex
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	mat.roughness = 1.0
+	mat.metallic_specular = 0.25
+	_ground = MeshInstance3D.new()
+	_ground.name = "Ground"
+	_ground.mesh = plane
+	_ground.material_override = mat
+	_ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ground.layers = GROUND_LAYER
+	_ground.position = to3(rect.get_center())
+	add_child(_ground)
+
+	var wmat := ShaderMaterial.new()
+	wmat.shader = WATER_SHADER
+	wmat.set_shader_parameter("ground_tex", tex)
+	wmat.set_shader_parameter("ripple_noise", RIPPLE_NOISE)
+	_water = MeshInstance3D.new()
+	_water.name = "Water"
+	_water.mesh = plane
+	_water.material_override = wmat
+	_water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_water.layers = GROUND_LAYER
+	_water.position = _ground.position + Vector3(0, 0.004, 0)
+	add_child(_water)
+	if not _to.is_empty():
+		_water.material_override.set_shader_parameter("self_glow", _to["water_glow"])
+
+
+# -----------------------------------------------------------------------------
+# Props: every 2D Prop becomes a sprite quad
+# -----------------------------------------------------------------------------
+func _build_props() -> void:
+	var holder := Node3D.new()
+	holder.name = "Props"
+	add_child(holder)
+	for p in _world2d.get_children():
+		if not (p is Prop) or p.data == null or p.data.texture == null:
+			continue
+		var d: PropData = p.data
+		var lying := d.ground_decal
+		if lying and d.frames == 1:
+			continue  # baked into the ground texture
+		var mi := MeshInstance3D.new()
+		mi.mesh = _quad_for(d)
+		mi.material_override = _material_for(d, lying)
+		var flip := -1.0 if p.flip_h else 1.0
+		if lying:
+			# Lily pads: lie flat, just above the water surface.
+			mi.position = to3(p.global_position, 0.02)
+			mi.rotation.x = -PI * 0.5
+			mi.scale = Vector3(flip, 1.0, 1.0)
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		else:
+			mi.position = to3(p.global_position) + Vector3(0.0, 0.0, PROP_DEPTH_BIAS)
+			mi.scale = Vector3(flip, _y_scale, 1.0)
+		mi.layers = PROP_LAYER
+		holder.add_child(mi)
+		_prop_count += 1
+
+
+## One quad per prop type, offset so the prop's base point sits at the origin.
+func _quad_for(d: PropData) -> QuadMesh:
+	var key := d.get_instance_id()
+	if not _quads.has(key):
+		var size := d.region.size if d.region.size != Vector2.ZERO else d.texture.get_size()
+		size.x /= d.frames
+		var q := QuadMesh.new()
+		q.size = size * PX
+		q.center_offset = Vector3((size.x * 0.5 - d.base.x) * PX, (d.base.y - size.y * 0.5) * PX, 0.0)
+		_quads[key] = q
+	return _quads[key]
+
+
+func _material_for(d: PropData, lying: bool) -> ShaderMaterial:
+	var key := d.get_instance_id()
+	if not _materials.has(key):
+		var tex_size := d.texture.get_size()
+		var region := d.region if d.region.size != Vector2.ZERO else Rect2(Vector2.ZERO, tex_size)
+		var m := ShaderMaterial.new()
+		m.shader = SPRITE_SHADER
+		m.set_shader_parameter("tex", d.texture)
+		m.set_shader_parameter("frame_rect", Vector4(region.position.x / tex_size.x, region.position.y / tex_size.y,
+				region.size.x / d.frames / tex_size.x, region.size.y / tex_size.y))
+		m.set_shader_parameter("texel", Vector2(1.0, 1.0) / tex_size)
+		m.set_shader_parameter("frames", float(d.frames))
+		m.set_shader_parameter("fps", d.frame_fps)
+		m.set_shader_parameter("sway_strength", d.sway_strength)
+		m.set_shader_parameter("sway_speed", d.sway_speed)
+		m.set_shader_parameter("rooted", d.sway_rooted)
+		m.set_shader_parameter("lying_flat", lying)
+		_materials[key] = m
+	return _materials[key]
+
+
+# -----------------------------------------------------------------------------
+# Fences: real 3D posts and rails
+# -----------------------------------------------------------------------------
+func _build_fences() -> void:
+	# LAYOUT / FENCE_CHAR are script constants of the realm (not properties).
+	var consts: Dictionary = _realm.get_script().get_script_constant_map()
+	var layout: Array = consts.get("LAYOUT", [])
+	var fence_char: String = consts.get("FENCE_CHAR", "#")
+	var cells := {}
+	for y in layout.size():
+		for x in String(layout[y]).length():
+			if layout[y][x] == fence_char:
+				cells[Vector2i(x, y)] = true
+	var holder := Node3D.new()
+	holder.name = "Fences"
+	add_child(holder)
+	if cells.is_empty():
+		return
+	var post_mesh := BoxMesh.new()
+	post_mesh.size = Vector3(0.17, 1.0, 0.17)
+	var rail_mesh := BoxMesh.new()
+	rail_mesh.size = Vector3(1.0, 0.11, 0.07)
+	var post_mat := _wood_material(WOOD_POST)
+	var rail_mat := _wood_material(WOOD_RAIL)
+	# Same post spot as the 2D collision: tile center, 6 px above its bottom edge.
+	var post_off := Vector3(0.5, 0.0, 1.0 - 6.0 * PX)
+	for c: Vector2i in cells:
+		var base := Vector3(c.x, 0.0, c.y) + post_off
+		_add_box(holder, post_mesh, post_mat, base + Vector3(0, 0.5, 0), Vector3.ZERO)
+		for rail_h: float in [0.38, 0.72]:
+			if cells.has(c + Vector2i.RIGHT):
+				_add_box(holder, rail_mesh, rail_mat, base + Vector3(0.5, rail_h, 0), Vector3.ZERO)
+			if cells.has(c + Vector2i.DOWN):
+				_add_box(holder, rail_mesh, rail_mat, base + Vector3(0, rail_h, 0.5), Vector3(0, PI * 0.5, 0))
+
+
+func _add_box(parent: Node3D, mesh: Mesh, mat: Material, at: Vector3, rot: Vector3) -> void:
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.position = at
+	mi.rotation = rot
+	mi.layers = PROP_LAYER
+	parent.add_child(mi)
+
+
+## Pixel-art wood on 3D boxes: world-space triplanar mapping at 32 px per
+## meter, so the wood's pixels match the sprites' pixel size exactly.
+func _wood_material(tex: Texture2D) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = tex
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	m.uv1_triplanar = true
+	m.uv1_world_triplanar = true
+	m.uv1_scale = Vector3.ONE
+	m.roughness = 0.9
+	return m
+
+
+# -----------------------------------------------------------------------------
+# Actors: sprites that mirror the 2D kid and dog
+# -----------------------------------------------------------------------------
+func _build_actors() -> void:
+	_kid3d = _make_actor_sprite(_kid2d.get_node("Sprite") as Sprite2D, "Kid")
+	_dog3d = _make_actor_sprite(_dog2d.get_node("Sprite") as Sprite2D, "Dog")
+	_flash = SpotLight3D.new()
+	_flash.name = "Flashlight"
+	_flash.light_color = Color(1.0, 0.93, 0.8)
+	_flash.spot_range = 11.0
+	_flash.spot_angle = 30.0
+	_flash.spot_angle_attenuation = 2.2
+	_flash.shadow_enabled = true
+	_flash.light_volumetric_fog_energy = 0.6
+	add_child(_flash)
+	# The phone screen's own soft glow: keeps the kid (and the dog at his
+	# heels) readable at night even when the flashlight points away.
+	_phone = OmniLight3D.new()
+	_phone.name = "PhoneGlow"
+	_phone.light_color = Color(0.75, 0.85, 1.0)
+	_phone.omni_range = 2.6
+	_phone.omni_attenuation = 1.6
+	_phone.shadow_enabled = false
+	add_child(_phone)
+
+
+func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:
+	var s := Sprite3D.new()
+	s.name = actor_name
+	s.texture = src.texture
+	s.hframes = src.hframes
+	s.vframes = src.vframes
+	s.pixel_size = PX
+	s.centered = true
+	# Same feet-on-origin offset as the 2D sprite (3D y points up, so it flips).
+	s.offset = Vector2(src.offset.x, -src.offset.y)
+	s.shaded = true
+	s.double_sided = true
+	s.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	s.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	s.scale = Vector3(1.0, _y_scale, 1.0)
+	s.layers = ACTOR_LAYER
+	add_child(s)
+	# Soft contact shadow under the feet (reads well at night, when the moon's
+	# shadow is faint). Decals are Forward+/Mobile only; harmless elsewhere.
+	var blob := Decal.new()
+	blob.texture_albedo = SOFT_SHADOW
+	blob.size = Vector3(0.95, 0.6, 0.42)
+	blob.modulate = Color(1, 1, 1, 0.55)
+	blob.position = Vector3(0, 0.25, 0)
+	blob.scale = Vector3(1.0, 1.0 / _y_scale, 1.0)  # undo the sprite's stretch
+	blob.cull_mask = GROUND_LAYER  # only the ground, never the sprites
+	s.add_child(blob)
+	return s
+
+
+func _sync_actor(s3: Sprite3D, s2: Sprite2D, pos: Vector2, depth_bias: float) -> void:
+	s3.position = to3(pos) + Vector3(0.0, 0.0, depth_bias)
+	s3.frame_coords = s2.frame_coords
+	s3.flip_h = s2.flip_h
+
+
+func _aim_flashlight() -> void:
+	var face := Vector3(_kid2d.facing.x, 0.0, _kid2d.facing.y).normalized()
+	if face == Vector3.ZERO:
+		face = Vector3.BACK
+	var origin := _kid3d.position + Vector3(0, 1.05, 0) + face * 0.25
+	_flash.position = origin
+	_flash.look_at(origin + face * 4.0 + Vector3(0, -1.6, 0), Vector3.UP)
+	_flash.visible = _kid2d.light_on
+	_phone.position = _kid3d.position + Vector3(0, 0.9, 0.35) + face * 0.2
+	_phone.visible = _kid2d.light_on
+
+
+# -----------------------------------------------------------------------------
+# Camera
+# -----------------------------------------------------------------------------
+func _build_camera() -> void:
+	_cam = Camera3D.new()
+	_cam.name = "Camera"
+	_cam.fov = camera_fov
+	_cam.near = 1.0
+	_cam.far = 200.0
+	_cam.rotation = Vector3(-deg_to_rad(camera_pitch_deg), 0.0, 0.0)
+	var attrs := CameraAttributesPractical.new()
+	var dof: bool = renderer_caps()["dof"]
+	# Tilt-shift: the far (top of screen) and near (bottom) edges go soft.
+	attrs.dof_blur_far_enabled = dof
+	attrs.dof_blur_far_distance = camera_distance + 3.0
+	attrs.dof_blur_far_transition = 9.0
+	attrs.dof_blur_near_enabled = dof
+	attrs.dof_blur_near_distance = camera_distance - 4.0
+	attrs.dof_blur_near_transition = 3.0
+	attrs.dof_blur_amount = 0.08
+	_cam.attributes = attrs
+	add_child(_cam)
+	_target = to3(_kid2d.global_position)
+	_place_camera()
+
+
+## Jump the camera straight to the kid (after a teleport, a scene load...).
+func snap_camera() -> void:
+	_target = _clamp_to_map(_kid3d.position)
+	_place_camera()
+
+
+func _follow_camera(delta: float) -> void:
+	var want := _clamp_to_map(_kid3d.position)
+	_target = _target.lerp(want, 1.0 - exp(-camera_smoothing * delta))
+	_place_camera()
+
+
+## Keep the view over the map (the apron fills the rest on wide screens);
+## center on an axis where the map is smaller than the view.
+func _clamp_to_map(p: Vector3) -> Vector3:
+	if _map_m.size == Vector2.ZERO:
+		return p
+	var vis := get_viewport().get_visible_rect().size
+	var aspect := vis.x / maxf(1.0, vis.y)
+	var half_h := camera_distance * tan(deg_to_rad(camera_fov * 0.5))
+	var half_w := half_h * aspect
+	var half_d := half_h / sin(deg_to_rad(camera_pitch_deg))
+	var out := p
+	if _map_m.size.x > half_w * 2.0:
+		out.x = clampf(p.x, _map_m.position.x + half_w, _map_m.end.x - half_w)
+	else:
+		out.x = _map_m.get_center().x
+	if _map_m.size.y > half_d * 2.0:
+		out.z = clampf(p.z, _map_m.position.y + half_d * 0.8, _map_m.end.y - half_d * 1.1)
+	else:
+		out.z = _map_m.get_center().y
+	return out
+
+
+func _place_camera() -> void:
+	var pitch := deg_to_rad(camera_pitch_deg)
+	_cam.position = _target + Vector3(0.0, sin(pitch), cos(pitch)) * camera_distance
+
+
+# -----------------------------------------------------------------------------
+# Light, sky, fog, glow
+# -----------------------------------------------------------------------------
+func _build_environment() -> void:
+	var caps := renderer_caps()
+	_env = Environment.new()
+	_env.background_mode = Environment.BG_SKY
+	_sky_mat = ProceduralSkyMaterial.new()
+	var sky := Sky.new()
+	sky.sky_material = _sky_mat
+	_env.sky = sky
+	_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	_env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	_env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	_env.tonemap_white = 4.0
+	_env.glow_enabled = true
+	_env.glow_strength = 1.0
+	_env.glow_bloom = 0.04
+	_env.glow_hdr_threshold = 1.0
+	_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	_env.ssao_enabled = caps["ssao"]
+	_env.ssao_radius = 0.6
+	_env.ssao_intensity = 1.6
+	_env.ssr_enabled = caps["ssr"]
+	_env.ssr_max_steps = 48
+	_env.ssr_fade_in = 0.1
+	_env.ssr_fade_out = 1.5
+	_env.ssr_depth_tolerance = 0.4
+	_env.volumetric_fog_enabled = caps["volumetric_fog"]
+	_env.volumetric_fog_anisotropy = 0.55
+	_env.volumetric_fog_length = 48.0
+	_env.volumetric_fog_detail_spread = 2.0
+	_env.volumetric_fog_sky_affect = 0.0
+	_env.adjustment_enabled = true
+	var we := WorldEnvironment.new()
+	we.environment = _env
+	add_child(we)
+
+	_sun = DirectionalLight3D.new()
+	_sun.name = "Sun"
+	_sun.shadow_enabled = true
+	_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	_sun.directional_shadow_max_distance = 70.0
+	_sun.shadow_blur = 1.2
+	_sun.light_angular_distance = 0.8
+	_sun.light_volumetric_fog_energy = 1.0
+	add_child(_sun)
+
+
+func _build_particles() -> void:
+	_pollen = _make_particles("Pollen", 160, 9.0, Vector3(16, 2.2, 10), 0.03, GLOW_DOT, 1.3)
+	(_pollen.process_material as ParticleProcessMaterial).gravity = Vector3(0.05, 0.02, 0.0)
+	_fireflies = _make_particles("Fireflies", 55, 6.0, Vector3(16, 0.8, 10), 0.07, GLOW_DOT, 3.0,
+			Color(0.75, 1.0, 0.35))
+
+
+func _make_particles(pname: String, amount: int, life: float, box: Vector3, size: float,
+		tex: Texture2D, glow: float, tint := Color(1.0, 0.95, 0.8)) -> GPUParticles3D:
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = box
+	pm.direction = Vector3(1, 0.2, 0)
+	pm.spread = 180.0
+	pm.initial_velocity_min = 0.05
+	pm.initial_velocity_max = 0.25
+	pm.gravity = Vector3.ZERO
+	pm.turbulence_enabled = true
+	pm.turbulence_noise_strength = 0.6
+	pm.turbulence_noise_scale = 4.0
+	var ramp := Gradient.new()
+	ramp.offsets = PackedFloat32Array([0.0, 0.2, 0.8, 1.0])
+	ramp.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 1), Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
+	var ramp_tex := GradientTexture1D.new()
+	ramp_tex.gradient = ramp
+	pm.color_ramp = ramp_tex
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_texture = tex
+	# Colors above 1.0 feed the glow (bloom) pass.
+	mat.albedo_color = Color(tint.r * glow, tint.g * glow, tint.b * glow)
+	var quad := QuadMesh.new()
+	quad.size = Vector2(size, size)
+	quad.material = mat
+	var gp := GPUParticles3D.new()
+	gp.name = pname
+	gp.amount = amount
+	gp.lifetime = life
+	gp.preprocess = life
+	gp.local_coords = false
+	gp.process_material = pm
+	gp.draw_pass_1 = quad
+	gp.visibility_aabb = AABB(-box * 2.0, box * 4.0)
+	gp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(gp)
+	return gp
+
+
+func _build_clouds() -> void:
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(160, 160)
+	_cloud_mat = ShaderMaterial.new()
+	_cloud_mat.shader = CLOUD_SHADER
+	_cloud_mat.set_shader_parameter("noise", CLOUD_NOISE)
+	_clouds = MeshInstance3D.new()
+	_clouds.name = "CloudShadows"
+	_clouds.mesh = plane
+	_clouds.material_override = _cloud_mat
+	_clouds.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+	_clouds.position = Vector3(_map_m.get_center().x, 30.0, _map_m.get_center().y)
+	add_child(_clouds)
+
+
+# -----------------------------------------------------------------------------
+# Time of day
+# -----------------------------------------------------------------------------
+func _apply_time(time_name: String, seconds: float) -> void:
+	if not PRESETS.has(time_name):
+		return
+	_from = _to.duplicate()
+	_to = PRESETS[time_name]
+	if _tween:
+		_tween.kill()
+	if seconds <= 0.0 or _from.is_empty():
+		_blend(1.0)
+	else:
+		_tween = create_tween()
+		_tween.tween_method(_blend, 0.0, 1.0, seconds).set_trans(Tween.TRANS_SINE)
+	_pollen.emitting = _to["pollen"] > 0.0
+	_fireflies.emitting = _to["fireflies"] > 0.0
+
+
+## t = 0..1 between the previous mood (_from) and the new one (_to).
+func _blend(t: float) -> void:
+	var v := {}
+	for k: String in _to:
+		var a: Variant = _from.get(k, _to[k])
+		var b: Variant = _to[k]
+		v[k] = a.lerp(b, t) if a is Color else lerpf(a, b, t)
+	_sun.light_color = v["sun_color"]
+	_sun.light_energy = v["sun_energy"]
+	_sun.rotation = Vector3(-deg_to_rad(v["sun_elev"]), deg_to_rad(v["sun_yaw"]), 0.0)
+	_env.ambient_light_color = v["ambient"]
+	_env.ambient_light_energy = v["ambient_energy"]
+	_sky_mat.sky_top_color = v["sky_top"]
+	_sky_mat.sky_horizon_color = v["sky_horizon"]
+	_sky_mat.ground_horizon_color = v["sky_horizon"]
+	if _env.volumetric_fog_enabled:
+		_env.volumetric_fog_density = v["fog_density"]
+		_env.volumetric_fog_albedo = v["fog_albedo"]
+	_env.tonemap_exposure = v["exposure"]
+	_env.adjustment_saturation = v["saturation"]
+	_env.adjustment_contrast = v["contrast"]
+	_env.glow_intensity = v["glow"]
+	_flash.light_energy = v["flashlight"]
+	_phone.light_energy = v["phone_glow"]
+	if _water:
+		(_water.material_override as ShaderMaterial).set_shader_parameter("self_glow", v["water_glow"])
+	if renderer_caps()["dof"]:
+		(_cam.attributes as CameraAttributesPractical).dof_blur_amount = v["dof"]
+	_cloud_mat.set_shader_parameter("coverage", v["clouds"])
+	_pollen.transparency = 1.0 - v["pollen"]
+	_fireflies.transparency = 1.0 - v["fireflies"]

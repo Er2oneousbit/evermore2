@@ -31,6 +31,7 @@ GAME
 │   ├── DirectionalSprite 4-direction sheet animation (LpcSprite,        [done]
 │   │                    AnimalSprite)
 │   ├── Atmosphere       Time of day: tint, grade, clouds, particles     [done]
+│   ├── HdView           HD-2D presentation of a 2D realm (3D view)      [done]
 │   ├── Prop / PropData  Data-driven world props (.tres)                 [done]
 │   ├── WangAutotiler    Terrain + fence autotiling from Tiled data      [done]
 │   ├── Alchemy          Formula + Ingredient resources, mastery         [todo]
@@ -76,7 +77,7 @@ The kid and the dog only collide with **world**, so they never block each other.
 
 | Layer | What | Graded? |
 |---|---|---|
-| 0 | The world (with the realm's CanvasModulate tint) | yes |
+| 0 | The 2D world (with the realm's CanvasModulate tint); in HD-2D mode the 3D view renders underneath and the 2D world is hidden | yes |
 | 3 | Ambient particles (pollen, fireflies) - follow the camera, no tint | yes |
 | 4 | Color grade full-screen pass (Atmosphere) | - |
 | 10 | HUD | no |
@@ -106,6 +107,39 @@ The kid and the dog only collide with **world**, so they never block each other.
 
 Real realms will be painted in the Godot editor with the same tileset and
 PropData; the ASCII builder is scaffolding for prototypes.
+
+## 3b. HD-2D view (`systems/hd2d/hd_view.gd`)
+
+**Gameplay is 2D, the picture is 3D.** `realms/big_yard/yard_hd.tscn` (the
+main scene) holds the normal 2D realm plus an `HdView` node that draws it:
+
+```
+YardHD (Node)
+├── Yard (the 2D realm: tiles, props, kid, dog, collision, Atmosphere, HUD)
+│     └── World / Ground / Water   <- hidden while HD is on, still simulated
+└── HdView (Node3D)
+      ├── Ground   plane with the 2D ground baked into a texture (once, at load)
+      ├── Water    glossy plane over the water pixels (SSR reflections)
+      ├── Props    one sprite quad per 2D Prop (shared mesh/material per type)
+      ├── Fences   3D posts + rails built from LAYOUT
+      ├── Kid/Dog  Sprite3Ds copying the 2D sprites' frame + position each frame
+      ├── Camera   perspective, follows the kid, clamped to the map
+      └── Sun, flashlight, phone glow, WorldEnvironment, particles, cloud shadows
+```
+
+Why mirror instead of rewriting gameplay in 3D: collision, the dog AI, every
+test, and the ASCII level builder keep working unchanged, and the 2D view
+stays one key away (F6) for debugging. Height (stairs, cliffs) can come later
+as per-tile elevation in the view without touching the simulation.
+
+Time of day still comes from the realm's `Atmosphere` (F2). In HD mode its 2D
+layers are switched off (`render_2d = false`) and `HdView` maps the same time
+names to its own 3D presets.
+
+**Same-row depth ties.** 2D Y-sort settles ties by draw order; in 3D, two
+upright sprites on the same row sit at the same depth and z-fight. HdView
+nudges props 3 cm back and actors 1-2 cm forward. Verified by parking the kid
+on an oak's row: without the nudge he disappears into the trunk.
 
 ## 4. Dog follow AI (how it works)
 
@@ -140,9 +174,10 @@ it and confirming the test fails:
 | `tests/run_all.sh` / `.ps1` | no | Runs every headless test below in one go |
 | `tests/smoke_follow.tscn` | no | Dog follow AI on the pen route, stay command, night + flashlight |
 | `tests/smoke_visuals.tscn` | no | LPC animation rows, Atmosphere presets/particles, Prop building |
+| `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |
-| `tests/screenshot_tour.tscn` | yes | Not a test: renders docs screenshots from fixed viewpoints |
+| `tests/screenshot_tour.tscn` | yes | Not a test: renders docs screenshots from fixed viewpoints (HD-2D by default, `EVERMORE_TOUR_VIEW=2d` for 2D) |
 
 ## 6. Roadmap
 
@@ -151,9 +186,10 @@ it and confirming the test fails:
 | **Prototype 0** (done) | Kid movement, dog follow, Y-sort, lighting, debug tools, smoke test |
 | **Prototype 0.1** (done) | Any-screen scaling (16:9 to 48:9), GameCamera, apron, HUD SafeFrame, aspect tests |
 | **Prototype 0.2** (done) | Real art: LPC kid/dog/tiles/props at 32 px, art pipeline + credits, Atmosphere (grade, clouds, particles), animated water |
+| **Prototype 0.3** (done) | HD-2D view: 3D world from the 2D realm, sun shadows, volumetric light shafts, tilt-shift DoF, reflective pond, F6 to compare |
 | Prototype 1 | Combat: weapon swing + charge meter, a squirrel enemy (LPC-style art), hit-stop, damage numbers |
 | Prototype 2 | Ring menu + first alchemy formula (data-driven `.tres` resources) |
-| Prototype 3 | The real Big Yard map painted in the editor; wading in shallow water |
+| Prototype 3 | The real Big Yard map painted in the editor; HD-2D height (stairs, ledges, a raised patio); wading in shallow water |
 | Prototype 4 | Mission 1 vertical slice: alternating kid/dog control, the Vacuum boss |
 | Later | Save system, dialogue, hub mansion, prologue |
 

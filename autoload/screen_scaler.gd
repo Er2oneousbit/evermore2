@@ -24,6 +24,11 @@
 # OPTIONAL CAP: set max_aspect (e.g. 32.0 / 9.0) to pillarbox anything wider.
 #        0 = no cap (default). Meant for a future video-settings menu.
 #
+# HD-2D MODE: set native_3d = true when the world is drawn in 3D (systems/hd2d).
+#        2D (HUD, menus) still scales by whole numbers, but 3D renders at the
+#        window's full resolution, so depth of field, bloom and fog stay smooth
+#        while the pixel-art sprites stay crisp. Same view_size math either way.
+#
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
 # =============================================================================
@@ -41,6 +46,15 @@ var max_aspect := 0.0:
 	set(value):
 		max_aspect = maxf(value, 0.0)
 		_recalculate()
+
+## true = 3D renders at full window resolution (HD-2D); false = everything is
+## drawn at view_size and scaled up (classic pixel-perfect 2D).
+var native_3d := false:
+	set(value):
+		native_3d = value
+		if is_instance_valid(_window):
+			_window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS if value else Window.CONTENT_SCALE_MODE_VIEWPORT
+			Debug.log_verbose("ScreenScaler: native_3d=%s" % value)
 
 ## Current whole-number scale factor (read-only from outside, please).
 var scale := 1

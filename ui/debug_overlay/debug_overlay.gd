@@ -36,6 +36,7 @@ func _build_text() -> String:
 	lines.append("FPS %d  |  %s" % [Engine.get_frames_per_second(), Names.text(GameState.current_realm)])
 	var win := get_tree().root.size
 	lines.append("win %dx%d  view %dx%d @%dx" % [win.x, win.y, ScreenScaler.view_size.x, ScreenScaler.view_size.y, ScreenScaler.scale])
+	lines.append("%s  (%s)" % ["HD-2D view" if ScreenScaler.native_3d else "2D view", RenderingServer.get_current_rendering_method()])
 
 	var kid := get_tree().get_first_node_in_group("kid") as Node2D
 	var dog := get_tree().get_first_node_in_group("dog") as Dog
@@ -52,7 +53,7 @@ func _build_text() -> String:
 	else:
 		lines.append("Dog  n/a")
 
-	lines.append("F2 time  F3 overlay  F4 warp dog")
+	lines.append("F2 time  F3 overlay  F4 warp dog  F6 2D/HD")
 	return "\n".join(lines)
 
 

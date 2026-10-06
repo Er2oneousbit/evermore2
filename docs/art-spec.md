@@ -1,8 +1,13 @@
-# Art Spec: "Modern SNES" on the LPC library
+# Art Spec: HD-2D on the LPC library
 
 **Rule for every decision:** *Would this feel right in Secret of Evermore?
 Then modernize how it's done.* Keep the original's soul, drop the 1995
 hardware limits.
+
+**The look (decided October 2026): HD-2D**, Square Enix's own way of
+modernizing its SNES games (Octopath Traveler, Live A Live, Dragon Quest III
+HD-2D): pixel-art sprites standing in a lit 3D world with real shadows,
+depth-of-field blur, bloom and light shafts. Free assets only.
 
 **Where the art comes from:** the **LPC (Liberated Pixel Cup)** library, mainly
 **LPC Revised** by Eliza Wyatt and contributors. It was drawn to evoke the SNES
@@ -38,6 +43,60 @@ Rendering > 2D > Snap Transforms/Vertices to Pixel .. On
 
 **Gotcha:** pixel snapping + a smoothed camera can make sprites jitter. If
 it shows up, keep the camera on whole pixels and test one change at a time.
+
+## 1b. HD-2D presentation (`systems/hd2d/hd_view.gd`)
+
+**Gameplay is 2D, the picture is 3D.** Each realm still builds its 2D world
+(tiles, props, actors, collision, AI). `HdView` draws that world in 3D and
+mirrors the 2D actors every frame. F6 flips to the classic 2D view for
+comparison. Nothing in gameplay code knows which view is on.
+
+| Setting | Value | Notes |
+|---|---|---|
+| World scale | **32 px = 1 m**; 2D (x, y) → 3D (x, 0, y) | A tile is a 1 m square; the kid is ~1.6 m |
+| Camera | Perspective, **pitch 40°, FOV 28°, distance 21 m** | Narrow FOV = the "diorama" feel. Exports on `HdView` |
+| Sprite stretch | Upright sprites ×1/cos(pitch) vertically | Undoes the squash from looking down at them (HD-2D games do this too) |
+| Ground | 2D tiles + flat decals rendered once into a texture, on a 3D plane | Autotiling stays pixel-exact |
+| Props | Upright quads (`hd_sprite.gdshader`): alpha cutout, real sun shadows, texel-row wind sway, GPU-side frame animation | Lily pads lie flat on the water |
+| Fences | Real 3D posts + rails, LPC wood at 32 px/m triplanar | Cast long shadows at golden hour |
+| Water | Glossy plane over the water pixels (`hd_water.gdshader`): LPC water color + screen-space reflections + ripple normals | Sun glints for free |
+| Same-row depth | Props 3 cm behind their base, kid 2 cm and dog 1 cm in front | Without it, sprites on one row z-fight and the kid vanishes into a trunk |
+| Resolution | 3D at the window's **native** resolution; HUD/2D at integer scale (`ScreenScaler.native_3d`) | DoF/bloom/fog stay smooth, pixels stay crisp |
+
+### Mood per time of day (`HdView.PRESETS`)
+
+| Knob | What it does |
+|---|---|
+| `sun_color/energy/elev/yaw` | The key light. Golden hour = low warm sun (20°), long shadows toward the bottom-right |
+| `ambient` | Fill light. Keep it **cooler** than the sun: warm light + cool shadow is what reads as "golden hour" |
+| `fog_density/albedo` | Volumetric fog: light shafts through the trees. A little goes a long way (0.0025-0.008) |
+| `exposure/saturation/contrast` | Final grade |
+| `glow` | Bloom on bright things (sun glints, fireflies, flashlight) |
+| `clouds` | Coverage of the invisible shadow-casting cloud layer |
+| `dof` | Tilt-shift strength (top and bottom of the screen go soft) |
+| `flashlight`, `phone_glow`, `water_glow` | Night readability: the phone's glow keeps the kid visible when the flashlight points away |
+
+Lesson from tuning: a saturated orange sun + orange fog + orange ambient
+turns everything into soup. Tint the **sun** warm, the **ambient** cool, keep
+fog thin, and let the LPC colors do the rest.
+
+### Renderer support
+
+Checked by running the HD-2D scene in Godot 4.7.2 with each renderer.
+`HdView.renderer_caps()` only switches on what the running renderer supports.
+
+| Feature | Forward+ | Mobile | Compatibility (old GPUs/VMs) |
+|---|---|---|---|
+| Sun/flashlight shadows, glow | yes | yes | yes |
+| Depth of field (tilt-shift) | yes | yes | **no** |
+| Volumetric fog (light shafts) | yes | no | no |
+| Screen-space reflections (pond) | yes | no | no |
+| SSAO | yes | no | no |
+| Contact-shadow decals | yes | yes | no |
+
+Forward+ is the target. Lower renderers still run the HD-2D view with fewer
+effects (and harsher contrast without the fog). A graphics settings menu
+should expose these toggles for weaker GPUs too.
 
 ## 2. Any-screen support (ultrawide, 32:9, 48:9, Steam Deck)
 
@@ -123,7 +182,8 @@ kid walking behind the tree.
 |---|---|---|---|
 | Lighting | Baked-in shading | Dynamic 2D lights + per-time-of-day mood (`systems/atmosphere/`) | **Done:** day / golden / night, flashlight with real shadows |
 | Color | Hardware palette | Per-realm color grade: split toning, contrast, saturation, vignette | **Done** (`assets/shaders/color_grade.gdshader`) |
-| Sky | None | Drifting cloud shadows, light shafts | **Done** |
+| Sky | None | Drifting cloud shadows, volumetric light shafts | **Done** (HD-2D) |
+| Depth | Flat layers | HD-2D: 3D world, real shadows, tilt-shift DoF, reflective water | **Done** (proof of concept) |
 | Life | Static scenery | Wind sway on plants, animated water, rippling sheen, lily pads, pollen, fireflies | **Done** |
 | Sprite depth | Flat | Normal maps on key sprites (kid, dog, bosses) | Later |
 | Animation | 2 to 4 frames | LPC: 8-9 frame walk/run, slash, hurt, more | **Done** for movement |

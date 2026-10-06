@@ -3,26 +3,28 @@
 A fan sequel to *Secret of Evermore* (Square, 1995). Top-down action RPG,
 modern pixel art, built in **Godot 4**.
 
-> **Status: Prototype 0.2, real art.** A kid runs around a backyard built
-> from the **LPC Revised** pixel-art library, with his dog following him.
-> Day, golden hour and night each have their own lighting, color grade,
-> drifting cloud shadows, pollen or fireflies, and a phone flashlight that
-> casts real shadows. Pixel-perfect on **any monitor shape: 16:9, 21:9, 32:9,
-> 48:9 triple-wide, Steam Deck**. No combat, menus or story yet.
+> **Status: Prototype 0.3, HD-2D.** The game is drawn the way Square Enix
+> remakes its SNES classics (Octopath Traveler, DQ3 HD-2D): pixel-art sprites
+> from the free **LPC** library standing in a lit 3D world, with real sun
+> shadows, volumetric light shafts, tilt-shift depth of field, bloom, a
+> reflective pond, and drifting cloud shadows. A kid explores a backyard with
+> his dog following him. Day, golden hour and night each have their own
+> lighting. Works on any monitor shape, from Steam Deck to 48:9. No combat,
+> menus or story yet.
 
 | Golden hour | Koi pond | Rose garden |
 |---|---|---|
-| ![golden hour](docs/screenshots/yard_golden_start.png) | ![pond](docs/screenshots/yard_golden_pond.png) | ![garden](docs/screenshots/yard_golden_garden.png) |
+| ![golden hour](docs/screenshots/hd_golden_start.png) | ![pond](docs/screenshots/hd_golden_pond.png) | ![garden](docs/screenshots/hd_golden_garden.png) |
 
-| Night: flashlight with real shadows, fireflies | Day: the fenced pen (dog-follow test course) |
+| Night: flashlight, fireflies, the phone's glow | Day: the fenced pen |
 |---|---|
-| ![night](docs/screenshots/yard_night_pond.png) | ![day](docs/screenshots/yard_day_pen.png) |
+| ![night](docs/screenshots/hd_night_pond.png) | ![day](docs/screenshots/hd_day_pen.png) |
 
-**32:9 super ultrawide (3840x1080):** the whole yard at once, HUD pulled into the middle.
-![32:9](docs/screenshots/yard_ultrawide_32x9.png)
+**32:9 super ultrawide:** the yard as a tilt-shift diorama.
+![32:9](docs/screenshots/hd_ultrawide_32x9.png)
 
-**48:9 triple-wide (7680x1440):** woods beyond the fence fill the extra width.
-![48:9](docs/screenshots/yard_triple_48x9.png)
+**Same spot in the classic 2D view (F6 toggles):**
+![2D](docs/screenshots/classic_2d_golden.png)
 
 ---
 
@@ -35,8 +37,11 @@ modern pixel art, built in **Godot 4**.
    (First open takes a few seconds while Godot builds its `.godot/` cache.)
 4. Press **F5** (or the ▶ Play button) to run.
 
-Older GPU or a VM? Run with `--rendering-method gl_compatibility` (see below).
-Everything works in both renderers.
+**Use the default Forward+ renderer** (needs a GPU with Vulkan or Direct3D 12
+support). Light shafts, pond reflections and ambient occlusion need it. Older
+GPU or a VM? Run with `--rendering-method gl_compatibility` (see below): it
+still works, just with fewer effects. See the renderer table in
+[`docs/art-spec.md`](docs/art-spec.md).
 
 ### Controls
 
@@ -54,6 +59,7 @@ Everything works in both renderers.
 | F2 | Cycle time of day: day / golden hour / night |
 | F3 | Toggle debug overlay (FPS, view size, positions, dog AI state, breadcrumb trail) |
 | F4 | Warp the dog to the kid (unstick him) |
+| F6 | Toggle the HD-2D view / classic 2D view |
 
 ---
 
@@ -91,6 +97,9 @@ godot --headless --path . --fixed-fps 60 res://tests/smoke_follow.tscn
 # Art plumbing: LPC animation rows, Atmosphere presets, prop building.
 godot --headless --path . --fixed-fps 60 res://tests/smoke_visuals.tscn
 
+# HD-2D view: every prop/fence/actor mirrored, camera on the map, F6, time of day.
+godot --headless --path . --fixed-fps 60 res://tests/smoke_hd.tscn
+
 # Any-monitor scaling. Headless: the math for 18 real monitors.
 godot --headless --path . res://tests/smoke_aspect.tscn
 # With a display: also the live window (bars, void, camera, HUD) at that size
@@ -102,6 +111,7 @@ pwsh tests/run_aspect_matrix.ps1 -Godot C:\path\to\Godot_v4.7.2-stable_win64_con
 #   older GPU / VM?  add:  -ExtraArgs "--rendering-method gl_compatibility"
 
 # Screenshot tour: renders fixed viewpoints at each time of day (needs a display).
+# HD-2D by default; EVERMORE_TOUR_VIEW=2d for the classic view.
 EVERMORE_SHOT_DIR=/tmp/shots godot --path . --resolution 1280x720 res://tests/screenshot_tour.tscn
 ```
 
@@ -160,15 +170,17 @@ evermore2/
 ├── systems/
 │   ├── animation/         DirectionalSprite, LpcSprite (characters), AnimalSprite
 │   ├── atmosphere/        Time of day: tint, color grade, clouds, pollen, fireflies
-│   └── camera/            GameCamera: map bounds + centering on wide screens
+│   ├── camera/            GameCamera: map bounds + centering on wide screens
+│   └── hd2d/              HdView: draws a 2D realm as an HD-2D 3D scene
 ├── realms/
 │   ├── _shared/           Prop + PropData, WangAutotiler (used by every realm)
-│   └── big_yard/          Test map (ASCII layout -> tiles, fences, props)
+│   └── big_yard/          Test map: prototype_yard (2D game) + yard_hd (HD-2D view, main scene)
 ├── assets/              Images the game loads
 │   ├── characters/        kid_lpc.png, dog_lpc.png (+ shadow)
 │   ├── tilesets/          LPC Revised ground tileset
 │   ├── props/             One PNG per tree/bush/flower/rock (made by build_art.py)
-│   ├── shaders/           Wind sway, water shimmer, color grade (+ noise)
+│   ├── shaders/           2D: wind sway, water shimmer, color grade. 3D: hd_sprite, hd_water, clouds
+│   ├── textures/hd/       Wood for the 3D fences (cut from the LPC tileset)
 │   └── fx/                Soft shadow, glow dot
 ├── data/
 │   ├── names.json         Character / place / item names (edit names HERE)

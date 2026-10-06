@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Secret of Evermore 2: Return to Evermore"
 config/description="A fan sequel to Secret of Evermore (1995). Top-down action RPG, modern pixel art."
-run/main_scene="res://realms/big_yard/prototype_yard.tscn"
+run/main_scene="res://realms/big_yard/yard_hd.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]

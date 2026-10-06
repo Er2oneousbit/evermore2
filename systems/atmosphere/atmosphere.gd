@@ -71,6 +71,17 @@ const GLOW_DOT := preload("res://assets/fx/glow_dot.tres")
 ## Current time of day ("day", "golden", "night").
 var time_name := ""
 
+## Draw the 2D mood layers (tint, grade, particles). The HD-2D view turns
+## this off and does its own lighting, but still relies on this node for
+## the time of day (F2) and the EventBus announcements.
+var render_2d := true:
+	set(value):
+		render_2d = value
+		if is_instance_valid(_modulate):
+			_modulate.visible = value
+			_grade.get_parent().visible = value
+			_particle_layer.visible = value
+
 var presets: Dictionary = PRESETS
 var _modulate: CanvasModulate
 var _grade: ColorRect

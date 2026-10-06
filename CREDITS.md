@@ -49,6 +49,8 @@ Full detail (notes and source links per layer): `credits/kid/credits.txt` / `cre
   YuriNikolai and Craftpix.net 2D Game Assets. Full list:
   <https://github.com/ElizaWy/LPC/blob/main/Credits.txt>
 * The autotile lookup `data/tilesets/lpc_summer_wang.json` is generated from that pack's `.tsx`.
+* `assets/textures/hd/wood_rail.png` and `wood_post.png` (the HD-2D view's 3D fence wood) are
+  32x32 crops of this tileset's planks (`tools/art/build_art.py`, `build_hd_textures`).
 
 ## Trees, bushes, flowers, grass, rocks, mushrooms, pond plants: `assets/props/big_yard/`
 
@@ -62,8 +64,9 @@ Full detail (notes and source links per layer): `credits/kid/credits.txt` / `cre
 
 ## Code-made effects
 
-Shaders (wind sway, water shimmer, color grade, cloud shadows), particles, and
-the soft shadow / glow textures were written for this project.
+Shaders (wind sway, water shimmer, color grade, cloud shadows, and the HD-2D
+sprite / water / cloud shaders), particles, the HD-2D lighting, and the soft
+shadow / glow textures were written for this project.
 
 ---
 

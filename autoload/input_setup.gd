@@ -33,6 +33,7 @@ const BINDINGS := {
 	"debug_cycle_time": {"keys": [KEY_F2]},
 	"debug_overlay":    {"keys": [KEY_F3]},
 	"debug_warp_dog":   {"keys": [KEY_F4]},
+	"debug_toggle_view": {"keys": [KEY_F6]},
 }
 
 

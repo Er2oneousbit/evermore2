@@ -41,6 +41,7 @@ In-game debug keys (always available in prototypes):
   F2   Cycle time of day (day / golden hour / night)
   F3   Toggle debug overlay (FPS, positions, dog AI state, breadcrumb trail)
   F4   Warp the dog to the kid (unstick the dog)
+  F6   Toggle HD-2D view / classic 2D view
 """
 
 ## True when --verbose was passed. Read-only from outside, please.
