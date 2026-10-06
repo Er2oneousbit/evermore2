@@ -9,7 +9,7 @@ is not affiliated with Square Enix.
 
 ---
 
-## The kid — `assets/characters/kid/kid_lpc.png`
+## The kid: `assets/characters/kid/kid_lpc.png`
 
 Built with the [Universal LPC Spritesheet Character Generator](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/)
 (recipe: `tools/lpc/characters.json`). Layers and their artists:
@@ -31,7 +31,7 @@ Full detail (notes and source links per layer): `credits/kid/credits.txt` / `cre
 > a DRM platform (Steam, consoles), swap the hair for an OGA-BY hairstyle in
 > `tools/lpc/characters.json` and rebuild.
 
-## The dog — `assets/characters/dog/dog_lpc.png`, `dog_lpc_shadow.png`
+## The dog: `assets/characters/dog/dog_lpc.png`, `dog_lpc_shadow.png`
 
 * **Shiba dog by Sevarihk**, adapted for LPC by **tapatilorenzo**, from
   [[LPC] Bears, deer, lions and more](https://opengameart.org/content/lpc-bears-deer-lions-and-more).
@@ -40,7 +40,7 @@ Full detail (notes and source links per layer): `credits/kid/credits.txt` / `cre
   (`tools/art/build_art.py`, `build_dog`).
 * Detail: `credits/dog/credits.txt`.
 
-## Ground tileset — `assets/tilesets/lpc_revised/terrain_summer.png`
+## Ground tileset: `assets/tilesets/lpc_revised/terrain_summer.png`
 
 * [LPC Revised - Fully Configured 4 Seasons Tilesets for Tiled Map Editor](https://opengameart.org/content/lpc-revised-fully-configured-4-seasons-tilesets-for-tiled-map-editor)
   compiled and configured by **JaidynReiman**. License: **OGA-BY 3.0** (page also lists CC-BY 3.0).
@@ -50,7 +50,7 @@ Full detail (notes and source links per layer): `credits/kid/credits.txt` / `cre
   <https://github.com/ElizaWy/LPC/blob/main/Credits.txt>
 * The autotile lookup `data/tilesets/lpc_summer_wang.json` is generated from that pack's `.tsx`.
 
-## Trees, bushes, flowers, grass, rocks, mushrooms, pond plants — `assets/props/big_yard/`
+## Trees, bushes, flowers, grass, rocks, mushrooms, pond plants: `assets/props/big_yard/`
 
 * [LPC Revised - 4 Season Terrain](https://opengameart.org/content/lpc-revised-4-season-terrain)
   by **Eliza Wyatt (DeathsDarling)**, with work by Lanea Zimmerman (Sharm), Hyptosis,

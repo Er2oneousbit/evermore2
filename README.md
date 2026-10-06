@@ -3,7 +3,7 @@
 A fan sequel to *Secret of Evermore* (Square, 1995). Top-down action RPG,
 modern pixel art, built in **Godot 4**.
 
-> **Status: Prototype 0.2 — real art.** A kid runs around a backyard built
+> **Status: Prototype 0.2, real art.** A kid runs around a backyard built
 > from the **LPC Revised** pixel-art library, with his dog following him.
 > Day, golden hour and night each have their own lighting, color grade,
 > drifting cloud shadows, pollen or fireflies, and a phone flashlight that

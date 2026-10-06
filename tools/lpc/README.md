@@ -1,4 +1,4 @@
-# tools/lpc — LPC character export
+# tools/lpc: LPC character export
 
 Builds character sprite sheets with the
 [Universal LPC Spritesheet Character Generator](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/)
