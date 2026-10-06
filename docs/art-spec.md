@@ -28,7 +28,7 @@ to use with credit. Credits live in [`CREDITS.md`](../CREDITS.md).
 | Bosses | 96 × 96 to 256 × 256 | |
 | Perspective | 3/4 top-down | Same as the original and as LPC |
 
-Why 32 px / 640x360 (decided October 2025): the LPC library is 32 px, and its
+Why 32 px / 640x360 (decided October 2026): the LPC library is 32 px, and its
 look matches the SNES Mana family. At 1080p it scales exactly 3x, at 1440p
 exactly 4x, at 4K exactly 6x.
 
