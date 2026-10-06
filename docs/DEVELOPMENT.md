@@ -148,13 +148,16 @@ On Windows, Python writes CRLF unless a file is opened with `newline=''`;
 
 * `main` is always green. Work happens on a branch, merged to `main` with a
   merge commit ("Merge <what>: <summary>"). No pull requests.
-* Versions are `0.MINOR.PATCH` in `project.godot` (`application/config/version`,
-  shown in the F3 overlay). After 0.9.x comes 0.10.0; 1.0 only when the owner
-  says the game is ready.
-* **Release checklist:** bump `config/version` in `project.godot`; add a
-  "Done (vX)" entry at the top of the Done list in [ROADMAP.md](ROADMAP.md)
-  (what changed, what was measured, test results); run the tests; commit as
-  `vX.Y.Z: <summary>` on `main`.
+* **Versions are frozen** at the value in `project.godot`
+  (`application/config/version`, shown in the F3 overlay) while the game is
+  being designed. Changes don't bump it.
+* **Progress** goes in [ROADMAP.md](ROADMAP.md): when a piece of work lands, add
+  a "Done: <milestone>" entry at the top of the Done list (what changed, what
+  was measured, test results).
+* **A real release** happens only when the owner asks for one: then the version
+  is bumped (after 0.9.x comes 0.10.0; 1.0 only when the owner says the game is
+  ready), the Done entry names the version, and the commit on `main` is
+  `vX.Y.Z: <summary>`.
 * Commit messages say why, and what was measured.
 
 ## Where things live

@@ -1,7 +1,8 @@
 # Roadmap
 
 What exists, what comes next, and the decisions that shape it. New feature
-ideas are added here first; bugs are fixed right away. Story and world
+ideas are added here first; bugs are fixed right away. Progress is tracked by
+milestone, not version: the version stays frozen while the game is designed. Story and world
 decisions live in [design-bible.md](design-bible.md).
 
 ## The plan
@@ -21,13 +22,13 @@ control alternating between kid and dog, and the Vacuum boss.
 
 ## Next up (suggested order)
 
-1. **Combat (v0.4)**: a weapon swing with the charge meter, using the kid's LPC
+1. **Combat**: a weapon swing with the charge meter, using the kid's LPC
    slash animations; one enemy (a squirrel, drawn in LPC style because none
    exists); hit-stop, damage numbers, enemy activation by distance.
-2. **Ring menu + the first alchemy formula (v0.5)**: data-driven `.tres` resources.
-3. **The real Big Yard (v0.6)**: painted in the editor with the same tileset and
+2. **Ring menu + the first alchemy formula**: data-driven `.tres` resources.
+3. **The real Big Yard**: painted in the editor with the same tileset and
    PropData; HD-2D height (stairs, ledges, a raised patio); wading in shallow water.
-4. **Mission 1 vertical slice (v0.7)**: alternating kid/dog control, sniff mode,
+4. **Mission 1 vertical slice**: alternating kid/dog control, sniff mode,
    the Vacuum boss.
 
 Alongside: the dog's look (notched floppy ear, one ear up, the orange "Kennel 13"
@@ -45,6 +46,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-06 | **Versions frozen at 0.3.0 during iterative design.** No bump per change; progress is tracked by milestone below. The version moves only for a real release, when the owner asks |
 | 2026-10-06 | **Public repo, bug reports only**, like Colonia: no pull requests (a workflow closes them), no feature requests. Code is MIT; art keeps its own licenses (CREDITS.md) |
 | 2026-10-06 | **HD-2D presentation**: gameplay stays 2D, a 3D view draws it. F6 keeps the classic 2D view for debugging |
 | 2026-10-06 | **Free assets only** (LPC library and similar); gaps are drawn in LPC style |
@@ -52,7 +54,7 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
-## Done (v0.3.0)
+## Done: HD-2D, and the repo goes public
 
 * **HD-2D**: the yard is drawn as pixel-art sprites in a lit 3D world, with real
   sun shadows, volumetric light shafts, tilt-shift depth of field, bloom, a
@@ -75,7 +77,7 @@ tag), and a real HUD in place of the placeholder text.
   scaling math); the new HD-2D test fails when the actor sync or the view toggle
   is broken
 
-## Done (v0.2.0)
+## Done: real art
 
 * **Real art** from the LPC library at 32 px: the kid from the LPC character
   generator, the dog (an LPC shiba recolored into a brown brindle mutt), the LPC
@@ -90,7 +92,7 @@ tag), and a real HUD in place of the placeholder text.
 * Dog follow test: max gap 76 px, 1 state change, 0 warps; disabling string
   pulling fails it (31 px backtrack), disabling anti-stutter fails it (157 state changes)
 
-## Done (v0.1.0)
+## Done: any monitor shape
 
 * **Any monitor shape**, pixel-perfect: integer scaling that fills the window
   (Godot's own "expand" left 256 px bars at 5120x1440); the view grows sideways
@@ -100,7 +102,7 @@ tag), and a real HUD in place of the placeholder text.
 * Live test at 13 resolutions from Steam Deck to 48:9; removing the apron fails
   it with the empty void showing
 
-## Done (v0.0.1)
+## Done: first prototype
 
 * Godot 4 project: the kid walks a test yard, the dog follows his path around
   fences (breadcrumbs plus string pulling, no stop-go stutter), Y-sorting, day /

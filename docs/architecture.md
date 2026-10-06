@@ -182,7 +182,7 @@ it and confirming the test fails:
 ## 6. Roadmap
 
 Moved to [ROADMAP.md](ROADMAP.md): the plan, what's next, decisions, and a
-"Done" entry per version. Developer setup and the release checklist are in
+"Done" entry per milestone. Developer setup and the release checklist are in
 [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ---
