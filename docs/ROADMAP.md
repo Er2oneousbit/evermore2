@@ -67,15 +67,18 @@ tag), and a real HUD in place of the placeholder text.
 
 ## Done: the text box fits its text
 
-* The box grows and shrinks with the line (one line of narration is a slim
-  strip; a portrait sets the minimum), and long text turns into pages: a press
+* The box grows and shrinks with the line, in both directions: as wide as its
+  widest line (centered, at least a small minimum, at most the 16:9 frame) and
+  as tall as the page (a portrait sets the minimum height); the name tab and
+  choices follow its edges. Long text turns into pages: a press
   finishes the typing, the next turns the page, and only then does the
   conversation move on
 * The wrapping is measured in the box's own font and handed to the label
   line by line, so nothing can spill out
-* Tests: the dialogue test checks short vs long boxes, the portrait minimum,
+* Tests: the dialogue test checks narrow vs wide and short vs tall boxes, centering,
+  the name tab hugging the name, the portrait minimum,
   that every page fits, that no word is lost across pages, and the page-turn
-  order; a fixed-height box or no paging makes it fail
+  order; a fixed-size box, a stretched name tab or no paging makes it fail
 
 ## Done: dialogue, NPCs, and the prologue's first scene
 
