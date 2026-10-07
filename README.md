@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Er2oneousbit/evermore2/actions/workflows/ci.yml/badge.svg)](https://github.com/Er2oneousbit/evermore2/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Tech demo](https://img.shields.io/badge/download-tech%20demo-orange.svg)](https://github.com/Er2oneousbit/evermore2/releases/tag/tech-demo)
 
 A fan sequel to *Secret of Evermore* (Square, 1995): a top-down action RPG
 about a kid, his shelter dog, and a world built from dreams. Thirty years after
@@ -40,7 +41,25 @@ monitor, from a Steam Deck to a 48:9 triple-wide.
 
 ## Try it
 
-There's no download yet; the prototype runs from source in the free Godot engine.
+### The tech demo (download and play)
+
+**[Download the tech demo](https://github.com/Er2oneousbit/evermore2/releases/tag/tech-demo)**
+for Windows or Linux. No engine needed: unzip and run.
+
+> **The release is only a tech demo of the game mechanics, not the game.** It
+> shows the systems as they're built (the HD-2D look, the dog, talking, combat)
+> and it's updated in place as they're polished. The story, the realms and the
+> real content come later.
+
+Inside: `Evermore2.exe` starts the prologue, `Combat arena.bat` the fight
+with the giant rats (also on Hard), `Test yard.bat` the day/night yard. The
+exe isn't code-signed, so Windows may warn you: **More info**, then
+**Run anyway**. On Linux use `./Evermore2.x86_64`, `./combat-arena.sh` and
+`./test-yard.sh`.
+
+### From source
+
+The newest work runs from source in the free Godot engine.
 
 1. Install **Godot 4.7.x** (the standard build, not .NET) from
    <https://godotengine.org/download>. It's a single file; no installer.

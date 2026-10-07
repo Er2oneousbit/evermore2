@@ -8,7 +8,9 @@
 name: CI
 
 on:
+  # Branches only: the tech-demo tag runs the release workflow, which tests too.
   push:
+    branches: ["**"]
   workflow_dispatch:
 
 # A newer push to the same branch cancels the older, still-running check.

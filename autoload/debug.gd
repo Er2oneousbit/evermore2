@@ -9,6 +9,7 @@
 #   godot --path . -- --help       Print options and quit
 #   godot --path . -- --debug      Start with the debug overlay visible
 #   godot --path . -- --verbose    Print VERBOSE-level log lines too
+#   godot --path . -- --arena      Start in the combat arena (also --yard)
 #
 # LOGGING:
 #   Debug.log_info("text")     always printed
@@ -37,6 +38,8 @@ Usage:  godot --path <project folder> -- [options]
   --debug        Start with the debug overlay visible (toggle any time with F3)
   --verbose      Print extra VERBOSE log lines (AI state changes, spawns, etc.)
   --hard         Play on Hard (enemies tougher, prices higher)
+  --arena        Start in the combat arena (giant rats)
+  --yard         Start in the test yard (F2 cycles day, golden hour, night)
 
 In-game debug keys (always available in prototypes):
   F2   Cycle time of day (day / golden hour / night)
@@ -47,6 +50,12 @@ In-game debug keys (always available in prototypes):
 
 ## True when --verbose was passed. Read-only from outside, please.
 var verbose := false
+## Demo maps a player can start in without the editor (--arena, --yard).
+const START_SCENES := {
+	"--arena": "res://realms/test/combat_arena_hd.tscn",
+	"--yard": "res://realms/big_yard/yard_hd.tscn",
+}
+
 ## Current overlay visibility. Use toggle_overlay()/set_overlay_visible().
 var overlay_visible := false
 
@@ -123,5 +132,8 @@ func _parse_args(args: PackedStringArray) -> void:
 				verbose = true
 			"--hard":
 				GameState.difficulty = "hard"
+			"--arena", "--yard":
+				# Deferred: the main scene isn't loaded yet while autoloads start.
+				get_tree().change_scene_to_file.call_deferred(START_SCENES[arg])
 			_:
 				log_warn("Unknown option '%s' (run with -- --help for the list)" % arg)

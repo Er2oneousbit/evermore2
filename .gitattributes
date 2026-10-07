@@ -11,3 +11,6 @@
 *.mp3 binary
 *.ttf binary
 *.otf binary
+
+# Windows launchers in the release zip must keep CRLF.
+*.bat text eol=crlf

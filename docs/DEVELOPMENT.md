@@ -182,6 +182,39 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   the 2D and the HD-2D view. Anything timed (hit-stop, typing, guards) counts
   frame time, never the wall clock.
 
+## The tech demo release
+
+There's one release, **`tech-demo`**: a tech demo of the game mechanics,
+updated in place (no version numbers while the design iterates). The Release
+workflow (`.github/workflows/release.yml`) runs the tests, exports Windows and
+Linux builds, starts each exported build on every demo map (any `ERROR`
+fails it), packages them with the launchers and `README.txt` from
+`tools/release/`, and replaces the files on the release.
+
+To update it, either:
+
+```sh
+git tag -f tech-demo && git push -f origin tech-demo
+```
+
+or Actions → Release → **Run workflow** on `main`. The notes on the release
+page come from `tools/release/release_notes.md`.
+
+To export locally, install the Godot 4.7.2 export templates (Editor →
+Manage Export Templates), then:
+
+```sh
+godot --headless --path . --export-release Windows export/windows/Evermore2.exe
+godot --headless --path . --export-release Linux export/linux/Evermore2.x86_64
+```
+
+Exports only include Godot resources. Files the game reads itself (like the
+`.dlg` dialogue scripts) must be listed in `include_filter` in
+`export_presets.cfg`, or the exported game can't find them.
+
+The demo maps can be started from the command line: `-- --arena`,
+`-- --yard` (and `--hard`), in the editor build and the exported one.
+
 ## Code style and rules
 
 1. **No hardcoded names.** Characters, places and items come from
