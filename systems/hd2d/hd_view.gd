@@ -14,8 +14,9 @@
 #          - props   : every 2D Prop becomes an upright sprite quad (or a flat
 #                      one for lily pads) that casts sun shadows
 #          - fences  : real 3D posts and rails (wood cut from the LPC tileset)
-#          - actors  : kid and dog sprites copy the 2D sprites' frame and
-#                      position every frame
+#          - actors  : every node in group "hd_actor" (kid, dog, NPCs) gets a
+#                      sprite that copies its 2D sprite's frame and position
+#                      every frame
 #          - mood    : sun/moon, sky, fog, glow, DoF per time of day, driven by
 #                      the realm's Atmosphere (F2 still cycles it)
 #        2D pixels -> 3D meters: 32 px = 1 m. 2D (x, y) -> 3D (x, 0, y).
@@ -44,6 +45,7 @@ const PROP_LAYER := 4
 ## Far too small to see, big enough to always break the tie.
 const PROP_DEPTH_BIAS := -0.03
 const KID_DEPTH_BIAS := 0.02
+const NPC_DEPTH_BIAS := 0.015
 const DOG_DEPTH_BIAS := 0.01
 
 const SPRITE_SHADER := preload("res://assets/shaders/hd_sprite.gdshader")
@@ -123,6 +125,8 @@ var _env: Environment
 var _sky_mat: ProceduralSkyMaterial
 var _kid3d: Sprite3D
 var _dog3d: Sprite3D
+## [2D actor, its Sprite3D, depth bias] for every mirrored actor.
+var _actors: Array = []
 var _ground: MeshInstance3D
 var _water: MeshInstance3D
 var _clouds: MeshInstance3D
@@ -204,8 +208,16 @@ static func renderer_caps() -> Dictionary:
 func _process(delta: float) -> void:
 	if not enabled or not is_instance_valid(_kid2d):
 		return
-	_sync_actor(_kid3d, _kid2d.get_node("Sprite") as Sprite2D, _kid2d.global_position, KID_DEPTH_BIAS)
-	_sync_actor(_dog3d, _dog2d.get_node("Sprite") as Sprite2D, _dog2d.global_position, DOG_DEPTH_BIAS)
+	for a: Array in _actors:
+		var actor := a[0] as Node2D
+		var s3 := a[1] as Sprite3D
+		if not is_instance_valid(actor):
+			s3.visible = false
+			continue
+		# The actor's OWN visibility: in HD mode the whole 2D World is hidden on
+		# purpose, so is_visible_in_tree() would hide every actor here too.
+		s3.visible = actor.visible
+		_sync_actor(s3, actor.get_node("Sprite") as Sprite2D, actor.global_position, a[2])
 	_follow_camera(delta)
 	_aim_flashlight()
 	# Particles live in world space; keep their spawn boxes over the view.
@@ -370,36 +382,56 @@ func _material_for(d: PropData, lying: bool) -> ShaderMaterial:
 # Fences: real 3D posts and rails
 # -----------------------------------------------------------------------------
 func _build_fences() -> void:
-	# LAYOUT / FENCE_CHAR are script constants of the realm (not properties).
-	var consts: Dictionary = _realm.get_script().get_script_constant_map()
-	var layout: Array = consts.get("LAYOUT", [])
-	var fence_char: String = consts.get("FENCE_CHAR", "#")
-	var cells := {}
-	for y in layout.size():
-		for x in String(layout[y]).length():
-			if layout[y][x] == fence_char:
-				cells[Vector2i(x, y)] = true
 	var holder := Node3D.new()
 	holder.name = "Fences"
 	add_child(holder)
-	if cells.is_empty():
+	if not _realm.has_method("fence_cells"):
 		return
-	var post_mesh := BoxMesh.new()
-	post_mesh.size = Vector3(0.17, 1.0, 0.17)
-	var rail_mesh := BoxMesh.new()
-	rail_mesh.size = Vector3(1.0, 0.11, 0.07)
-	var post_mat := _wood_material(WOOD_POST)
-	var rail_mat := _wood_material(WOOD_RAIL)
+	var cells: Dictionary = _realm.fence_cells()
+	var styles: Dictionary = _realm.cfg("HD_FENCE_STYLES")
+	var kit := {
+		"wood": {"post": _box_mesh(Vector3(0.17, 1.0, 0.17)), "rail": _box_mesh(Vector3(1.0, 0.11, 0.07)),
+				"post_mat": _wood_material(WOOD_POST), "rail_mat": _wood_material(WOOD_RAIL),
+				"rails": [0.38, 0.72], "bars": 0},
+		"iron": {"post": _box_mesh(Vector3(0.09, 1.25, 0.09)), "rail": _box_mesh(Vector3(1.0, 0.05, 0.04)),
+				"bar": _box_mesh(Vector3(0.035, 1.12, 0.035)),
+				"post_mat": _iron_material(), "rail_mat": _iron_material(),
+				"rails": [0.12, 1.02], "bars": 4},
+	}
 	# Same post spot as the 2D collision: tile center, 6 px above its bottom edge.
 	var post_off := Vector3(0.5, 0.0, 1.0 - 6.0 * PX)
 	for c: Vector2i in cells:
+		var k: Dictionary = kit.get(styles.get(cells[c], "wood"), kit["wood"])
 		var base := Vector3(c.x, 0.0, c.y) + post_off
-		_add_box(holder, post_mesh, post_mat, base + Vector3(0, 0.5, 0), Vector3.ZERO)
-		for rail_h: float in [0.38, 0.72]:
-			if cells.has(c + Vector2i.RIGHT):
-				_add_box(holder, rail_mesh, rail_mat, base + Vector3(0.5, rail_h, 0), Vector3.ZERO)
-			if cells.has(c + Vector2i.DOWN):
-				_add_box(holder, rail_mesh, rail_mat, base + Vector3(0, rail_h, 0.5), Vector3(0, PI * 0.5, 0))
+		var post_h: float = (k["post"] as BoxMesh).size.y
+		_add_box(holder, k["post"], k["post_mat"], base + Vector3(0, post_h * 0.5, 0), Vector3.ZERO)
+		for dir: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN]:
+			# Only join posts of the same kind (iron doesn't run into wood).
+			if not cells.has(c + dir) or cells[c + dir] != cells[c]:
+				continue
+			var rot := Vector3.ZERO if dir == Vector2i.RIGHT else Vector3(0, PI * 0.5, 0)
+			var along := Vector3(dir.x, 0, dir.y)
+			for rail_h: float in k["rails"]:
+				_add_box(holder, k["rail"], k["rail_mat"], base + along * 0.5 + Vector3(0, rail_h, 0), rot)
+			for b in k["bars"]:
+				var t := float(b + 1) / float(k["bars"] + 1)
+				var bar_h: float = (k["bar"] as BoxMesh).size.y
+				_add_box(holder, k["bar"], k["post_mat"], base + along * t + Vector3(0, bar_h * 0.5, 0), Vector3.ZERO)
+
+
+func _box_mesh(size: Vector3) -> BoxMesh:
+	var m := BoxMesh.new()
+	m.size = size
+	return m
+
+
+## Old wrought iron: dark, a little shiny, a hint of rust in the color.
+func _iron_material() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.11, 0.1, 0.11)
+	m.metallic = 0.55
+	m.roughness = 0.55
+	return m
 
 
 func _add_box(parent: Node3D, mesh: Mesh, mat: Material, at: Vector3, rot: Vector3) -> void:
@@ -429,8 +461,11 @@ func _wood_material(tex: Texture2D) -> StandardMaterial3D:
 # Actors: sprites that mirror the 2D kid and dog
 # -----------------------------------------------------------------------------
 func _build_actors() -> void:
-	_kid3d = _make_actor_sprite(_kid2d.get_node("Sprite") as Sprite2D, "Kid")
-	_dog3d = _make_actor_sprite(_dog2d.get_node("Sprite") as Sprite2D, "Dog")
+	_kid3d = _add_actor(_kid2d, KID_DEPTH_BIAS)
+	_dog3d = _add_actor(_dog2d, DOG_DEPTH_BIAS)
+	for n in get_tree().get_nodes_in_group("hd_actor"):
+		if n != _kid2d and n != _dog2d and n is Node2D and n.has_node("Sprite"):
+			_add_actor(n, NPC_DEPTH_BIAS)
 	_flash = SpotLight3D.new()
 	_flash.name = "Flashlight"
 	_flash.light_color = Color(1.0, 0.93, 0.8)
@@ -449,6 +484,12 @@ func _build_actors() -> void:
 	_phone.omni_attenuation = 1.6
 	_phone.shadow_enabled = false
 	add_child(_phone)
+
+
+func _add_actor(actor: Node2D, depth_bias: float) -> Sprite3D:
+	var s3 := _make_actor_sprite(actor.get_node("Sprite") as Sprite2D, actor.name)
+	_actors.append([actor, s3, depth_bias])
+	return s3
 
 
 func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:

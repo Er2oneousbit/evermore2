@@ -31,6 +31,51 @@ Full detail (notes and source links per layer): `credits/kid/credits.txt` / `cre
 > a DRM platform (Steam, consoles), swap the hair for an OGA-BY hairstyle in
 > `tools/lpc/characters.json` and rebuild.
 
+## Dad, Maya and Dex: `assets/characters/{dad,maya,dex}/`
+
+Built with the same LPC generator (recipes in `tools/lpc/characters.json`).
+Full detail per layer: `credits/<name>/credits.txt` / `credits.csv`.
+
+**Dad**
+
+| Layer | Artists | Licenses |
+|---|---|---|
+| `body/bodies/male` | bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert, Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani, Johannes Sjölund (wulax), Stephen Challener (Redshrike) | OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0 |
+| `head/heads/human/male` | bluecarrot16, Benjamin K. Smith (BenCreating), Stephen Challener (Redshrike) | OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0 |
+| `head/faces/male/neutral` | JaidynReiman, ElizaWy, Stephen Challener (Redshrike) | OGA-BY 3.0 |
+| `hair/parted/adult` | JaidynReiman, Joe White, Manuel Riecke (MrBeast) | CC-BY-SA 3.0, GPL 3.0 |
+| `beards/beard/basic` | JaidynReiman, Carlo Enrico Victoria (Nemisys) | CC-BY-SA 3.0, GPL 3.0 |
+| `torso/clothes/longsleeve/longsleeve2_buttoned/male` | ElizaWy, JaidynReiman, Stephen Challener (Redshrike), Johannes Sjölund (wulax) | OGA-BY 3.0 |
+| `legs/pants/male` | bluecarrot16, JaidynReiman, ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike) | OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0 |
+| `feet/shoes/revised/male` | JaidynReiman, ElizaWy, Bluecarrot16, Stephen Challener (Redshrike), Johannes Sjölund (wulax) | OGA-BY 3.0, GPL 3.0 |
+
+**Maya**
+
+| Layer | Artists | Licenses |
+|---|---|---|
+| `body/bodies/teen` | bluecarrot16, Evert, TheraHedwig, Benjamin K. Smith (BenCreating), MuffinElZangano, Durrani, Pierre Vigier (pvigier), Eliza Wyatt (ElizaWy), Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike) | OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0 |
+| `head/heads/human/female_small` | ElizaWy, Stephen Challener (Redshrike) | OGA-BY 3.0, CC-BY |
+| `head/faces/female/neutral` | JaidynReiman, ElizaWy, Stephen Challener (Redshrike) | OGA-BY 3.0 |
+| `hair/ponytail/adult/fg` | JaidynReiman, Manuel Riecke (MrBeast) | CC-BY-SA 3.0, GPL 3.0 |
+| `torso/clothes/longsleeve/longsleeve2/teen` | ElizaWy, JaidynReiman, Stephen Challener (Redshrike), Johannes Sjölund (wulax) | OGA-BY 3.0 |
+| `legs/pants/thin` | bluecarrot16, JaidynReiman, ElizaWy, Joe White, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike) | OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0 |
+| `feet/shoes/revised/thin` | ElizaWy, JaidynReiman | OGA-BY 3.0 |
+
+**Dex**
+
+| Layer | Artists | Licenses |
+|---|---|---|
+| `body/bodies/teen` | bluecarrot16, Evert, TheraHedwig, Benjamin K. Smith (BenCreating), MuffinElZangano, Durrani, Pierre Vigier (pvigier), Eliza Wyatt (ElizaWy), Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike) | OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0 |
+| `head/heads/human/male_small` | ElizaWy, Stephen Challener (Redshrike) | OGA-BY 3.0, CC-BY |
+| `head/faces/male/neutral` | JaidynReiman, ElizaWy, Stephen Challener (Redshrike) | OGA-BY 3.0 |
+| `hair/cowlick/adult` | ElizaWy, bluecarrot16 | CC0 |
+| `torso/clothes/shortsleeve/tshirt/teen` | ElizaWy, JaidynReiman, Stephen Challener (Redshrike), Johannes Sjölund (wulax) | OGA-BY 3.0 |
+| `legs/pants/thin` | bluecarrot16, JaidynReiman, ElizaWy, Joe White, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike) | OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0 |
+| `feet/shoes/revised/thin` | ElizaWy, JaidynReiman | OGA-BY 3.0 |
+
+> Dad's hair and beard and Maya's ponytail are CC-BY-SA 3.0 / GPL 3.0 only (like
+> the kid's hair): same note as above.
+
 ## The dog: `assets/characters/dog/dog_lpc.png`, `dog_lpc_shadow.png`
 
 * **Shiba dog by Sevarihk**, adapted for LPC by **tapatilorenzo**, from

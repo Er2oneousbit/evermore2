@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://actors/npc/npc.gd" id="1_npc"]
+[ext_resource type="Script" path="res://systems/animation/lpc_sprite.gd" id="2_lpc"]
+[ext_resource type="Texture2D" path="res://assets/fx/soft_shadow.tres" id="3_shadow"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_feet"]
+size = Vector2(14, 8)
+
+[node name="Npc" type="CharacterBody2D"]
+collision_mask = 0
+motion_mode = 1
+script = ExtResource("1_npc")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+z_index = -10
+modulate = Color(1, 1, 1, 0.55)
+scale = Vector2(0.75, 0.3)
+texture = ExtResource("3_shadow")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+script = ExtResource("2_lpc")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -3)
+shape = SubResource("RectangleShape2D_feet")

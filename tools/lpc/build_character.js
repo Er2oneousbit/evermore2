@@ -62,6 +62,14 @@ function usage(msg) {
     await page.goto(GENERATOR_URL + hash, { waitUntil: 'networkidle', timeout: 120000 });
     await page.waitForTimeout(6000); // sprite layers finish compositing after network idle
     await page.screenshot({ path: path.join(outDir, 'preview.png') });
+    // The generator quietly drops parts it doesn't recognize (a misspelled
+    // item or color). Compare what we asked for with what it kept.
+    const kept = new Set(decodeURIComponent(new URL(page.url()).hash).replace(/^#/, '').split('&'));
+    const dropped = hash.replace(/^#/, '').split('&').filter(p => !kept.has(p));
+    if (dropped.length) {
+      console.warn('WARNING: the generator ignored: ' + dropped.join(', ') + '  (check the item/color names in the web generator)');
+      process.exitCode = 3;
+    }
     const downloads = [['Spritesheet (PNG)', 'sheet.png'], ['Credits (TXT)', 'credits.txt'], ['Credits (CSV)', 'credits.csv']];
     for (const [label, file] of downloads) {
       const [dl] = await Promise.all([

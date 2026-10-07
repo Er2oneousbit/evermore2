@@ -5,5 +5,23 @@
     "output": "assets/characters/kid/kid_lpc.png",
     "hash": "#sex=teen&body=Body_Color_light&head=Human_Male_Small_light&expression=Neutral_light&hair=Messy2_chestnut&clothes=Longsleeve_2_red&legs=Pants_blue&shoes=Revised_Shoes_white",
     "credits": "credits/kid/"
+  },
+  "dad": {
+    "notes": "43, the kid's dad (the 1995 boy). Same chestnut hair and light skin as the kid on purpose: the photo reveal depends on the family resemblance. Beard, green button-up, charcoal pants.",
+    "output": "assets/characters/dad/dad_lpc.png",
+    "credits": "credits/dad/",
+    "hash": "#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&hair=Parted_chestnut&beard=Basic_Beard_chestnut&clothes=Longsleeve_2_Buttoned_forest&legs=Pants_charcoal&shoes=Revised_Shoes_brown"
+  },
+  "maya": {
+    "notes": "13, the kid's best friend. Ponytail, lavender longsleeve, jeans.",
+    "output": "assets/characters/maya/maya_lpc.png",
+    "credits": "credits/maya/",
+    "hash": "#sex=teen&body=Body_Color_bronze&head=Human_Female_Small_bronze&expression=Neutral_bronze&hair=Ponytail_black&clothes=Longsleeve_2_lavender&legs=Pants_blue&shoes=Revised_Shoes_white"
+  },
+  "dex": {
+    "notes": "14, made the dare. Blond cowlick (not messy: the kid's hair is messy), charcoal tee, navy pants, black shoes.",
+    "output": "assets/characters/dex/dex_lpc.png",
+    "credits": "credits/dex/",
+    "hash": "#sex=teen&body=Body_Color_light&head=Human_Male_Small_light&expression=Neutral_light&hair=Cowlick_blonde&clothes=TShirt_charcoal&legs=Pants_navy&shoes=Revised_Shoes_black"
   }
 }

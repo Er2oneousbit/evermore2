@@ -13,9 +13,14 @@ with real sun shadows, light shafts through the trees, tilt-shift blur, a
 reflective pond and drifting cloud shadows. It runs pixel-perfect on any
 monitor, from a Steam Deck to a 48:9 triple-wide.
 
-> **Early prototype.** A kid explores a backyard at day, golden hour
-> and night, with his dog following him. No combat, menus or story yet. See the
+> **Early prototype.** The story's opening is playable: dinner with Dad, then
+> the dare at the Ruffleberg place, with people to talk to. There's also a test
+> yard showing off day, golden hour and night. No combat or menus yet. See the
 > [roadmap](docs/ROADMAP.md) for what's next.
+
+| Dinner with Dad | The dare at the Ruffleberg place |
+|---|---|
+| ![dinner](docs/screenshots/prologue_dinner.png) | ![maya](docs/screenshots/prologue_maya.png) |
 
 | Golden hour | Koi pond | Rose garden |
 |---|---|---|
@@ -50,7 +55,8 @@ runs, without the light shafts, reflections and blur.
 |---|---|---|
 | Move (full tilt runs, partial walks) | WASD / Arrow keys | Left stick / D-pad |
 | Phone flashlight | F | Y |
-| Dog: stay / follow | E | X |
+| Talk / interact | E / Enter | A |
+| Dog: stay / follow | Q | X |
 | Time of day (prototype) | F2 | |
 | Classic 2D view (prototype) | F6 | |
 

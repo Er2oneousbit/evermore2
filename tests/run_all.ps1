@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     smoke_follow at 30, 60 and 120 RENDER fps (physics stays at 60 Hz; this proves
-    nothing depends on the render frame rate), smoke_visuals, smoke_hd, smoke_aspect (math part).
+    nothing depends on the render frame rate), smoke_visuals, smoke_hd, smoke_dialogue, smoke_aspect (math part).
     No display needed. For the live ultrawide checks use run_aspect_matrix.ps1.
 
 .PARAMETER Godot
@@ -48,6 +48,7 @@ $tests = @(
     @{ Label = "follow @120fps"; Scene = "res://tests/smoke_follow.tscn";  Args = @("--fixed-fps", "120") },
     @{ Label = "visuals";        Scene = "res://tests/smoke_visuals.tscn"; Args = @("--fixed-fps", "60") },
     @{ Label = "hd-2d view";     Scene = "res://tests/smoke_hd.tscn";      Args = @("--fixed-fps", "60") },
+    @{ Label = "dialogue";       Scene = "res://tests/smoke_dialogue.tscn"; Args = @("--fixed-fps", "60") },
     @{ Label = "aspect (math)";  Scene = "res://tests/smoke_aspect.tscn";  Args = @() }
 )
 

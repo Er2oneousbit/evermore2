@@ -58,6 +58,7 @@ var light_on := true
 
 func _ready() -> void:
 	add_to_group("kid")
+	add_to_group("hd_actor")
 	_flashlight.enabled = light_on
 	EventBus.time_of_day_changed.connect(_on_time_of_day_changed)
 
@@ -69,6 +70,9 @@ func _on_time_of_day_changed(time_name: String) -> void:
 
 func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	# Stand still while talking (the stick moves the dialogue choices instead).
+	if Dialogue.is_active():
+		input_dir = Vector2.ZERO
 
 	if input_dir != Vector2.ZERO:
 		facing = input_dir.normalized()
@@ -84,6 +88,12 @@ func _physics_process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if Dialogue.is_active():
+		return
+	if event.is_action_pressed("interact"):
+		if Interaction.try_interact():
+			get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("toggle_light"):
 		light_on = not light_on
 		_flashlight.enabled = light_on
