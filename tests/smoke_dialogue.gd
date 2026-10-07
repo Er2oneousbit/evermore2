@@ -13,7 +13,9 @@
 #        4. Talking to an NPC in the prologue lot: the prompt appears, the
 #           text box opens, the kid can't walk while talking, choices work,
 #           and the conversation ends cleanly
-#        4b. The text box fits its text: short lines make a short box, a
+#        4b. The text box fits its text: narrow for short lines (but at least
+#           MIN_WIDTH), as wide as the widest line, never wider than the safe
+#           frame, centered; short lines make a short box, a
 #           portrait sets the minimum height, long text turns into pages that
 #           each fit inside the box, no word is lost across pages, and a press
 #           turns the page before the conversation moves on
@@ -278,6 +280,29 @@ func _test_box_sizing() -> void:
 	_check(portrait_h >= DialogueBox.PORTRAIT_PX, "a portrait line must be at least portrait height (%.0f)" % portrait_h)
 	_check(narration_h < portrait_h, "one-line narration (%.0f) should be shorter than a portrait line (%.0f)" % [narration_h, portrait_h])
 
+	box.show_line("", "Short.", null)
+	await _frames(2)
+	var short_w := box.box_width()
+	_check(short_w >= DialogueBox.MIN_WIDTH - 0.5, "short line box %.0f narrower than MIN_WIDTH" % short_w)
+	var mid := "A line that is clearly longer than a single short word."
+	box.show_line("", mid, null)
+	await _frames(2)
+	var mid_w := box.box_width()
+	_check(mid_w > short_w, "a longer line should widen the box (%.0f vs %.0f)" % [mid_w, short_w])
+	_check(box._width_of(box._font(), mid) + box._chrome_width() <= mid_w + 0.5,
+			"the box (%.0f) must be wide enough for its line" % mid_w)
+	_check(mid_w < box.max_box_width(), "a one-line box shouldn't take the full width")
+	box.show_line("Dad", "Hi.", portrait)
+	await _frames(2)
+	var tab: Control = box._name_tab
+	_check(tab.size.x <= tab.get_combined_minimum_size().x + 1.0,
+			"the name tab should hug the name (%.0f wide, needs %.0f)" % [tab.size.x, tab.get_combined_minimum_size().x])
+	box.show_line("", mid, null)
+	await _frames(2)
+	var gap_left: float = box.max_box_width() * 0.5 + box._box.offset_left
+	var gap_right: float = box.max_box_width() * 0.5 - box._box.offset_right
+	_check(absf(gap_left - gap_right) <= 1.0, "the box should be centered (gaps %.0f / %.0f)" % [gap_left, gap_right])
+
 	var three := "Line one is here and it goes on for a while so that it wraps around. " \
 			+ "It keeps going a little more to make a third line in the box for sure."
 	box.show_line("", three, null)
@@ -292,6 +317,7 @@ func _test_box_sizing() -> void:
 	box.show_line("Dad", long_text, portrait)
 	await _frames(2)
 	_check(box.page_count() >= 2, "long text should split into pages (got %d)" % box.page_count())
+	_check(box.box_width() <= box.max_box_width() + 0.5, "the box (%.0f) must never be wider than the frame (%.0f)" % [box.box_width(), box.max_box_width()])
 	var width := box._text_width()
 	var font := box._font()
 	var rebuilt := ""

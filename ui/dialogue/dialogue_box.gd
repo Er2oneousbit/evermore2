@@ -8,9 +8,11 @@
 #        typing, turns the page, then asks for the next beat. Up/down move
 #        through choices. Built in code, so there's no node tree to keep in sync.
 #
-# SIZE FOLLOWS THE TEXT: the box grows from one line up to MAX_LINES and
-#        shrinks back (never shorter than the portrait when there is one).
-#        Longer text is split into pages automatically. The wrapping is done
+# SIZE FOLLOWS THE TEXT: the box is as wide as its widest line (at least
+#        MIN_WIDTH, at most the safe frame) and centered at the bottom; it's
+#        one line tall up to MAX_LINES (never shorter than the portrait when
+#        there is one). Longer text is split into pages automatically, and a
+#        line that spans pages keeps one width so the box doesn't jump. The wrapping is done
 #        here, word by word with the label's own font, and the label gets the
 #        lines ready-made (its own autowrap is off), so what we measure is
 #        exactly what's drawn: nothing can spill out of the box.
@@ -35,6 +37,10 @@ signal choice_made(index: int)
 
 ## Most lines shown at once; more text turns into pages.
 const MAX_LINES := 4
+## Narrowest the box gets, so a one-word line still reads as a box.
+const MIN_WIDTH := 160.0
+## Slack added to measured text so the label never clips its last letter.
+const TEXT_SLACK := 2.0
 const MARGIN := 8
 const PAD := 6
 const PORTRAIT_PX := 64
@@ -137,6 +143,16 @@ func current_page() -> int:
 ## The box's height in base pixels right now (tests read it).
 func box_height() -> float:
 	return -_box.offset_top - MARGIN
+
+
+## The box's width in base pixels right now (tests read it).
+func box_width() -> float:
+	return _box.offset_right - _box.offset_left
+
+
+## Widest the box may get: the safe frame minus its margins.
+func max_box_width() -> float:
+	return _frame.size.x - MARGIN * 2
 
 
 ## Split text into pages of at most MAX_LINES lines, each at most `width`
@@ -273,26 +289,52 @@ func _line_height() -> float:
 	return _font().get_height(FONT_SIZE) + LINE_GAP
 
 
-## Width available for text inside the box right now.
-func _text_width() -> float:
-	var w := _frame.size.x - MARGIN * 2 - (PAD + 2) * 2 - ARROW_ROOM
+## Everything in the box that isn't text: padding, arrow room, portrait.
+func _chrome_width() -> float:
+	var w := (PAD + 2) * 2 + ARROW_ROOM + TEXT_SLACK
 	if _portrait_frame.visible:
-		w -= PORTRAIT_PX + PORTRAIT_GAP
-	return maxf(w, 40.0)
+		w += PORTRAIT_PX + PORTRAIT_GAP
+	return w
+
+
+## Widest a line of text may be (the box at its widest, minus the chrome).
+func _text_width() -> float:
+	return maxf(max_box_width() - _chrome_width(), 40.0)
+
+
+## Widest line across all pages of the current text.
+func _widest_line() -> float:
+	var font := _font()
+	var widest := 0.0
+	for p in _pages:
+		for l in p.split("\n"):
+			widest = maxf(widest, _width_of(font, l))
+	return widest
 
 
 ## Fit the box to the current page, then hang the name tab and the choices
 ## off its top edge.
 func _layout() -> void:
+	# Height: this page's lines (or the portrait, if taller).
 	var lines := _text.text.count("\n") + 1
 	var text_h := lines * _line_height()
 	var inner := maxf(text_h, PORTRAIT_PX if _portrait_frame.visible else 0.0)
 	var height := ceilf(inner + PAD * 2)
 	_box.offset_top = -MARGIN - height
+	# Width: the widest line of the whole text, centered.
+	var width := clampf(ceilf(_widest_line() + _chrome_width()), MIN_WIDTH, max_box_width())
+	_box.offset_left = -floorf(width * 0.5)
+	_box.offset_right = _box.offset_left + width
 	var top := _box.offset_top
 	_name_tab.offset_top = top - 16
 	_name_tab.offset_bottom = top + 2
+	_name_tab.offset_left = _box.offset_left + 6
+	# Hug the name: both edges are set, or the tab stretches to the anchor.
+	_name_tab.offset_right = _name_tab.offset_left + _name_tab.get_combined_minimum_size().x
+	_arrow.offset_left = _box.offset_right - 16
+	_arrow.offset_right = _box.offset_right - 4
 	_choices_panel.offset_bottom = top - 4
+	_choices_panel.offset_right = _box.offset_right
 
 
 # -----------------------------------------------------------------------------
@@ -306,12 +348,10 @@ func _build() -> void:
 	_box = PanelContainer.new()
 	_box.name = "Box"
 	_box.add_theme_stylebox_override("panel", _style(BG, BORDER, 2, PAD))
-	_box.anchor_left = 0.0
-	_box.anchor_right = 1.0
+	_box.anchor_left = 0.5
+	_box.anchor_right = 0.5
 	_box.anchor_top = 1.0
 	_box.anchor_bottom = 1.0
-	_box.offset_left = MARGIN
-	_box.offset_right = -MARGIN
 	_box.offset_bottom = -MARGIN
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_frame.add_child(_box)
@@ -348,11 +388,10 @@ func _build() -> void:
 	_arrow.text = "v"
 	_arrow.add_theme_font_size_override("font_size", FONT_SIZE)
 	_arrow.add_theme_color_override("font_color", BORDER)
-	_arrow.anchor_left = 1.0
-	_arrow.anchor_right = 1.0
+	_arrow.anchor_left = 0.5
+	_arrow.anchor_right = 0.5
 	_arrow.anchor_top = 1.0
 	_arrow.anchor_bottom = 1.0
-	_arrow.offset_left = -MARGIN - 16
 	_arrow.offset_top = -MARGIN - 18
 	_frame.add_child(_arrow)
 	var blink := create_tween().set_loops()
@@ -361,9 +400,10 @@ func _build() -> void:
 
 	_name_tab = PanelContainer.new()
 	_name_tab.add_theme_stylebox_override("panel", _style(BG, BORDER, 2, 4))
+	_name_tab.anchor_left = 0.5
+	_name_tab.anchor_right = 0.5
 	_name_tab.anchor_top = 1.0
 	_name_tab.anchor_bottom = 1.0
-	_name_tab.offset_left = MARGIN + 6
 	_frame.add_child(_name_tab)
 	_name = Label.new()
 	_name.add_theme_font_size_override("font_size", FONT_SIZE)
@@ -371,13 +411,12 @@ func _build() -> void:
 
 	_choices_panel = PanelContainer.new()
 	_choices_panel.add_theme_stylebox_override("panel", _style(BG, BORDER, 2, 6))
-	_choices_panel.anchor_left = 1.0
-	_choices_panel.anchor_right = 1.0
+	_choices_panel.anchor_left = 0.5
+	_choices_panel.anchor_right = 0.5
 	_choices_panel.anchor_top = 1.0
 	_choices_panel.anchor_bottom = 1.0
 	_choices_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_choices_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_choices_panel.offset_right = -MARGIN
 	_frame.add_child(_choices_panel)
 	_choices_list = VBoxContainer.new()
 	_choices_panel.add_child(_choices_list)
