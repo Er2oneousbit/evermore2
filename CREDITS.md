@@ -114,6 +114,32 @@ Full detail per layer: `credits/<name>/credits.txt` / `credits.csv`.
 * Modified by this project: trees composed from separate canopy / trunk / shadow sprites,
   sprites cropped and trimmed (`tools/art/build_art.py`).
 
+## Sound and music: `assets/audio/`
+
+Every sound and music track is **CC0** (public domain): no credit is required,
+and it's given anyway, with thanks. Cut, mixed to mono and normalized by
+`tools/audio/build_audio.py`; which file came from where is in
+`credits/audio/credits.txt`.
+
+* **Music**: Juhani Junkala (SubspaceAudio), *JRPG Music Pack #1
+  [Exploration]*, *#4 [Calm]* and *#5 [Action]*
+  ([OpenGameArt](https://opengameart.org/users/subspaceaudio)).
+  "A Place I Call Home" (dinner), "Childhood Friends" (the dare),
+  "Grasslands" (the test yard), "Preparing For Battle" (the combat arena)
+* **RPG Sound Pack** by artisticdude: swings, bites, menu sounds
+  ([OpenGameArt](https://opengameart.org/content/rpg-sound-pack))
+* **50 RPG sound effects** by Kenney (www.kenney.nl): the stick's crack, cloth
+  ([OpenGameArt](https://opengameart.org/content/50-rpg-sound-effects))
+* **Punch** and **Squeaky Rat** by Iwan "qubodup" Gabovitch: hits, the rat
+  ([Punch](https://opengameart.org/content/punch),
+  [Squeaky Rat](https://opengameart.org/content/squeaky-rat))
+* **Dog sounds** by pauliuw: barks, yelp, whine
+  ([OpenGameArt](https://opengameart.org/content/dog-sounds))
+* **Fantozzi's Footsteps** by Fantozzi (submitted by qubodup): grass and stone
+  steps ([OpenGameArt](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone))
+* Made by this project (generated in `tools/audio/build_audio.py`): the text
+  blip, the kid's whistle, the switch chime
+
 ## Code-made effects
 
 Shaders (wind sway, water shimmer, color grade, cloud shadows, and the HD-2D

@@ -43,6 +43,8 @@ const DEFAULTS := {
 	"PROP_DIR": "res://data/props/big_yard/",
 	"TERRAIN_SET": "Summer Terrain",
 	"TERRAIN_BY_CHAR": {":": "Dirt", "~": "Shallow Water"},
+	## Music track for this map (autoload/audio.gd MUSIC). "" = silence.
+	"MUSIC": "",
 	"TERRAIN_PRIORITY": ["Grass", "Dirt", "Shallow Water"],
 	"SOLID_CHARS": "~",
 	"WATER_EDGE_PX": 11,
@@ -100,6 +102,7 @@ var _counts := {"props": 0, "decals": 0, "solids": 0, "npcs": 0, "triggers": 0, 
 
 
 func _ready() -> void:
+	add_to_group("ascii_realm")
 	_load_config()
 	if not _validate_layout():
 		return
@@ -115,6 +118,7 @@ func _ready() -> void:
 	var key: String = cfg("REALM_NAME_KEY")
 	if not key.is_empty():
 		GameState.current_realm = key
+	Audio.play_music(cfg("MUSIC"), 1.5)
 	Debug.log_info("%s loaded (%dx%d tiles, %d props, %d decals, %d NPCs, %d enemies, %d solid shapes). Run with -- --help for options."
 			% [Names.text(key) if not key.is_empty() else name, layout[0].length(), layout.size(),
 			_counts["props"], _counts["decals"], _counts["npcs"], _counts["enemies"], _counts["solids"]])
@@ -126,6 +130,19 @@ func cfg(key: String) -> Variant:
 
 
 ## The playable map area in world pixels.
+## What kind of ground is at a world position: "grass" or "stone" (dirt,
+## paths and anything hard), for footstep sounds. Outside any realm: grass.
+static func surface_at(tree: SceneTree, world_pos: Vector2) -> String:
+	var realm := tree.get_first_node_in_group("ascii_realm") as AsciiRealm
+	if realm == null:
+		return "grass"
+	var cell := Vector2i(floori(world_pos.x / TILE), floori(world_pos.y / TILE))
+	if cell.y < 0 or cell.y >= realm.layout.size() or cell.x < 0 or cell.x >= realm.layout[0].length():
+		return "grass"
+	var terrain: String = realm.cfg("TERRAIN_BY_CHAR").get(realm.layout[cell.y][cell.x], "Grass")
+	return "grass" if terrain == "Grass" else "stone"
+
+
 func map_rect() -> Rect2:
 	return Rect2(0, 0, layout[0].length() * TILE, layout.size() * TILE)
 

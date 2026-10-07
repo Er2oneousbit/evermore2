@@ -18,7 +18,7 @@ monitor, from a Steam Deck to a 48:9 triple-wide.
 > the dare at the Ruffleberg place, with people to talk to. Combat is in: a
 > test arena with giant rats shows the swing and its auto charge, and you can
 > switch between the kid and the dog, leave one on Stay put, and set how the
-> AI plays the other. No menus yet. See the
+> AI plays the other. It has sound and music now, and a settings menu. See the
 > [roadmap](docs/ROADMAP.md) for what's next.
 
 | Dinner with Dad | The dare at the Ruffleberg place |
@@ -104,6 +104,9 @@ one-person project, so pull requests and feature requests aren't taken.
 * Art from the **LPC (Liberated Pixel Cup)** library: Eliza Wyatt, Lanea
   Zimmerman, Stephen Challener, Sevarihk, bluecarrot16, JaidynReiman and many
   more. Every artist and license is in [CREDITS.md](CREDITS.md).
+* Music by **Juhani Junkala** (SubspaceAudio); sound effects by artisticdude,
+  Kenney, qubodup, pauliuw and Fantozzi. All CC0, all credited in
+  [CREDITS.md](CREDITS.md).
 * Code under the [MIT License](LICENSE). The art keeps its own licenses
   (CC-BY, CC-BY-SA, OGA-BY, GPL; see CREDITS.md).
 * Developer notes: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).

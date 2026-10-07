@@ -46,6 +46,7 @@ func setup(opt: Dictionary) -> OptionRow:
 
 ## Move to the next (+1) or previous (-1) value.
 func step(dir: int) -> void:
+	Audio.play("ui_confirm")
 	var key: String = option["key"]
 	var v: Variant = Settings.get_value(key)
 	match option["type"]:

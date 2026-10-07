@@ -102,6 +102,9 @@ var _swing_level := 1
 var _swing_landed := false
 ## Seconds he's stood still in Search stance (he sniffs around after a bit).
 var _idle_time := 0.0
+## Ground covered between paw sounds (px), and what's left until the next.
+const PAW_PX := 20.0
+var _paw_left := 0.0
 
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _on_screen: VisibleOnScreenNotifier2D = $OnScreen
@@ -162,6 +165,7 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(want, acceleration * delta)
 	move_and_slide()
 	_update_animation(delta)
+	_paws(delta)
 	queue_redraw()
 
 
@@ -196,6 +200,7 @@ func is_attacking() -> bool:
 
 ## Called by his Hurtbox when a hit lands.
 func on_hit(info: HitInfo, _dealt: int) -> void:
+	Audio.play_at("dog_whine" if health.is_dead() else "dog_yelp", global_position)
 	velocity += info.knockback
 	_sprite.modulate = Color(1.0, 0.45, 0.45)
 	create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.25)
@@ -224,6 +229,7 @@ func _on_animation_finished(anim: StringName) -> void:
 
 func _land_bite() -> void:
 	_swing_landed = true
+	Audio.play_at("dog_bite", global_position)
 	Fx.slash(global_position, facing, weapon.reach, weapon.arc_deg, _swing_level)
 	Combat.strike(get_tree(), global_position + Vector2(0, -6), facing, weapon.reach,
 			weapon.arc_deg, "player", _make_hit, _swing_level)
@@ -235,6 +241,24 @@ func _make_hit(hb: Hurtbox) -> HitInfo:
 	info.stagger = weapon.stagger
 	info.level = _swing_level
 	return info
+
+
+## Light paw steps every PAW_PX of ground covered.
+func _paws(delta: float) -> void:
+	var moved := get_real_velocity().length() * delta
+	if moved < 0.05:
+		_paw_left = PAW_PX * 0.5
+		return
+	_paw_left -= moved
+	if _paw_left <= 0.0:
+		_paw_left += PAW_PX
+		Audio.play_at("paw_" + AsciiRealm.surface_at(get_tree(), global_position), global_position)
+
+
+## A bark (answering Stay put, being called back...).
+func bark() -> void:
+	if not downed:
+		Audio.play_at("dog_bark", global_position)
 
 
 ## Teleport next to the leader and reset the trail. Safe to call any time.

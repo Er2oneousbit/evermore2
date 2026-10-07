@@ -47,6 +47,10 @@ static func strike(tree: SceneTree, origin: Vector2, dir: Vector2, reach: float,
 		var dealt := hb.receive(info)
 		if dealt > 0:
 			total += dealt
+			# Bigger swings land lower and add the stick's crack.
+			Audio.play_at("hit", hb.global_position, 1.0 - 0.06 * (level - 1))
+			if level >= 2 and hb.team == "enemy":
+				Audio.play_at("thwack", hb.global_position, 1.0 - 0.05 * (level - 2))
 			Fx.damage_number(hb.global_position + Vector2(0, -28), dealt,
 					"enemy" if hb.team == "enemy" else "player", info.level)
 	if total > 0:

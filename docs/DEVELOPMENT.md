@@ -217,6 +217,19 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   themselves out of the menu.
 * F6 flips the View setting, so it's remembered like the menu option.
 
+## Sound and music
+
+* Play a sound by name: `Audio.play_at("swing", global_position)` in the
+  world, `Audio.play("ui_move")` for menus and the HUD. Music:
+  `Audio.play_music("lot")`, or set `const MUSIC := "lot"` on an AsciiRealm.
+* The names live in `Audio.SOUNDS` (`autoload/audio.gd`): files, volume, pitch
+  variation. Enemies name theirs in their EnemyData (`sound_windup`,
+  `sound_attack`, `sound_hurt`, `sound_death`).
+* New files come from `tools/audio/build_audio.py` (`SFX` and `MUSIC`
+  tables): add a row, run it, commit the OGG files and
+  `credits/audio/credits.txt`. Needs numpy, soundfile, ffmpeg and 7-Zip.
+* Headless runs don't play anything; tests listen to `Audio.played` instead.
+
 ## The tech demo release
 
 There's one release, **`tech-demo`**: a tech demo of the game mechanics,

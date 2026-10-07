@@ -19,11 +19,16 @@ var _list: VBoxContainer
 var _settings: SettingsMenu
 var _resume: Button
 var _settings_button: Button
+var _opening := false  # no focus tick for the focus that opening sets
 
 
 func _ready() -> void:
 	layer = 50
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# A tick whenever the highlighted item changes (pause or settings menu).
+	get_viewport().gui_focus_changed.connect(func(_c: Control) -> void:
+		if is_open() and not _opening:
+			Audio.play("ui_move"))
 
 
 func is_open() -> bool:
@@ -53,13 +58,18 @@ func open() -> void:
 	_root.visible = true
 	_list.visible = true
 	get_tree().paused = true
-	_resume.grab_focus.call_deferred()
+	Audio.play("ui_open")
+	_opening = true
+	_resume.grab_focus()
+	_opening = false
 	opened.emit()
 
 
 func close() -> void:
 	if _settings:
 		_close_settings()
+	if _root and _root.visible:
+		Audio.play("ui_back")
 	if _root:
 		_root.visible = false
 	get_tree().paused = false
@@ -81,6 +91,7 @@ func _close_settings() -> void:
 	if _settings:
 		_settings.queue_free()
 		_settings = null
+		Audio.play("ui_back")
 	_list.visible = true
 	_settings_button.grab_focus.call_deferred()
 
@@ -125,6 +136,8 @@ func _button(text: String, action: Callable) -> Button:
 	b.name = text.replace(" ", "")
 	b.text = text
 	b.focus_mode = Control.FOCUS_ALL
-	b.pressed.connect(action)
+	b.pressed.connect(func() -> void:
+		Audio.play("ui_confirm")
+		action.call())
 	_list.add_child(b)
 	return b
