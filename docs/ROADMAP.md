@@ -9,35 +9,37 @@ decisions live in [design-bible.md](design-bible.md).
 
 A sequel to *Secret of Evermore* (1995), thirty years on. A 13-year-old and his
 shelter dog are pulled into Evermore 2.0, a world that grows from the dreams of
-whoever enters it, and Carltron wants the kid back as his "anchor". Five realms
-plus a hub and a finale, a dog that changes form in each, alchemy, and the ring
-menu (the full outline is in the design bible).
+whoever enters it, and Carltron wants the kid back as his "anchor". The boy who
+beat Carltron in 1995 is the kid's dad. Realms (being redesigned), a dog that
+changes form in each, alchemy, and the ring menu (the outline is in the design
+bible).
 
 It's drawn in **HD-2D**: pixel-art sprites in a lit 3D world, the way Square
 Enix remakes its own SNES games. All art is free and credited (the LPC library),
 and the game runs pixel-perfect on any monitor shape.
 
-The first goal is **Mission 1, "Lost Dog"**, as a vertical slice: the Big Yard,
-control alternating between kid and dog, and the Vacuum boss.
+The first goal is a **vertical slice**: the prologue (the dare, the mansion,
+Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
 1. **Combat**: a weapon swing with the charge meter, using the kid's LPC
-   slash animations; one enemy (a squirrel, drawn in LPC style because none
-   exists); hit-stop, damage numbers, enemy activation by distance.
+   slash animations; one test enemy; hit-stop, damage numbers, enemy activation
+   by distance.
 2. **Ring menu + the first alchemy formula**: data-driven `.tres` resources.
-3. **The real Big Yard**: painted in the editor with the same tileset and
-   PropData; HD-2D height (stairs, ledges, a raised patio); wading in shallow water.
-4. **Mission 1 vertical slice**: alternating kid/dog control, sniff mode,
-   the Vacuum boss.
+3. **The prologue**: Podunk at dusk, the dare, the mansion tutorial (foyer,
+   library, study, kitchen, lab), Carltron waking. Unaffected by the realm
+   redesign, so it can be built first; HD-2D height (stairs, a basement).
+4. **The first realm** (once the realms are designed): painted in the editor,
+   finding the dog, the first boss, sniff mode.
 
-Alongside: the dog's look (notched floppy ear, one ear up, the orange "Kennel 13"
+Alongside: the dog's look (notched floppy ear, one ear up, the orange shelter
 tag), and a real HUD in place of the placeholder text.
 
 ## Later
 
 * Save system (human-readable JSON), dialogue, the hub (The Mansion That Was), the prologue
-* The other realms: Saltreach, Frostheim, Vernia, The Grand Carlton, The Off Switch
+* The realms (being redesigned, see design-bible.md section 8)
 * Player 2 controls the dog; rebinding, accessibility (text size, colorblind swaps, shake toggle)
 * Graphics settings menu: renderer effects (fog, SSR, SSAO, DoF), aspect cap for the HUD and the view
 * A web build (Compatibility renderer only, so without light shafts, reflections or blur)
@@ -46,6 +48,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-06 | **The first realm lineup is scrapped**, The Big Yard and Mission 1 included. Realms get redesigned; the story spine (Dad is the 1995 boy, one night, the torn clipping) stays |
 | 2026-10-06 | **Versions frozen at 0.3.0 during iterative design.** No bump per change; progress is tracked by milestone below. The version moves only for a real release, when the owner asks |
 | 2026-10-06 | **Public repo, bug reports only**, like Colonia: no pull requests (a workflow closes them), no feature requests. Code is MIT; art keeps its own licenses (CREDITS.md) |
 | 2026-10-06 | **HD-2D presentation**: gameplay stays 2D, a 3D view draws it. F6 keeps the classic 2D view for debugging |
