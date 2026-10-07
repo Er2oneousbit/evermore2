@@ -209,14 +209,22 @@ appears when Dad comes in (section 4).
 
 **Content yardstick** (from studying the original's walkthroughs; the full notes
 are local, in `research/`). Guidance, not rules:
-- The original: about 54 areas over 4 realms (12 to 15 each), 17 major bosses
-  plus 12 to 14 mini-bosses, 6 towns, 34 alchemy formulas, about 16 hours for
-  the main story
-- Its rhythm: an area every ~18 minutes, a major boss every hour or so, a new
-  mechanic or set piece every 15 to 20 minutes; each realm resets the feel with
-  a new currency, dog form, weapon tier and alchemists
-- For our 8+ hours: roughly 30 areas, 8 to 10 bosses plus mini-bosses, the
-  first boss and first "wow" moment within the first hour
+- The original, per realm (main path): Prehistoria 13 areas, 3 bosses, 4
+  mini-fights, ~12 set pieces; Antiqua 14, 5, 6, ~18; Gothica 16, 5, 4, ~19 (the
+  densest); Omnitopia 12, 3, 2 plus the final waves, ~11. In all about 56 areas,
+  17 major bosses, ~17 mini-boss or ambush fights, ~60 set pieces, 6 towns, 34
+  alchemy formulas, about 16 hours for the main story
+- Its rhythm: an area every ~18 minutes, a boss-tier fight every 30 to 35
+  minutes, a new mechanic or set piece every 13 to 18 minutes; each realm resets
+  the feel with a new currency, dog form, weapon tier and alchemists
+- For our 8+ hours: roughly 30 areas, 8 to 10 bosses plus a similar number of
+  mini-fights, ~30 set pieces, the first boss and first "wow" moment within the
+  first hour
+- Where ours differs on purpose: the original had no "stay" command (only
+  scripted spots and holding the sniff button kept the dog still), needed the
+  attack button held for charge levels 2 and 3, and gave the boy 3 armor slots
+  (body, helmet, arm). It had about 15 places that split the pair; ours can
+  have more, since Stay put makes splitting a tool instead of a script
 - Copy: one clear gimmick per boss, kid/dog split sections, dense middle realms
   (the original's market trade chain and banquet/jail sequences are its best
   stretches)
