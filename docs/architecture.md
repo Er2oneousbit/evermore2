@@ -19,11 +19,13 @@ GAME
 │   ├── Dialogue     Runs .dlg conversations, owns the text box          [done]
 │   ├── Interaction  What the kid would talk to; drives the HUD prompt   [done]
 │   ├── Settings     Player options (one table), saved, applied live     [done]
+│   ├── Audio        Sounds by name, world/menu pools, music crossfade   [done]
 │   ├── PauseMenu    Esc / Start: Resume, Settings, Quit                 [done]
 │   ├── Difficulty   Normal/Hard levers in one table                     [done]
 │   ├── Fx           Damage numbers, slash trails, hit-stop, shake       [done]
 │   ├── Party        Kid + dog: switching, Stay put, stances, knockouts  [done]
 │   └── Economy      Per-realm currencies, exchange rates, trade routes [todo]
+│   (Audio: "SFX" and "Music" buses under Master; Settings sets their volume)
 │
 ├── Actors
 │   ├── Kid          LPC sprite, run/walk by stick tilt, flashlight     [done]
@@ -271,6 +273,7 @@ it and confirming the test fails:
 | `tests/smoke_combat.tscn` | no | Charge meter math, health/armor, difficulty levers, the swing (front only, x1 to x4), enemies (wake by distance, telegraph, bite, team rules, death), talk beats attack, rats and late spawns in HD-2D |
 | `tests/smoke_party.tscn` | no | Switching (camera glide, following), Stay put through a switch and call-back, knockout hand-off, every stance, the dog's bite, the HUD marker and partner arrow, talking belongs to the kid, the HD-2D camera follows the leader |
 | `tests/smoke_settings.tscn` | no | Settings values and presets, save/load round trip, every graphics switch reaching HdView, gameplay options, rebinding, pause and settings menus driven by key presses |
+| `tests/smoke_audio.tscn` | no | Every sound and music file loads, per-frame limit, every gameplay hook makes its sound (swing, hits, rat, dog, footsteps by surface, whistle, switch), music per map and crossfades, menu ticks and the text blip |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |

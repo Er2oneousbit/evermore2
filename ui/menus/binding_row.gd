@@ -134,6 +134,7 @@ func _finish(taken: Array[String]) -> void:
 	var btn: Button = slots[_listen_slot][2]
 	listening = null
 	_listen_slot = -1
+	Audio.play("ui_confirm")
 	Settings.store_binding(action)
 	for other in taken:
 		Settings.store_binding(other)

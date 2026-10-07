@@ -96,6 +96,10 @@ var downed := false
 var follower: Follower
 var brain: PartnerBrain
 
+## Ground covered between footstep sounds (px), and what's left until the next.
+const STEP_PX := 26.0
+var _step_left := 0.0
+
 var _attacking := false
 var _swing_mult := 1.0
 var _swing_level := 1
@@ -144,6 +148,8 @@ func attack() -> bool:
 	_attacking = true
 	_sprite.speed_scale = weapon.swing_speed
 	_sprite.play(weapon.swing_anim, facing, true)
+	# A charged swing whooshes a little deeper.
+	Audio.play_at("swing", global_position, 1.0 - 0.06 * (_swing_level - 1))
 	return true
 
 
@@ -153,6 +159,7 @@ func is_attacking() -> bool:
 
 ## Called by his Hurtbox when a hit lands.
 func on_hit(info: HitInfo, _dealt: int) -> void:
+	Audio.play_at("hurt", global_position)
 	velocity += info.knockback
 	_stagger = maxf(_stagger, info.stagger)
 	var t := create_tween()
@@ -236,6 +243,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_update_animation(input_dir)
+	_footsteps(delta)
 
 	# Flashlight sits slightly ahead of the kid, at chest height.
 	_flashlight.position = facing * light_offset + Vector2(0, LIGHT_HEIGHT)
@@ -259,6 +267,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		_flashlight.enabled = light_on
 		EventBus.light_toggled.emit(light_on)
 		Debug.log_verbose("Flashlight %s" % ("on" if light_on else "off"))
+
+
+## A step sound every STEP_PX of ground covered, on whatever he's standing on.
+func _footsteps(delta: float) -> void:
+	var moved := get_real_velocity().length() * delta
+	if moved < 0.05:
+		_step_left = STEP_PX * 0.5  # the first step lands soon after starting
+		return
+	_step_left -= moved
+	if _step_left <= 0.0:
+		_step_left += STEP_PX
+		Audio.play_at("step_" + AsciiRealm.surface_at(get_tree(), global_position), global_position)
 
 
 ## Picks idle / walk / run from the actual speed, and keeps playback speed in

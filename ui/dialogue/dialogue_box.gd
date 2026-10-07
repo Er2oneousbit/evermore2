@@ -34,6 +34,8 @@ signal choice_made(index: int)
 @export var chars_per_second := 48.0
 ## The Normal text speed in Settings, which chars_per_second is tuned for.
 const DEFAULT_CPS := 48.0
+## A text blip every this many letters while typing.
+const BLIP_EVERY := 3
 ## Input is ignored this long after the box opens (game time), so the press
 ## that started the conversation can't also skip its first line.
 @export var open_guard_seconds := 0.15
@@ -205,7 +207,11 @@ func _process(delta: float) -> void:
 		_char_time = total
 	else:
 		_char_time += delta * cps * chars_per_second / DEFAULT_CPS
+	var before := _text.visible_characters
 	_text.visible_characters = mini(int(_char_time), total)
+	# A soft blip every few letters while typing (the classic text "voice").
+	if floori(_text.visible_characters / float(BLIP_EVERY)) > floori(maxi(before, 0) / float(BLIP_EVERY)):
+		Audio.play("text_blip")
 	if _text.visible_characters >= total:
 		_finish_typing()
 
@@ -216,16 +222,19 @@ func _unhandled_input(event: InputEvent) -> void:
 	var confirm := event.is_action_pressed("interact") or event.is_action_pressed("attack")
 	if is_showing_choices():
 		if event.is_action_pressed("move_up"):
+			Audio.play("ui_move")
 			_selected = wrapi(_selected - 1, 0, _options.size())
 			_refresh_choices()
 			get_viewport().set_input_as_handled()
 		elif event.is_action_pressed("move_down"):
+			Audio.play("ui_move")
 			_selected = wrapi(_selected + 1, 0, _options.size())
 			_refresh_choices()
 			get_viewport().set_input_as_handled()
 		elif confirm and _guard_passed():
 			get_viewport().set_input_as_handled()
 			var picked := _selected
+			Audio.play("ui_confirm")
 			_hide_choices()
 			choice_made.emit(picked)
 		return

@@ -159,6 +159,7 @@ func on_hit(info: HitInfo, _dealt: int) -> void:
 	create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.2)
 	if info.source is Node2D and not health.is_dead():
 		target = info.source  # whoever hit it gets its attention
+		_sound(data.sound_hurt)
 	state = State.HURT
 	_timer = maxf(info.stagger, 0.12)
 
@@ -169,6 +170,7 @@ func is_active() -> bool:
 
 func _start_windup() -> void:
 	state = State.WINDUP
+	_sound(data.sound_windup)
 	_timer = data.windup_seconds
 	_attack_dir = global_position.direction_to(target.global_position)
 	_sprite.play(&"idle", _attack_dir)
@@ -186,6 +188,7 @@ func _start_attack() -> void:
 
 func _land_attack() -> void:
 	_landed = true
+	_sound(data.sound_attack)
 	var dmg := Difficulty.enemy_damage(data.damage)
 	Combat.strike(get_tree(), global_position + Vector2(0, -6), _attack_dir, data.attack_reach,
 			data.attack_arc, "enemy", func(hb: Hurtbox) -> HitInfo: return _make_hit(hb, dmg), 1)
@@ -209,6 +212,7 @@ func _on_animation_finished(anim: StringName) -> void:
 
 func _on_died() -> void:
 	state = State.DEAD
+	_sound(data.sound_death)
 	velocity = Vector2.ZERO
 	collision_layer = 0
 	collision_mask = 0
@@ -216,6 +220,11 @@ func _on_died() -> void:
 	_sprite.modulate = Color.WHITE
 	_sprite.play(&"die", Vector2.ZERO, true)
 	died.emit(self)
+
+
+func _sound(sound_name: String) -> void:
+	if sound_name != "":
+		Audio.play_at(sound_name, global_position)
 
 
 ## Blink a few times, then go.

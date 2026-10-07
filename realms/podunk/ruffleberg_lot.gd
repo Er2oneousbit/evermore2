@@ -46,6 +46,8 @@ const LAYOUT: Array[String] = [
 ]
 
 const REALM_NAME_KEY := "place_ruffleberg_lot"
+## The dare (dinner plays "home" over black first, see _play_intro).
+const MUSIC := "lot"
 const DIALOGUE := "res://data/dialogue/prologue.dlg"
 const TERRAIN_BY_CHAR := {":": "Dirt"}
 const FENCES := {"#": "Wood Fence", "%": "Metal Fence"}
@@ -86,10 +88,13 @@ func _ready() -> void:
 ## Title card, dinner over black, then fade in on the street.
 func _play_intro() -> void:
 	_kid.set_physics_process(false)
+	Audio.play_music("home", 0.0)
 	await _show_card(Names.text("town") + ".  October 2025.", 2.5)
 	Dialogue.start(DIALOGUE, "dinner")
 	await Dialogue.ended
+	Audio.stop_music(1.5)
 	await _show_card("Later that night.", 1.8)
+	Audio.play_music("lot", 2.5)
 	var fade := create_tween()
 	fade.tween_property(_black, "modulate:a", 0.0, 1.5)
 	await fade.finished
@@ -119,6 +124,7 @@ func _end_slice() -> void:
 	_black.modulate.a = 0.0
 	var fade := create_tween()
 	fade.tween_property(_black, "modulate:a", 1.0, 2.0)
+	Audio.stop_music(3.0)
 	await fade.finished
 	_card.text = "To be continued: the mansion."
 	_card.modulate.a = 1.0

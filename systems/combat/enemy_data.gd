@@ -26,6 +26,15 @@ extends Resource
 ## Which frame of the attack animation the bite/blow lands on (index).
 @export var attack_hit_frame := 2
 
+@export_group("Sounds")
+## Audio names (autoload/audio.gd SOUNDS). Empty = silent.
+## The warning before it attacks (players learn to listen for it).
+@export var sound_windup := ""
+## Its attack landing.
+@export var sound_attack := ""
+@export var sound_hurt := ""
+@export var sound_death := ""
+
 @export_group("Stats (Normal)")
 @export var hp := 18
 @export var armor := 0.0

@@ -103,6 +103,7 @@ func _set_leader(member: Node2D) -> void:
 	leader = member
 	_apply_roles()
 	_move_camera(old, member)
+	Audio.play("switch")
 	EventBus.control_changed.emit(member)
 	Debug.log_verbose("Party: now driving %s" % member.name)
 
@@ -149,8 +150,24 @@ func set_staying(on: bool) -> void:
 			f.clear_trail()
 		else:
 			f.set_state(Follower.State.FOLLOW)  # called back: come find the leader
+	_stay_sound(p, on)
 	EventBus.partner_stay_changed.emit(on)
 	Debug.log_verbose("Party: stay put %s" % ("on" if on else "off"))
+
+
+## The dog answers with a bark; calling him back, the kid whistles first.
+## (The kid has no voice yet: a menu tick confirms it.)
+func _stay_sound(p: Node2D, on: bool) -> void:
+	if p == null:
+		return
+	if p != dog:
+		Audio.play("ui_confirm")
+		return
+	if not on and is_instance_valid(kid):
+		Audio.play_at("whistle", kid.global_position)
+		await get_tree().create_timer(0.45, false).timeout
+	if is_instance_valid(p) and p.has_method("bark"):
+		p.bark()
 
 
 ## True if `member` is the partner and told to Stay put.
@@ -176,6 +193,7 @@ func set_stance(member: Node2D, stance: String) -> void:
 		GameState.dog_stance = stance
 	else:
 		GameState.kid_stance = stance
+	Audio.play("ui_move")
 	EventBus.stance_changed.emit(member, stance)
 
 

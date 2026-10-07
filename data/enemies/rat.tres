@@ -18,6 +18,10 @@ anims = {
 &"die": {"row": 0, "frames": [8, 9, 10], "fps": 7.0, "loop": false}
 }
 attack_hit_frame = 2
+sound_windup = "rat_squeak"
+sound_attack = "rat_bite"
+sound_hurt = "rat_pain"
+sound_death = "rat_death"
 hp = 18
 armor = 0.0
 damage = 5.0

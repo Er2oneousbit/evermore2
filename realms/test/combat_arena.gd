@@ -41,3 +41,4 @@ const PROPS_BY_CHAR := {
 	"v": ["tall_grass_a", "tall_grass_b", "tall_grass_c", "grass_clump_a"],
 }
 const ENEMIES_BY_CHAR := {"r": "rat"}
+const MUSIC := "arena"
