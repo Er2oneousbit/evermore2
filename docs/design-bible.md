@@ -257,6 +257,8 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
 |---|---|
 | Hidden items | The world hides items: buried in the ground, tucked under bushes and rocks, behind things. Exploring pays |
 | The dog's nose | **The dog sniffs out items**: hidden items and alchemy ingredients |
+| Control | **Switch between the kid and the dog any time** (owner, 2026-10-07); the AI plays the other one by his stance. Player 2 can take the other one |
+| Stay put | **A "Stay put" command for the partner** (whoever you're not controlling), so mazes and puzzles can need the two to split up and swap control (owner, 2026-10-07) |
 | Stances | **The kid: Offensive or Defensive. The dog: Offensive or Search.** Set any time |
 | Weapon charge | **Auto power-up: no holding a button.** The charge builds by itself between swings; a swing uses whatever level it reached |
 | Armor | **The kid: head, body, legs, boots, hands, arms** (six slots). **The dog: collar** |
@@ -275,6 +277,20 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
     item he stops, points and barks, then digs it up. He only fights if
     something attacks him.
   - Set from the ring menu or the pause menu; the HUD shows a small icon.
+- **Stay put and splitting up (DRAFT):**
+  - *Stay put / Follow* toggles the partner (Q / gamepad X): playing the kid
+    it tells the dog, playing the dog it tells the kid. A partner who's staying
+    put holds his spot; he still defends himself by his stance but never wanders.
+  - *Switch* (its own button) moves control and the camera to the other one,
+    wherever he is.
+  - *Call back*: hold the button to whistle the partner over, so a split can
+    never strand you. Puzzle areas can block the call on purpose.
+  - A partner arrow at the screen edge shows where he is when he's off screen,
+    and flashes red when he's under attack.
+  - Puzzles it opens up: the dog squeezes through a gap the kid can't; one holds
+    a pressure plate while the other crosses; the kid waits while the dog sniffs
+    a way through a dark maze; a door stays open only while someone stands on
+    the switch.
 - **Sniffing:** besides Search stance, a sniff button (when you control the dog)
   shows scent trails as colored wisps: one color for items, one for
   ingredients, one for people. The trail leads to the nearest few within range.
