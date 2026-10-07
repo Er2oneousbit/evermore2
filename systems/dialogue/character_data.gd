@@ -28,6 +28,9 @@ extends Resource
 @export var emotion_portraits: Dictionary = {}
 ## Name plate color.
 @export var color := Color(1.0, 0.92, 0.7)
+## Voice for the short spoken clips ("Hey!" when you talk to them, reactions
+## on emotion tags): a key of Audio.VOICES. Empty = silent (like the kid).
+@export var voice := ""
 
 
 func display_name() -> String:

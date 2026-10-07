@@ -9,6 +9,8 @@ WHAT:  Takes the ORIGINAL audio packs (downloaded from OpenGameArt, cached in
                                           peak-normalized (loudness per sound
                                           is set in autoload/audio.gd)
          assets/audio/music/<name>.ogg    looping music tracks, as released
+         assets/audio/voice/<name>.ogg    short voice clips ("Hey!", "What?"):
+                                          real voice actors, one or two words
          assets/audio/ambience/<name>.ogg background loops (birds by day,
                                           crickets at night), stereo, with
                                           the end crossfaded into the start
@@ -52,6 +54,7 @@ CACHE = os.path.join(ROOT, "tools", "audio", ".cache")
 SFX_OUT = os.path.join(ROOT, "assets", "audio", "sfx")
 MUSIC_OUT = os.path.join(ROOT, "assets", "audio", "music")
 AMBIENCE_OUT = os.path.join(ROOT, "assets", "audio", "ambience")
+VOICE_OUT = os.path.join(ROOT, "assets", "audio", "voice")
 CREDITS_OUT = os.path.join(ROOT, "credits", "audio", "credits.txt")
 OGA = "https://opengameart.org/sites/default/files/"
 RATE = 44100
@@ -106,6 +109,16 @@ PACKS = {
         "title": "Crickets Ambient Noise - loopable", "author": "Wolfgang_ (attribution notice: Ted Kerr)",
         "license": "CC0", "url": OGA + "crickets_1.mp3",
         "page": "https://opengameart.org/content/crickets-ambient-noise-loopable",
+    },
+    "voice_bright": {
+        "title": "Free Voice Clips Pack - Bright Female", "author": "cicifyre", "license": "CC0",
+        "url": OGA + "Free%20Voice%20Clips%20Pack%20-%20Bright%20Female_0.zip",
+        "page": "https://opengameart.org/content/voice-clip-packs-for-visual-novels-and-rpgs",
+    },
+    "voice_adventurer": {
+        "title": "Voice Clip Pack - Male Adventurer RPG", "author": "Brandon Song (wolfwoot)", "license": "CC0",
+        "url": OGA + "RPG%20Male%20Adventurer.zip",
+        "page": "https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg",
     },
     "jrpg_exploration": {
         "title": "JRPG Music Pack #1 [Exploration]", "author": "Juhani Junkala (SubspaceAudio)", "license": "CC0",
@@ -185,6 +198,26 @@ MUSIC = {
     "arena": ("jrpg_action", "Action3 - Preparing For Battle.ogg"),   # the combat arena
 }
 
+
+## Voice clips: output name -> (pack, file). One or two words each, played
+## when someone starts talking to you or reacts (autoload/audio.gd VOICES).
+_BRIGHT = "Free Voice Clips Pack - Bright Female/"
+_ADV = "RPG Male Adventurer/"
+VOICE = {
+    **{f"bright_hey_{i}": ("voice_bright", f"{_BRIGHT}0{i}-hey.wav") for i in (1, 2, 3)},
+    **{f"bright_hello_{i}": ("voice_bright", f"{_BRIGHT}0{i}-hello.wav") for i in (1, 2, 3)},
+    **{f"bright_what_{i}": ("voice_bright", f"{_BRIGHT}0{i}-what.wav") for i in (1, 2, 3)},
+    **{f"bright_why_{i}": ("voice_bright", f"{_BRIGHT}0{i}-why.wav") for i in (1, 2, 3)},
+    **{f"bright_okay_{i}": ("voice_bright", f"{_BRIGHT}0{i}-okay.wav") for i in (1, 2, 3)},
+    **{f"bright_bye_{i}": ("voice_bright", f"{_BRIGHT}0{i}-bye.wav") for i in (1, 2, 3)},
+    **{f"bright_laugh_{i}": ("voice_bright", f"{_BRIGHT}0{i}-laughter.wav") for i in (1, 2)},
+    "bright_gasp_1": ("voice_bright", f"{_BRIGHT}02-anime gasp.wav"),
+    "adventurer_greet_1": ("voice_adventurer", f"{_ADV}greet0.wav"),
+    "adventurer_yes_1": ("voice_adventurer", f"{_ADV}yes0.wav"),
+    "adventurer_yes_2": ("voice_adventurer", f"{_ADV}yes1.wav"),
+    "adventurer_no_1": ("voice_adventurer", f"{_ADV}no0.wav"),
+    "adventurer_no_2": ("voice_adventurer", f"{_ADV}no1.wav"),
+}
 
 ## Ambience loops: output name -> (pack, file, crossfade seconds for the seam).
 AMBIENCE = {
@@ -340,6 +373,11 @@ def build(offline):
     for name, (key, rel) in MUSIC.items():
         shutil.copyfile(source(key, rel, offline), os.path.join(MUSIC_OUT, name + ".ogg"))
         print("  music %s" % name)
+    os.makedirs(VOICE_OUT, exist_ok=True)
+    for name, (key, rel) in VOICE.items():
+        data, sr = load_mono(source(key, rel, offline), None)
+        write_ogg(finish(data, sr), sr, os.path.join(VOICE_OUT, name + ".ogg"))
+        print("  voice %s" % name)
     os.makedirs(AMBIENCE_OUT, exist_ok=True)
     for name, (key, rel, xfade) in AMBIENCE.items():
         data, sr = sf.read(source(key, rel, offline), always_2d=True)
@@ -359,6 +397,8 @@ def write_credits():
         used.setdefault(key, []).append(f"{name}.ogg  <-  {rel}")
     for name, (key, rel) in MUSIC.items():
         used.setdefault(key, []).append(f"music/{name}.ogg  <-  {rel}")
+    for name, (key, rel) in VOICE.items():
+        used.setdefault(key, []).append(f"voice/{name}.ogg  <-  {rel}")
     for name, (key, rel, _x) in AMBIENCE.items():
         used.setdefault(key, []).append(f"ambience/{name}.ogg  <-  {rel} (looped)")
     lines = ["Audio used by Secret of Evermore 2: Return to Evermore",

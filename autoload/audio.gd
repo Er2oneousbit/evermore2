@@ -5,6 +5,7 @@
 #          Audio.play_at("swing", kid.global_position)   a sound in the world
 #          Audio.play("ui_move")                          a menu / HUD sound
 #          Audio.play_music("lot")                        crossfades the music
+#          Audio.voice("bright", "greet")                 a character's voice clip
 #          Audio.set_ambience("outdoor")                  birds by day, crickets
 #                                                         at night (follows the
 #                                                         time of day by itself)
@@ -69,6 +70,32 @@ const SOUNDS := {
 }
 ## Music name -> file in MUSIC_DIR. The tracks loop seamlessly.
 const MUSIC := {"home": "home", "lot": "lot", "yard": "yard", "arena": "arena"}
+
+const VOICE_DIR := "res://assets/audio/voice/"
+## Voices: real voice actors saying one or two words ("Hey!", "What?") when
+## someone starts talking to you or reacts. Characters pick one with
+## CharacterData.voice. voice -> volume dB and kind -> files (in VOICE_DIR).
+## Kinds: greet, question, agree, disagree, laugh, surprise, bye.
+const VOICES := {
+	"bright": {"db": -6.0, "pitch": 0.02, "kinds": {
+		"greet": ["bright_hey_1", "bright_hey_2", "bright_hey_3", "bright_hello_2", "bright_hello_3"],
+		"question": ["bright_what_1", "bright_what_2", "bright_why_1", "bright_why_2"],
+		"agree": ["bright_okay_1", "bright_okay_2", "bright_okay_3"],
+		"laugh": ["bright_laugh_1", "bright_laugh_2"],
+		"surprise": ["bright_gasp_1"],
+		"bye": ["bright_bye_1", "bright_bye_2", "bright_bye_3"],
+	}},
+	"adventurer": {"db": -6.0, "pitch": 0.02, "kinds": {
+		"greet": ["adventurer_greet_1"],
+		"agree": ["adventurer_yes_1", "adventurer_yes_2"],
+		"disagree": ["adventurer_no_1", "adventurer_no_2"],
+	}},
+}
+## A line's emotion tag in a .dlg -> which kind of voice clip it plays.
+const EMOTION_VOICE := {
+	"surprised": "surprise", "shocked": "surprise", "laughing": "laugh", "happy": "laugh",
+	"confused": "question", "curious": "question", "relieved": "agree",
+}
 
 const AMBIENCE_DIR := "res://assets/audio/ambience/"
 ## Ambience loop -> [file in AMBIENCE_DIR, volume dB]. Both sit about 10 dB
@@ -243,6 +270,31 @@ func play_music(track: String, fade := 1.0) -> void:
 		new.play()
 	_crossfade(new, old, fade)
 	Debug.log_verbose("Audio: music -> %s" % track)
+
+
+## A character's voice clip ("bright", "greet"). False if that voice has no
+## clip of that kind (then nothing plays: silence beats a wrong word).
+func voice(voice_name: String, kind: String) -> bool:
+	if voice_name == "" or not VOICES.has(voice_name):
+		return false
+	var v: Dictionary = VOICES[voice_name]
+	var files: Array = v["kinds"].get(kind, [])
+	if files.is_empty():
+		return false
+	var stream := _load(VOICE_DIR + files[randi() % files.size()] + ".ogg")
+	if stream == null:
+		return false
+	var label := "voice:%s:%s" % [voice_name, kind]
+	history.append(label)
+	played.emit(label)
+	var p := _free_voice(_ui) as AudioStreamPlayer
+	p.stream = stream
+	p.volume_db = v["db"]
+	var spread: float = v.get("pitch", 0.0)
+	p.pitch_scale = 1.0 + randf_range(-spread, spread)
+	if not _silent:
+		p.play()
+	return true
 
 
 ## What kind of place this is ("outdoor", or "" for silence); the loop then

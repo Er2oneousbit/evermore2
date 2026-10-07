@@ -270,6 +270,7 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
 | Stances | **The kid: Offensive or Defensive. The dog: Offensive or Search.** Set any time |
 | Weapon charge | **Auto power-up: no holding a button.** The charge builds by itself between swings; a swing uses whatever level it reached |
 | Armor | **The kid: head, body, legs, boots, hands, arms** (six slots). **The dog: collar** |
+| Voices | **One or two words from real voice actors** (owner, 2026-10-07): "Hey!" when you talk to someone, short reactions. No full voice acting for now; AI voices were tried and rejected. Babble is the backup plan. The kid is silent |
 | Difficulty | **Normal and Hard playthroughs** (owner, 2026-10-07). On Hard, things cost more and enemies have more HP and armor and hit harder. Every lever lives in one table (`autoload/difficulty.gd`) |
 | Text box | Fits the amount of text: grows and shrinks, long lines turn into pages (done) |
 

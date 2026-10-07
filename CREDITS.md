@@ -143,6 +143,10 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
   night ambience ([OpenGameArt](https://opengameart.org/content/crickets-ambient-noise-loopable))
 * **Forest bird sounds** by pauliuw: the occasional bird by day
   ([OpenGameArt](https://opengameart.org/content/forest-bird-sounds))
+* **Voices**: cicifyre (*Free Voice Clips Pack - Bright Female*: Maya) and
+  Brandon Song / wolfwoot (*Voice Clip Pack - Male Adventurer RPG*: Dad)
+  ([cicifyre](https://opengameart.org/content/voice-clip-packs-for-visual-novels-and-rpgs),
+  [wolfwoot](https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg))
 * **Digging Underground** by Almitory and **Item Pickup / Key** by Musheran:
   digging and picking up (ready for hidden items)
   ([dig](https://opengameart.org/node/138434), [pickup](https://opengameart.org/content/item-pickup-key))
