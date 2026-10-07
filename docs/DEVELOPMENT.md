@@ -182,6 +182,22 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   the 2D and the HD-2D view. Anything timed (hit-stop, typing, guards) counts
   frame time, never the wall clock.
 
+## The duo (Party)
+
+* **Party** (autoload) knows the kid and the dog, who the player drives
+  (`Party.leader`) and who the AI plays (`Party.partner()`), Stay put, and the
+  stances (stored in `GameState.kid_stance` / `dog_stance`). Ask it, don't keep
+  your own copy: `Party.switch_control()`, `Party.set_staying()`,
+  `Party.stance_of(member)`.
+* Both members have a `controlled` flag (Party sets it), a `Follower` (the
+  breadcrumb follow, `systems/party/follower.gd`) and a `PartnerBrain`
+  (stances, `systems/party/partner_brain.gd`). The Follower reads its tuning
+  from the member's exports (`follow_distance`, `walk_speed`, ...).
+* Keys: Tab / gamepad Back switches, Q / X is Stay put, R / RB cycles the
+  partner's stance.
+* In a test that measures one member's attack, freeze the other
+  (`set_physics_process(false)`): the AI partner on Offensive joins any fight.
+
 ## The tech demo release
 
 There's one release, **`tech-demo`**: a tech demo of the game mechanics,

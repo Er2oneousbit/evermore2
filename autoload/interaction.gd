@@ -40,7 +40,8 @@ func try_interact() -> bool:
 func _physics_process(_delta: float) -> void:
 	var best: Node2D = null
 	var kid := get_tree().get_first_node_in_group("kid") as Kid
-	if kid and not Dialogue.is_active():
+	# Only the kid talks: nothing is in reach while the player drives the dog.
+	if kid and kid.controlled and not Dialogue.is_active():
 		var best_score := INF
 		for n in get_tree().get_nodes_in_group("interactable"):
 			var node := n as Node2D

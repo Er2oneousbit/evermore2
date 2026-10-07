@@ -20,14 +20,14 @@ GAME
 │   ├── Interaction  What the kid would talk to; drives the HUD prompt   [done]
 │   ├── Difficulty   Normal/Hard levers in one table                     [done]
 │   ├── Fx           Damage numbers, slash trails, hit-stop, shake       [done]
-│   ├── Party        Kid + dog: knockouts, revives (switching: next)     [done]
+│   ├── Party        Kid + dog: switching, Stay put, stances, knockouts  [done]
 │   └── Economy      Per-realm currencies, exchange rates, trade routes [todo]
 │
 ├── Actors
 │   ├── Kid          LPC sprite, run/walk by stick tilt, flashlight     [done]
 │   │                Weapon swing, auto charge, health                   [done]
 │   │                Alchemy casting                                     [todo]
-│   ├── Dog          Breadcrumb follow, string pulling, stay, sprite    [done]
+│   ├── Dog          AI partner or driven, bite, sniff, sprite          [done]
 │   │                Sniff, forms, P2 control, commands                 [todo]
 │   ├── Npc          Talks when interacted with, faces the kid           [done]
 │   └── Enemy        Data-driven: wake by distance, chase, telegraph,    [done]
@@ -210,13 +210,35 @@ attack pressed -> Kid.attack(): ChargeMeter.spend() -> [multiplier, level]
   telegraph mirror through `modulate`. Keep sprite colors at or below 1.0:
   brighter-than-white trips the bloom and haloes everything nearby.
 
-## 4. Dog follow AI (how it works)
+## 3e. The duo: who drives, who follows
 
-1. The kid drops a **breadcrumb** every 10 px of movement.
-2. The dog walks crumb to crumb (it goes around fences the same way the kid did).
-3. **String pulling:** every 0.1 s the dog sweeps its own collision box toward
-   crumbs, newest first, and skips to the furthest reachable one. Open ground =
-   straight line; fences = it still walks the corners.
+```
+Party (autoload)  leader = the one the stick drives, partner() = the other
+   switch_control -> controlled flags, partner's Follower.target = leader,
+                     Camera2D reparented to the leader and glides (HdView
+                     follows Party.leader's 3D sprite)
+   staying        -> partner's Follower in STAY (survives a switch)
+   stances        -> GameState.kid_stance / dog_stance
+
+Kid / Dog each frame:
+   controlled ? stick input
+              : PartnerBrain.think(stance, staying)
+                  enemy worth fighting? (awake, near the leader / within reach)
+                     -> approach, face, attack() when the charge is ready
+                  else -> Follower.steer()  (the breadcrumb follow below)
+```
+
+## 4. Follow AI (how it works)
+
+`systems/party/follower.gd`, used by whichever member the AI plays (the dog
+behind the kid, or the kid behind the dog after a switch).
+
+1. The leader drops a **breadcrumb** every 10 px of movement.
+2. The follower walks crumb to crumb (it goes around fences the same way the
+   leader did).
+3. **String pulling:** every 0.1 s the follower sweeps its own collision box
+   toward crumbs, newest first, and skips to the furthest reachable one. Open
+   ground = straight line; fences = it still walks the corners.
 4. **Anti-stutter:** a dead zone before getting up again (`resume_margin`),
    easing near the target gap (`slowdown_range`), and a walk/sprint dead zone
    (`catch_up_margin`).
@@ -245,6 +267,7 @@ it and confirming the test fails:
 | `tests/smoke_visuals.tscn` | no | LPC animation rows, Atmosphere presets/particles, Prop building |
 | `tests/smoke_dialogue.tscn` | no | .dlg parsing and errors, the runner (choices, flags, conditions, commands, loop guard), every game script loads, talking to Maya in 2D and HD-2D |
 | `tests/smoke_combat.tscn` | no | Charge meter math, health/armor, difficulty levers, the swing (front only, x1 to x4), enemies (wake by distance, telegraph, bite, team rules, death), talk beats attack, rats and late spawns in HD-2D |
+| `tests/smoke_party.tscn` | no | Switching (camera glide, following), Stay put through a switch and call-back, knockout hand-off, every stance, the dog's bite, the HUD marker and partner arrow, talking belongs to the kid, the HD-2D camera follows the leader |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |

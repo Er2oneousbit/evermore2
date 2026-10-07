@@ -17,6 +17,12 @@
 #        the button talks instead. Hits knock him back and flash him; at 0 HP
 #        he's downed and Party decides what happens next.
 #
+# AI PARTNER: after a switch (Tab / gamepad Back) the player drives the dog and
+#        a PartnerBrain plays the kid by his stance: Offensive goes after awake
+#        enemies near the dog, Defensive stays close and only swings at what
+#        comes within reach. He follows with the same breadcrumb Follower the
+#        dog uses (the follow tuning exports below).
+#
 # ORIGIN CONVENTION: the node's origin is at the kid's FEET. Everything is
 #        drawn upward from (0, 0). This is what makes Y-sorting look right
 #        (walking "behind" a tree means your feet are above its trunk base).
@@ -49,6 +55,26 @@ extends CharacterBody2D
 ## Movement speed kept while swinging (fraction of normal).
 @export_range(0.0, 1.0) var swing_move_factor := 0.15
 
+@export_group("Following (AI partner)")
+## Same meanings as on the dog (systems/party/follower.gd reads them).
+@export var follow_distance := 34.0
+@export var resume_margin := 22.0
+@export var slowdown_range := 44.0
+@export var catch_up_distance := 150.0
+@export var catch_up_margin := 32.0
+@export var warp_distance := 480.0
+@export var hard_warp_distance := 3200.0
+## Following the dog: he walks at his own top speed and sprints a little past
+## it (the dog is quicker), so he can keep up.
+@export var walk_speed := 120.0
+@export var sprint_speed := 165.0
+@export var crumb_spacing := 10.0
+@export var max_crumbs := 120
+@export var crumb_reached_radius := 6.0
+@export var shortcut_interval := 0.1
+@export_flags_2d_physics var blocking_mask := 1
+@export_group("")
+
 ## Flashlight brightness per time of day. A phone light is invisible at noon,
 ## so in daylight it would only wash out the scene. Unknown names use night.
 const LIGHT_ENERGY_BY_TIME := {"day": 0.0, "golden": 0.35, "night": 1.3}
@@ -61,11 +87,14 @@ const LIGHT_HEIGHT := -26.0
 ## the flashlight) read this to know which way the kid is looking.
 var facing := Vector2.DOWN
 var light_on := true
-## True while the player drives the kid (Party switches this in phase B).
+## True while the player drives the kid (Party switches it).
 var controlled := true
 ## The auto-filling attack charge (HUD reads it).
 var charge := ChargeMeter.new()
 var downed := false
+## Following and fighting while the player drives the dog.
+var follower: Follower
+var brain: PartnerBrain
 
 var _attacking := false
 var _swing_mult := 1.0
@@ -76,6 +105,8 @@ var _stagger := 0.0
 @onready var _flashlight: PointLight2D = $Flashlight
 @onready var _sprite: LpcSprite = $Sprite
 @onready var health: Health = $Health
+## Built in code: tells the Follower whether a warp would be seen.
+var _on_screen: VisibleOnScreenNotifier2D
 
 
 func _ready() -> void:
@@ -86,6 +117,12 @@ func _ready() -> void:
 	equip(weapon)
 	_sprite.animation_finished.connect(_on_animation_finished)
 	health.died.connect(_on_died)
+	_on_screen = VisibleOnScreenNotifier2D.new()
+	_on_screen.name = "OnScreen"
+	_on_screen.rect = Rect2(-16, -48, 32, 50)
+	add_child(_on_screen)
+	follower = Follower.new(self, $CollisionShape2D, blocking_mask)
+	brain = PartnerBrain.new(self)
 	Party.register(self)
 
 
@@ -164,17 +201,23 @@ func _on_time_of_day_changed(time_name: String) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	follower.record_crumb()
 	if downed:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 		move_and_slide()
 		return
 	charge.tick(delta)
 	_stagger = maxf(0.0, _stagger - delta)
-	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	# Stand still while talking (the stick moves the dialogue choices instead),
-	# while staggered, or when the player is driving the dog.
-	if Dialogue.is_active() or _stagger > 0.0 or not controlled:
-		input_dir = Vector2.ZERO
+	var input_dir := Vector2.ZERO
+	# Stand still while talking (the stick moves the dialogue choices instead)
+	# and while staggered.
+	var can_act := not Dialogue.is_active() and _stagger <= 0.0
+	if can_act and controlled:
+		input_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	elif can_act and not _attacking and is_instance_valid(follower.target):
+		# The AI plays him: its wanted velocity, as if it were stick input.
+		var want := brain.think(delta, Party.stance_of(self), Party.is_staying(self), _on_screen.is_on_screen())
+		input_dir = want / move_speed
 	if _attacking:
 		# Mostly planted during a swing; the blow lands on the weapon's frame.
 		velocity = velocity.move_toward(input_dir * move_speed * swing_move_factor, friction * delta)
@@ -186,6 +229,8 @@ func _physics_process(delta: float) -> void:
 	if input_dir != Vector2.ZERO:
 		facing = input_dir.normalized()
 		velocity = velocity.move_toward(input_dir * move_speed, acceleration * delta)
+	elif not controlled:
+		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 

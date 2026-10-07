@@ -1,8 +1,10 @@
 # =============================================================================
 # hud.gd  -  Placeholder HUD (names + HP), lives inside a SafeFrame
 # -----------------------------------------------------------------------------
-# WHAT:  Bottom-left: the kid. Bottom-right: the dog. Text only for now; real
-#        HP bars, charge meter, and the ring menu come in later prototypes.
+# WHAT:  Bottom-left: the kid. Bottom-right: the dog. Each shows HP and his
+#        charge bar; "> " marks the one you drive, and the partner shows his
+#        stance (and "Stay" on Stay put). An arrow points at the partner when
+#        he's off-screen. Text only for now; real bars and the ring menu later.
 # WHY NOW: proves the ultrawide layout rule early. Everything here anchors to
 #        the SafeFrame, so on 32:9 it sits in the middle 16:9 area.
 #
@@ -17,50 +19,91 @@ extends CanvasLayer
 ## "[E] Talk to Maya": shown while something is in reach (see Interaction).
 var _prompt: Label
 var _charge_bar: ChargeBar
+var _dog_charge_bar: ChargeBar
+var _partner_arrow: PartnerArrow
 var _kid: Node2D
 var _dog: Node2D
+
+const STANCE_LABELS := {"offensive": "Offensive", "defensive": "Defensive", "search": "Search"}
 
 
 func _ready() -> void:
 	_kid = get_tree().get_first_node_in_group("kid")
 	_dog = get_tree().get_first_node_in_group("dog")
-	_watch_health(_kid, _kid_status, GameState.get_kid_name())
-	_watch_health(_dog, _dog_status, GameState.get_dog_name())
-	_build_charge_bar()
+	for m in [_kid, _dog]:
+		var h: Health = m.get_node_or_null("Health") if m else null
+		if h:
+			h.changed.connect(func(_hp: int, _max: int) -> void: _refresh_status())
+	_charge_bar = _build_charge_bar("ChargeBar", false)
+	_dog_charge_bar = _build_charge_bar("DogChargeBar", true)
+	_partner_arrow = PartnerArrow.new()
+	_partner_arrow.name = "PartnerArrow"
+	$SafeFrame.add_child(_partner_arrow)
 	_build_prompt()
+	_refresh_status()
 	EventBus.interaction_target_changed.connect(_on_target_changed)
 	EventBus.dialogue_started.connect(_on_dialogue_started)
 	EventBus.dialogue_ended.connect(_on_dialogue_ended)
+	EventBus.control_changed.connect(func(_l: Node2D) -> void: _refresh_status())
+	EventBus.partner_stay_changed.connect(func(_on: bool) -> void: _refresh_status())
+	EventBus.stance_changed.connect(func(_m: Node2D, _s: String) -> void: _refresh_status())
 
 
-## Keep a status label in step with a party member's Health.
-func _watch_health(member: Node2D, label: Label, who: String) -> void:
-	var h: Health = member.get_node_or_null("Health") if member else null
-	if h == null:
-		label.text = who
-		return
-	var update := func(hp: int, max_hp: int) -> void:
-		label.text = "%s  HP %d/%d%s" % [who, hp, max_hp, "  KO" if hp <= 0 else ""]
-	update.call(h.max_hp if h.hp == 0 and not h.is_dead() else h.hp, h.max_hp)
-	h.changed.connect(update)
+## Both status labels: "> " on the one you drive, HP, and the partner's stance.
+func _refresh_status() -> void:
+	_kid_status.text = _status_text(_kid, GameState.get_kid_name())
+	_dog_status.text = _status_text(_dog, GameState.get_dog_name())
 
 
-func _build_charge_bar() -> void:
-	_charge_bar = ChargeBar.new()
-	_charge_bar.name = "ChargeBar"
-	_charge_bar.anchor_top = 1.0
-	_charge_bar.anchor_bottom = 1.0
-	_charge_bar.offset_left = 5
-	_charge_bar.offset_right = 75
-	_charge_bar.offset_top = -21
-	_charge_bar.offset_bottom = -16
-	$SafeFrame.add_child(_charge_bar)
+func _status_text(member: Node2D, who: String) -> String:
+	if not is_instance_valid(member):
+		return who
+	var text := who
+	var h: Health = member.get_node_or_null("Health")
+	if h:
+		# Health may not have filled up yet if the HUD readies first.
+		var hp := h.max_hp if h.hp == 0 and not h.is_dead() else h.hp
+		text += "  HP %d/%d" % [hp, h.max_hp]
+		if h.is_dead():
+			text += "  KO"
+	if Party.partner() == null:
+		return text
+	if member == Party.leader:
+		return "> " + text
+	text += "  " + STANCE_LABELS.get(Party.stance_of(member), Party.stance_of(member))
+	if Party.is_staying(member):
+		text += "  Stay"
+	return text
+
+
+func _build_charge_bar(bar_name: String, right_side: bool) -> ChargeBar:
+	var bar := ChargeBar.new()
+	bar.name = bar_name
+	bar.anchor_top = 1.0
+	bar.anchor_bottom = 1.0
+	if right_side:
+		bar.anchor_left = 1.0
+		bar.anchor_right = 1.0
+		bar.offset_left = -75
+		bar.offset_right = -5
+	else:
+		bar.offset_left = 5
+		bar.offset_right = 75
+	bar.offset_top = -21
+	bar.offset_bottom = -16
+	$SafeFrame.add_child(bar)
+	return bar
 
 
 func _process(_delta: float) -> void:
-	if _charge_bar and is_instance_valid(_kid) and _kid.get("charge") != null:
-		_charge_bar.meter = _kid.charge
-		_charge_bar.visible = _kid_status.visible
+	for pair in [[_charge_bar, _kid, _kid_status], [_dog_charge_bar, _dog, _dog_status]]:
+		var bar: ChargeBar = pair[0]
+		var m: Node2D = pair[1]
+		if bar and is_instance_valid(m) and m.get("charge") != null:
+			bar.meter = m.charge
+			bar.visible = (pair[2] as Label).visible
+		elif bar:
+			bar.visible = false
 
 
 func _build_prompt() -> void:
@@ -86,6 +129,7 @@ func _on_dialogue_started(_node: String) -> void:
 	_kid_status.visible = false
 	_dog_status.visible = false
 	_charge_bar.visible = false
+	_dog_charge_bar.visible = false
 
 
 func _on_dialogue_ended(_node: String) -> void:

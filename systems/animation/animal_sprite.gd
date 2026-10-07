@@ -28,6 +28,8 @@ const ANIMS := {
 	&"walk":  {"row": 0, "frames": [0, 1, 2, 3], "fps": 8.0, "loop": true},
 	&"run":   {"row": 0, "frames": [0, 1, 2, 3], "fps": 13.0, "loop": true},
 	&"sniff": {"row": 0, "frames": [4, 5, 6, 7], "fps": 6.0, "loop": false},
+	# The dog's bite: head low, then a stretched lunge (frame 1) where it lands.
+	&"bite":  {"row": 0, "frames": [4, 1, 1, 0], "fps": 14.0, "loop": false},
 }
 
 

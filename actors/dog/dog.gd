@@ -1,37 +1,26 @@
 # =============================================================================
-# dog.gd  -  The dog companion (AI follower; player 2 control comes later)
+# dog.gd  -  The dog: the kid's partner, or yours to drive after a switch
 # -----------------------------------------------------------------------------
-# WHAT:  A small state machine that follows the kid using a BREADCRUMB TRAIL.
+# WHAT:  Two ways to move, picked by Party:
+#          controlled  the player drives him (Tab / gamepad Back switches);
+#                      attack (J / Space / A) is his bite
+#          AI partner  a PartnerBrain plays him by his stance: Offensive
+#                      bites awake enemies near the kid, Search keeps out of
+#                      fights and sniffs around. Following uses the shared
+#                      breadcrumb Follower (systems/party/follower.gd explains
+#                      the trail, the shortcuts and the anti-stutter rules).
+#        Stay put (Q / gamepad X, via Party) makes him hold his spot.
 #
-# WHY BREADCRUMBS (instead of "walk straight at the kid"):
-#   The kid leaves a crumb every few pixels. The dog walks crumb to crumb,
-#   so it goes around corners and fences the same way the kid did instead of
-#   face-planting into walls. This is how most SNES-era followers worked, and
-#   it needs no navigation mesh. A NavigationAgent2D can be added later for
-#   smarter behaviors (fetch, sniff targets) without replacing this.
+# THE BITE: like the kid's swing, it runs on WeaponData (data/weapons/
+#   dog_bite.tres) and an auto-filling ChargeMeter. He lunges forward and the
+#   bite lands on the animation's hit frame, in a short arc in front of him.
 #
-# MODERN UPGRADE ("string pulling"): every shortcut_interval the dog sweeps
-#   its own collision box toward crumbs (newest first) and skips straight to
-#   the furthest one it can reach. Open ground = dog cuts straight across.
-#   Fences = the sweep hits them, so it still walks the corners.
-#
-# ANTI-STUTTER: hysteresis (resume_margin, catch_up_margin) plus easing near
-#   follow_distance (slowdown_range). Without these the dog stop-starts every
-#   few steps. tests/smoke_follow.gd fails if that regresses.
-#
-# STATES:
-#   IDLE      close enough to the kid; sit tight
-#   FOLLOW    walking the trail at normal speed
-#   CATCH_UP  far behind; sprinting the trail
-#   STAY      player told the dog to stay (E / gamepad X); ignores the kid
-#
-# SAFETY NET: if the dog gets farther than `warp_distance` AND is off-screen
-#   (stuck, or the kid took a path the dog can't), it warps next to the kid.
-#   Past `hard_warp_distance` it warps regardless. F4 forces a warp.
+# SAFETY NET: lost far behind and off-screen, he warps to the leader (the
+#   Follower decides). F4 forces a warp.
 #
 # ART:   $Sprite is an AnimalSprite showing assets/characters/dog/dog_lpc.png
 #   (an LPC shiba recolored into a brown brindle mutt by tools/art/build_art.py).
-#   FOLLOW = walk cycle, CATCH_UP = run, IDLE/STAY = standing.
+#   walk / run by speed, idle facing the leader, sniff, bite.
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -39,66 +28,89 @@
 class_name Dog
 extends CharacterBody2D
 
-enum State { IDLE, FOLLOW, CATCH_UP, STAY }
+## The follow states (IDLE, FOLLOW, CATCH_UP, STAY) live on the Follower.
+const State = Follower.State
 
-# --- Tuning ------------------------------------------------------------------
-## Who to follow. Set in the level scene; falls back to the "kid" group.
+# --- Follow tuning (the Follower reads these; see follower.gd) ----------------
+## Fallback for whom to follow before Party says (the "kid" group otherwise).
 @export var target_path: NodePath
-## The dog stops when it is this close to the kid (px).
+## He stops when he is this close to the leader (px).
 @export var follow_distance := 36.0
-## Once IDLE, the kid must get this much farther than follow_distance before
-## the dog gets up again. This dead zone (hysteresis) stops stop-go stutter.
+## Once IDLE, the leader must get this much farther than follow_distance
+## before he gets up again. This dead zone (hysteresis) stops stop-go stutter.
 @export var resume_margin := 22.0
-## Within this distance past follow_distance the dog eases off its speed, so it
-## settles into a smooth trail behind a walking kid instead of bumping into
-## follow_distance and stopping every few steps.
+## Within this distance past follow_distance he eases off his speed, so he
+## settles into a smooth trail behind a walking leader.
 @export var slowdown_range := 44.0
-## Beyond this distance the dog sprints.
+## Beyond this distance he sprints.
 @export var catch_up_distance := 150.0
 ## Sprinting continues until the gap closes to catch_up_distance minus this.
 @export var catch_up_margin := 32.0
-## Beyond this distance the dog warps to the kid, but ONLY while off-screen.
-## On ultrawide monitors the dog can be visible 900+ px away; teleporting in
+## Beyond this distance he warps to the leader, but ONLY while off-screen.
+## On ultrawide monitors he can be visible 900+ px away; teleporting in
 ## plain sight looks broken, so a visible dog sprints instead.
 @export var warp_distance := 480.0
-## Beyond this distance the dog warps even if visible (truly lost/stuck).
+## Beyond this distance he warps even if visible (truly lost/stuck).
 @export var hard_warp_distance := 3200.0
 @export var walk_speed := 124.0
 @export var sprint_speed := 210.0
 @export var acceleration := 2200.0
-## Distance the kid must move before a new crumb is dropped (px).
+## Distance the leader must move before a new crumb is dropped (px).
 @export var crumb_spacing := 10.0
 ## Hard cap on trail length so memory never grows unbounded.
 @export var max_crumbs := 120
-## How close the dog must get to a crumb before moving to the next one.
+## How close he must get to a crumb before moving to the next one.
 @export var crumb_reached_radius := 6.0
-## How often (seconds) the dog looks for a straight-line shortcut along its
-## trail ("string pulling"). Lower = smoother corners, slightly more CPU.
+## How often (seconds) he looks for a straight-line shortcut along the trail.
 @export var shortcut_interval := 0.1
-## Physics layers the dog's body can't pass through (layer 1 = "world").
+## Physics layers his body can't pass through (layer 1 = "world").
 @export_flags_2d_physics var blocking_mask := 1
 
-var state: State = State.IDLE
-## Knocked out: lies down until Party revives him.
-var downed := false
-var facing := Vector2.RIGHT
-## How many times the safety-net warp fired. If this climbs during normal
-## play, the follow logic is failing somewhere (shown on the F3 overlay).
-var warp_count := 0
-
-var _target: Node2D
-var _trail: Array[Vector2] = []  # global positions, oldest first
-var _shortcut_timer := 0.0
-var _shape_query := PhysicsShapeQueryParameters2D.new()
-
+# --- Driven by the player ------------------------------------------------------
+## Top speed when the player drives him (a little quicker than the kid).
+@export var move_speed := 140.0
+## His bite (data/weapons/*.tres).
+@export var weapon: WeaponData = preload("res://data/weapons/dog_bite.tres")
+## Forward burst at the start of a bite (px/s).
+@export var lunge_speed := 150.0
 ## Movement speed (px/s) that matches the walk cycle at 1x playback; raise it
 ## if the paws look like they slide, lower it if they moonwalk.
 @export var walk_anim_speed := 70.0
+
+## True while the player drives him (Party sets it).
+var controlled := false
+## Knocked out: lies down until Party revives him.
+var downed := false
+var facing := Vector2.RIGHT
+## The auto-filling bite charge (HUD reads it).
+var charge := ChargeMeter.new()
+var follower: Follower
+var brain: PartnerBrain
+
+## Follow state (Follower), kept here for the overlay and tests.
+var state: State:
+	get:
+		return follower.state if follower else State.IDLE
+## How many times the safety-net warp fired (F3 overlay).
+var warp_count: int:
+	get:
+		return follower.warp_count if follower else 0
+
+var _attacking := false
+var _swing_mult := 1.0
+var _swing_level := 1
+var _swing_landed := false
+## Seconds he's stood still in Search stance (he sniffs around after a bit).
+var _idle_time := 0.0
 
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _on_screen: VisibleOnScreenNotifier2D = $OnScreen
 @onready var _sprite: AnimalSprite = $Sprite
 @onready var health: Health = $Health
+
+## Search stance: sniff after standing still this long, then every SNIFF_EVERY.
+const SNIFF_AFTER := 1.2
+const SNIFF_EVERY := 2.5
 
 # Debug trail colors (F3 overlay).
 const COLOR_TRAIL := Color(1, 0.55, 0.1, 0.8)
@@ -108,84 +120,78 @@ const COLOR_TRAIL_NEXT := Color(1, 1, 0.2, 1)
 func _ready() -> void:
 	add_to_group("dog")
 	add_to_group("hd_actor")
+	follower = Follower.new(self, _collision, blocking_mask)
+	follower.state_changed.connect(func(s: String) -> void:
+		EventBus.dog_state_changed.emit(s)
+		Debug.log_verbose("Dog state -> %s" % s))
+	brain = PartnerBrain.new(self)
+	charge = ChargeMeter.new(weapon.max_level, weapon.seconds_per_level)
 	health.died.connect(_on_died)
-	Party.register(self)
+	_sprite.animation_finished.connect(_on_animation_finished)
 	_resolve_target()
-	# Shortcut checks sweep the dog's real body shape, not a thin ray, so a
-	# "clear" result means the whole dog fits through, corners included.
-	_shape_query.shape = _collision.shape
-	_shape_query.collision_mask = blocking_mask
-	_shape_query.exclude = [get_rid()]
+	Party.register(self)
 
 
 func _physics_process(delta: float) -> void:
-	if not is_instance_valid(_target):
+	if not controlled and not is_instance_valid(follower.target):
 		_resolve_target()
-		if not is_instance_valid(_target):
-			return  # Nothing to follow (already warned once in _resolve_target).
-
-	_record_crumb()
+	follower.record_crumb()
 
 	if downed:
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
 		move_and_slide()
 		return
+	charge.tick(delta)
 
-	if state == State.STAY:
-		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
+	if _attacking:
+		velocity = velocity.move_toward(Vector2.ZERO, acceleration * 0.25 * delta)
 		move_and_slide()
-		_update_animation()
-		queue_redraw()
+		if not _swing_landed and _sprite.frame_index() >= weapon.hit_frame:
+			_land_bite()
 		return
 
-	var dist := global_position.distance_to(_target.global_position)
-
-	if dist > hard_warp_distance or (dist > warp_distance and not _on_screen.is_on_screen()):
-		warp_to_target()
-		return
-
-	# Hysteresis: an idle dog needs a bigger gap before it gets up again.
-	var start_distance := follow_distance + (resume_margin if state == State.IDLE else 0.0)
-
-	if dist <= start_distance:
-		if state != State.IDLE:
-			# Drop the trail on arrival: those crumbs are behind us now. While
-			# idle, new crumbs keep recording so we can follow the kid's path.
-			_trail.clear()
-		_set_state(State.IDLE)
-		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
-	else:
-		var was_idle := state == State.IDLE
-		_set_state(_pick_moving_state(dist))
-		# Shortcut right away when getting up (skips stale crumbs the kid laid
-		# while walking past us), then periodically while moving.
-		_shortcut_timer -= delta
-		if was_idle or _shortcut_timer <= 0.0:
-			_shortcut_timer = shortcut_interval
-			_try_shortcut()
-		var speed := sprint_speed if state == State.CATCH_UP else walk_speed
-		# Ease off near the target gap so we trail smoothly instead of stop-go.
-		speed *= clampf((dist - follow_distance) / slowdown_range, 0.3, 1.0)
-		var waypoint := _next_waypoint()
-		var dir := global_position.direction_to(waypoint)
-		velocity = velocity.move_toward(dir * speed, acceleration * delta)
-		if dir != Vector2.ZERO:
-			facing = dir
-
+	var want := Vector2.ZERO
+	if controlled:
+		if not Dialogue.is_active():
+			want = Input.get_vector("move_left", "move_right", "move_up", "move_down") * move_speed
+	elif is_instance_valid(follower.target):
+		want = brain.think(delta, Party.stance_of(self), Party.is_staying(self), _on_screen.is_on_screen())
+	if want != Vector2.ZERO and not _attacking:
+		facing = want.normalized()
+	if not _attacking:  # think() may have just started a bite
+		velocity = velocity.move_toward(want, acceleration * delta)
 	move_and_slide()
-	_update_animation()
+	_update_animation(delta)
 	queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("dog_toggle_stay"):
-		if state == State.STAY:
-			_set_state(State.FOLLOW)
-		else:
-			_set_state(State.STAY)
-			_trail.clear()
-	elif event.is_action_pressed("debug_warp_dog"):
+	if event.is_action_pressed("debug_warp_dog") and not controlled:
 		warp_to_target()
+		return
+	if not controlled or Dialogue.is_active():
+		return
+	if event.is_action_pressed("attack") and attack():
+		get_viewport().set_input_as_handled()
+
+
+## Bite now, with whatever charge has built up. False if he can't.
+func attack() -> bool:
+	if _attacking or downed or Dialogue.is_active():
+		return false
+	var spent := charge.spend()
+	_swing_mult = spent[0]
+	_swing_level = spent[1]
+	_swing_landed = false
+	_attacking = true
+	velocity = facing * lunge_speed
+	_sprite.speed_scale = weapon.swing_speed
+	_sprite.play(weapon.swing_anim, facing, true)
+	return true
+
+
+func is_attacking() -> bool:
+	return _attacking
 
 
 ## Called by his Hurtbox when a hit lands.
@@ -198,127 +204,92 @@ func on_hit(info: HitInfo, _dealt: int) -> void:
 func revive(fraction := 0.3) -> void:
 	downed = false
 	health.revive(fraction)
-	_trail.clear()
-	_set_state(State.IDLE)
+	follower.clear_trail()
+	if follower.state != State.STAY:
+		follower.set_state(State.IDLE)
 
 
 func _on_died() -> void:
 	downed = true
+	_attacking = false
+	_sprite.speed_scale = 1.0
 	# Head down on the ground: the last frame of the sniff row, held.
 	_sprite.play(&"sniff", facing, true)
 
 
-## Teleport next to the kid and reset the trail. Safe to call any time.
+func _on_animation_finished(anim: StringName) -> void:
+	if anim == weapon.swing_anim:
+		_attacking = false
+
+
+func _land_bite() -> void:
+	_swing_landed = true
+	Fx.slash(global_position, facing, weapon.reach, weapon.arc_deg, _swing_level)
+	Combat.strike(get_tree(), global_position + Vector2(0, -6), facing, weapon.reach,
+			weapon.arc_deg, "player", _make_hit, _swing_level)
+
+
+func _make_hit(hb: Hurtbox) -> HitInfo:
+	var info := HitInfo.make(weapon.damage * _swing_mult, global_position, hb.global_position,
+			weapon.knockback, "player", self)
+	info.stagger = weapon.stagger
+	info.level = _swing_level
+	return info
+
+
+## Teleport next to the leader and reset the trail. Safe to call any time.
 func warp_to_target() -> void:
-	if not is_instance_valid(_target):
-		return
-	# Land slightly behind the kid (opposite of where the kid faces).
-	var behind := Vector2.DOWN
-	if _target is Kid:
-		behind = -(_target as Kid).facing
-	global_position = _target.global_position + behind * follow_distance
-	velocity = Vector2.ZERO
-	_trail.clear()
-	warp_count += 1
-	if state != State.STAY:
-		_set_state(State.IDLE)
-	Debug.log_verbose("Dog warped to kid")
+	follower.warp()
 
 
-## State name as text, for the debug overlay and EventBus.
+## Follow state name as text, for the debug overlay and EventBus.
 func get_state_name() -> String:
-	return State.keys()[state]
+	return follower.state_name()
 
 
-## Read-only copy of the trail, for debugging/tests.
+## Trail length, for debugging/tests.
 func get_trail_size() -> int:
-	return _trail.size()
+	return follower.trail().size()
 
 
 # -----------------------------------------------------------------------------
 # Internals
 # -----------------------------------------------------------------------------
 func _resolve_target() -> void:
+	var t: Node2D = null
 	if not target_path.is_empty():
-		_target = get_node_or_null(target_path) as Node2D
-	if not is_instance_valid(_target):
-		_target = get_tree().get_first_node_in_group("kid") as Node2D
-	if not is_instance_valid(_target) and not has_meta("warned_no_target"):
+		t = get_node_or_null(target_path) as Node2D
+	if not is_instance_valid(t):
+		t = get_tree().get_first_node_in_group("kid") as Node2D
+	follower.target = t
+	if not is_instance_valid(t) and not has_meta("warned_no_target"):
 		set_meta("warned_no_target", true)
 		Debug.log_warn("Dog: no target found (target_path empty and no node in group 'kid')")
 
 
-## FOLLOW vs CATCH_UP, with its own hysteresis so the dog doesn't flicker
-## between walking and sprinting right at catch_up_distance.
-func _pick_moving_state(dist: float) -> State:
-	if state == State.CATCH_UP:
-		return State.CATCH_UP if dist > catch_up_distance - catch_up_margin else State.FOLLOW
-	return State.CATCH_UP if dist > catch_up_distance else State.FOLLOW
-
-
-func _record_crumb() -> void:
-	var pos := _target.global_position
-	if _trail.is_empty() or _trail.back().distance_to(pos) >= crumb_spacing:
-		_trail.append(pos)
-		if _trail.size() > max_crumbs:
-			_trail.pop_front()
-
-
-## String pulling: scan the trail from NEWEST to oldest and jump to the first
-## crumb the dog can reach in a straight line, dropping every crumb before it.
-## Open ground: the dog heads almost straight for the kid. Around fences: it
-## still has to walk the corners, because the body-sized sweep hits the fence.
-func _try_shortcut() -> void:
-	if _trail.size() < 2:
-		return
-	var space := get_world_2d().direct_space_state
-	for i in range(_trail.size() - 1, 0, -1):  # index 0 is already our target
-		if _can_reach(space, _trail[i]):
-			for _k in i:
-				_trail.pop_front()
-			return
-
-
-## True if the dog's collision shape can slide straight to `point` unblocked.
-func _can_reach(space: PhysicsDirectSpaceState2D, point: Vector2) -> bool:
-	var from := global_position + _collision.position
-	_shape_query.transform = Transform2D(0.0, from)
-	_shape_query.motion = point - global_position
-	var fractions := space.cast_motion(_shape_query)
-	# cast_motion returns [safe, unsafe]; [1, 1] means no hit along the way.
-	return fractions.size() == 2 and fractions[0] >= 1.0
-
-
-## First crumb we still need to walk to. Drops crumbs that are:
-##   - reached: within crumb_reached_radius, or
-##   - passed:  the NEXT crumb is closer than this one.
-## The "passed" rule stops two bugs: orbiting a crumb we overshot on a sharp
-## turn, and walking backward to old crumbs after the kid strolled past an
-## idle dog. It's safe because consecutive crumbs are only crumb_spacing apart
-## on a path the kid actually walked, so no wall can sit between them.
-func _next_waypoint() -> Vector2:
-	while not _trail.is_empty():
-		var d0 := global_position.distance_to(_trail[0])
-		var reached := d0 <= crumb_reached_radius
-		var passed := _trail.size() >= 2 and global_position.distance_to(_trail[1]) < d0
-		if not (reached or passed):
-			break
-		_trail.pop_front()
-	return _trail.front() if not _trail.is_empty() else _target.global_position
-
-
-## Walk while following, run while catching up, stand otherwise. Playback
-## speed follows actual speed so the paws plant instead of skating.
-func _update_animation() -> void:
-	if downed:
+## Walk or run by speed, idle facing the leader, sniff now and then in Search.
+## Playback speed follows actual speed so the paws plant instead of skating.
+func _update_animation(delta: float) -> void:
+	if downed or _attacking:
 		return
 	var speed := velocity.length()
 	if speed < 8.0:
 		_sprite.speed_scale = 1.0
-		# Idle faces the kid, so a waiting dog looks like it's paying attention.
-		var look := global_position.direction_to(_target.global_position) if is_instance_valid(_target) else facing
+		if not controlled and Party.stance_of(self) == "search":
+			_idle_time += delta
+			if _idle_time >= SNIFF_AFTER:
+				_idle_time = SNIFF_AFTER - SNIFF_EVERY
+				_sprite.play(&"sniff", facing, true)
+			if _sprite.current == &"sniff" and _sprite.is_playing_once():
+				return
+		# Idle faces the leader, so a waiting dog looks like it's paying attention.
+		var look := facing
+		if not controlled and is_instance_valid(follower.target):
+			look = global_position.direction_to(follower.target.global_position)
 		_sprite.play(&"idle", look)
-	elif state == State.CATCH_UP:
+		return
+	_idle_time = 0.0
+	if speed > walk_speed * 1.05 or follower.state == State.CATCH_UP:
 		_sprite.speed_scale = speed / sprint_speed
 		_sprite.play(&"run", facing)
 	else:
@@ -326,21 +297,14 @@ func _update_animation() -> void:
 		_sprite.play(&"walk", facing)
 
 
-func _set_state(new_state: State) -> void:
-	if new_state == state:
-		return
-	state = new_state
-	EventBus.dog_state_changed.emit(get_state_name())
-	Debug.log_verbose("Dog state -> %s" % get_state_name())
-
-
 # -----------------------------------------------------------------------------
 # Debug drawing: the breadcrumb trail (only while the F3 overlay is on)
 # -----------------------------------------------------------------------------
 func _draw() -> void:
-	if not Debug.overlay_visible or _trail.is_empty():
+	var trail := follower.trail() if follower else ([] as Array[Vector2])
+	if not Debug.overlay_visible or trail.is_empty():
 		return
-	for i in _trail.size():
-		var p := to_local(_trail[i])
+	for i in trail.size():
+		var p := to_local(trail[i])
 		var c := COLOR_TRAIL_NEXT if i == 0 else COLOR_TRAIL
 		draw_rect(Rect2(p - Vector2(1, 1), Vector2(2, 2)), c)

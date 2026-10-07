@@ -16,7 +16,9 @@ monitor, from a Steam Deck to a 48:9 triple-wide.
 
 > **Early prototype.** The story's opening is playable: dinner with Dad, then
 > the dare at the Ruffleberg place, with people to talk to. Combat is in: a
-> test arena with giant rats shows the swing and its auto charge. No menus yet. See the
+> test arena with giant rats shows the swing and its auto charge, and you can
+> switch between the kid and the dog, leave one on Stay put, and set how the
+> AI plays the other. No menus yet. See the
 > [roadmap](docs/ROADMAP.md) for what's next.
 
 | Dinner with Dad | The dare at the Ruffleberg place |
@@ -79,7 +81,9 @@ runs, without the light shafts, reflections and blur.
 | Phone flashlight | F | Y |
 | Attack (waiting charges it up) | J / Space | A |
 | Talk / interact | E / Enter | A |
-| Dog: stay / follow | Q | X |
+| Switch between the kid and the dog | Tab | Back / View |
+| Partner: Stay put / come back | Q | X |
+| Partner's stance (Offensive, Defensive / Search) | R | RB |
 | Time of day (prototype) | F2 | |
 | Classic 2D view (prototype) | F6 | |
 

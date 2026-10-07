@@ -96,7 +96,7 @@ func _run() -> void:
 	_check(route_gap <= MAX_ALLOWED_GAP, "dog fell %.1f px behind (max %.1f)" % [route_gap, MAX_ALLOWED_GAP])
 
 	# --- 2. Stay command ------------------------------------------------------
-	_tap("dog_toggle_stay")
+	_tap("partner_stay")
 	await _wait(0.1)
 	var stay_pos := _dog.global_position
 	await _walk_to(STAY_WALK_TO)
@@ -104,7 +104,7 @@ func _run() -> void:
 	await _wait(0.3)
 	_check(_dog.state == Dog.State.STAY, "dog should be in STAY")
 	_check(_dog.global_position.distance_to(stay_pos) < 2.0, "dog moved while told to stay")
-	_tap("dog_toggle_stay")
+	_tap("partner_stay")
 	await _wait(3.0)
 	_check(_dist() <= _dog.follow_distance + 10.0, "dog should rejoin kid after stay (dist %.1f)" % _dist())
 

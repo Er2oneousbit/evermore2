@@ -26,12 +26,15 @@ const BINDINGS := {
 	"move_up":    {"keys": [KEY_W, KEY_UP],    "buttons": [JOY_BUTTON_DPAD_UP],    "axes": [[JOY_AXIS_LEFT_Y, -1.0]]},
 	"move_down":  {"keys": [KEY_S, KEY_DOWN],  "buttons": [JOY_BUTTON_DPAD_DOWN],  "axes": [[JOY_AXIS_LEFT_Y, 1.0]]},
 	# --- Actions --------------------------------------------------------------
-	# Interact and attack share gamepad A: when attacking gets wired up, it
-	# must check Interaction.current_target() first (talking wins).
+	# Interact and attack share gamepad A: the kid checks
+	# Interaction.try_interact() first (talking wins).
 	"interact":        {"keys": [KEY_E, KEY_ENTER, KEY_KP_ENTER], "buttons": [JOY_BUTTON_A]},
 	"attack":          {"keys": [KEY_J, KEY_SPACE], "buttons": [JOY_BUTTON_A]},
 	"toggle_light":    {"keys": [KEY_F],            "buttons": [JOY_BUTTON_Y]},
-	"dog_toggle_stay": {"keys": [KEY_Q],            "buttons": [JOY_BUTTON_X]},
+	# --- The duo (Party) --------------------------------------------------------
+	"switch_control":  {"keys": [KEY_TAB],          "buttons": [JOY_BUTTON_BACK]},
+	"partner_stay":    {"keys": [KEY_Q],            "buttons": [JOY_BUTTON_X]},
+	"partner_stance":  {"keys": [KEY_R],            "buttons": [JOY_BUTTON_RIGHT_SHOULDER]},
 	# --- Debug (prototype only; gate behind a setting before release) ---------
 	"debug_cycle_time": {"keys": [KEY_F2]},
 	"debug_overlay":    {"keys": [KEY_F3]},

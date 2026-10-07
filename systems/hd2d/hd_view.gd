@@ -128,7 +128,7 @@ var _dog3d: Sprite3D
 ## [2D actor, its Sprite3D, depth bias] for every mirrored actor.
 var _actors: Array = []
 ## Actors already mirrored (instance id -> true), so late arrivals are found.
-var _mirrored: Dictionary = {}
+var _mirrored: Dictionary = {}  # instance id -> its Sprite3D
 ## Seconds until the next look for actors that arrived after load.
 var _scan_timer := 0.0
 const SCAN_SECONDS := 0.2
@@ -524,7 +524,7 @@ func _add_new_actors() -> void:
 func _add_actor(actor: Node2D, depth_bias: float) -> Sprite3D:
 	var s3 := _make_actor_sprite(actor.get_node("Sprite") as Sprite2D, actor.name)
 	_actors.append([actor, s3, depth_bias])
-	_mirrored[actor.get_instance_id()] = true
+	_mirrored[actor.get_instance_id()] = s3
 	# Drop the 3D sprite when its actor leaves for good.
 	actor.tree_exiting.connect(func() -> void: _forget_actor(actor, s3), CONNECT_ONE_SHOT)
 	return s3
@@ -613,14 +613,25 @@ func _build_camera() -> void:
 	_place_camera()
 
 
-## Jump the camera straight to the kid (after a teleport, a scene load...).
+## Jump the camera straight to the leader (after a teleport, a scene load...).
 func snap_camera() -> void:
-	_target = _clamp_to_map(_kid3d.position)
+	_target = _clamp_to_map(_leader3d().position)
 	_place_camera()
 
 
+## The 3D sprite of whoever the player drives (Party), so the camera follows
+## the dog after a switch. The kid until Party knows better.
+func _leader3d() -> Sprite3D:
+	var l := Party.leader
+	if is_instance_valid(l):
+		var s3 = _mirrored.get(l.get_instance_id())
+		if is_instance_valid(s3):
+			return s3
+	return _kid3d
+
+
 func _follow_camera(delta: float) -> void:
-	var want := _clamp_to_map(_kid3d.position)
+	var want := _clamp_to_map(_leader3d().position)
 	_target = _target.lerp(want, 1.0 - exp(-camera_smoothing * delta))
 	_place_camera()
 
