@@ -110,6 +110,42 @@ JRPG Music Pack #5 [Action]
   https://opengameart.org/content/jrpg-pack-5-action
   music/arena.ogg  <-  Action3 - Preparing For Battle.ogg
 
+Free Voice Clips Pack - Bright Female
+  by cicifyre
+  license: CC0
+  https://opengameart.org/content/voice-clip-packs-for-visual-novels-and-rpgs
+  voice/bright_hey_1.ogg  <-  Free Voice Clips Pack - Bright Female/01-hey.wav
+  voice/bright_hey_2.ogg  <-  Free Voice Clips Pack - Bright Female/02-hey.wav
+  voice/bright_hey_3.ogg  <-  Free Voice Clips Pack - Bright Female/03-hey.wav
+  voice/bright_hello_1.ogg  <-  Free Voice Clips Pack - Bright Female/01-hello.wav
+  voice/bright_hello_2.ogg  <-  Free Voice Clips Pack - Bright Female/02-hello.wav
+  voice/bright_hello_3.ogg  <-  Free Voice Clips Pack - Bright Female/03-hello.wav
+  voice/bright_what_1.ogg  <-  Free Voice Clips Pack - Bright Female/01-what.wav
+  voice/bright_what_2.ogg  <-  Free Voice Clips Pack - Bright Female/02-what.wav
+  voice/bright_what_3.ogg  <-  Free Voice Clips Pack - Bright Female/03-what.wav
+  voice/bright_why_1.ogg  <-  Free Voice Clips Pack - Bright Female/01-why.wav
+  voice/bright_why_2.ogg  <-  Free Voice Clips Pack - Bright Female/02-why.wav
+  voice/bright_why_3.ogg  <-  Free Voice Clips Pack - Bright Female/03-why.wav
+  voice/bright_okay_1.ogg  <-  Free Voice Clips Pack - Bright Female/01-okay.wav
+  voice/bright_okay_2.ogg  <-  Free Voice Clips Pack - Bright Female/02-okay.wav
+  voice/bright_okay_3.ogg  <-  Free Voice Clips Pack - Bright Female/03-okay.wav
+  voice/bright_bye_1.ogg  <-  Free Voice Clips Pack - Bright Female/01-bye.wav
+  voice/bright_bye_2.ogg  <-  Free Voice Clips Pack - Bright Female/02-bye.wav
+  voice/bright_bye_3.ogg  <-  Free Voice Clips Pack - Bright Female/03-bye.wav
+  voice/bright_laugh_1.ogg  <-  Free Voice Clips Pack - Bright Female/01-laughter.wav
+  voice/bright_laugh_2.ogg  <-  Free Voice Clips Pack - Bright Female/02-laughter.wav
+  voice/bright_gasp_1.ogg  <-  Free Voice Clips Pack - Bright Female/02-anime gasp.wav
+
+Voice Clip Pack - Male Adventurer RPG
+  by Brandon Song (wolfwoot)
+  license: CC0
+  https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg
+  voice/adventurer_greet_1.ogg  <-  RPG Male Adventurer/greet0.wav
+  voice/adventurer_yes_1.ogg  <-  RPG Male Adventurer/yes0.wav
+  voice/adventurer_yes_2.ogg  <-  RPG Male Adventurer/yes1.wav
+  voice/adventurer_no_1.ogg  <-  RPG Male Adventurer/no0.wav
+  voice/adventurer_no_2.ogg  <-  RPG Male Adventurer/no1.wav
+
 Birds and Wind - Ambient
   by Spring Spring
   license: CC0

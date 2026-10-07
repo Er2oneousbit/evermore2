@@ -12,6 +12,8 @@
 #           "home" for dinner, crossfades and stops work
 #        5. Menus and dialogue: pause opens/moves/closes with ticks, the text
 #           box blips while typing
+#        7. Voices: talking to Maya, she says hello in her voice; an emotion
+#           tag plays a voiced reaction; the kid and Dex stay silent
 #        6. Ambience: birds by day, crickets at night (following the time of
 #           day), loops, a bird now and then by day, silence when a map asks,
 #           none during dinner
@@ -48,6 +50,7 @@ func _run() -> void:
 	await _test_music()
 	await _test_menus_and_text()
 	await _test_ambience()
+	await _test_voices()
 	if _failures.is_empty():
 		print("[TEST] PASS  smoke_audio")
 		get_tree().quit(0)
@@ -63,6 +66,11 @@ func _test_files() -> void:
 		for f: String in Audio.SOUNDS[sound]["files"]:
 			var path := Audio.SFX_DIR + f + ".ogg"
 			_check(ResourceLoader.exists(path) and load(path) is AudioStream, "sound file %s loads (for '%s')" % [path, sound])
+	for v: String in Audio.VOICES:
+		for kind: String in Audio.VOICES[v]["kinds"]:
+			for f: String in Audio.VOICES[v]["kinds"][kind]:
+				var vpath: String = Audio.VOICE_DIR + f + ".ogg"
+				_check(ResourceLoader.exists(vpath) and load(vpath) is AudioStream, "voice %s loads" % vpath)
 	for amb: String in Audio.AMBIENCE:
 		var apath: String = Audio.AMBIENCE_DIR + Audio.AMBIENCE[amb][0] + ".ogg"
 		_check(ResourceLoader.exists(apath) and load(apath) is AudioStream, "ambience %s loads" % apath)
@@ -262,6 +270,38 @@ func _test_ambience() -> void:
 	add_child(lot)  # with the intro: dinner, indoors
 	await _frames(10)
 	_check(Audio.ambience_name == "", "no birds during dinner (%s)" % Audio.ambience_name)
+	Dialogue._finish()
+	lot.queue_free()
+	await _frames(2)
+
+
+func _test_voices() -> void:
+	_check(Dialogue.character("KID").voice == "", "the kid stays silent (the player's character)")
+	_check(not Audio.voice("bright", "no_such_kind"), "a kind a voice doesn't have plays nothing")
+	var lot: Node = load(LOT).instantiate()
+	lot.skip_intro = true
+	add_child(lot)
+	await _frames(10)
+	var kid: Kid = lot.get_node("World/Kid")
+	var maya: Npc = null
+	for n in get_tree().get_nodes_in_group("npc"):
+		if n.character_id == "MAYA":
+			maya = n
+	kid.global_position = maya.global_position + Vector2(30, 0)
+	kid.facing = Vector2.LEFT
+	await _frames(3)
+	_heard.clear()
+	Interaction.try_interact()
+	await _frames(2)
+	_expect("voice:bright:greet", "talking to Maya, she says hello")
+	# Her relieved line ("Good. Watching is good.") comes with an "okay".
+	_heard.clear()
+	Dialogue._finish()
+	Dialogue.start("res://data/dialogue/prologue.dlg", "maya_watch")
+	for i in 6:
+		await _frames(2)
+		Dialogue._on_advance()
+	_expect("voice:bright:agree", "an emotion tag plays a voiced reaction")
 	Dialogue._finish()
 	lot.queue_free()
 	await _frames(2)

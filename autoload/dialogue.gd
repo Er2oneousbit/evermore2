@@ -84,6 +84,11 @@ func start(path: String, node_name: String, who: Node = null) -> bool:
 	_active = true
 	_node = node_name
 	speaker_node = who
+	# Walking up and talking to someone: they say hello in their own voice.
+	if who and who.get("character_id") != null:
+		var greeter: CharacterData = _characters.get(String(who.character_id))
+		if greeter:
+			Audio.voice(greeter.voice, "greet")
 	started.emit(node_name)
 	EventBus.dialogue_started.emit(node_name)
 	Debug.log_verbose("Dialogue started: %s (%s)" % [node_name, path])
@@ -101,6 +106,9 @@ func _on_advance() -> void:
 			if c == null and not beat["speaker"].is_empty():
 				Debug.log_warn("Dialogue: no character file for speaker %s" % beat["speaker"])
 			var speaker_name: String = c.display_name() if c else ""
+			# An emotion tag can come with a voiced reaction ("What?", a laugh).
+			if c and Audio.EMOTION_VOICE.has(beat["emotion"]):
+				Audio.voice(c.voice, Audio.EMOTION_VOICE[beat["emotion"]])
 			_box.show_line(speaker_name, beat["text"], c.portrait(beat["emotion"]) if c else null,
 					c.color if c else Color.WHITE)
 		"choices":

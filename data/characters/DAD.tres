@@ -9,3 +9,4 @@ name_key = "npc_dad"
 sheet = ExtResource("2_sheet")
 portrait_region = Rect2(16, 1540, 32, 32)
 color = Color(0.6, 0.85, 0.6, 1)
+voice = "adventurer"

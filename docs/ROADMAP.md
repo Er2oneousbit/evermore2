@@ -50,6 +50,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-07 | **Voices: one or two words, real voice actors** ("Hey!" when you talk to someone, short reactions). AI text-to-speech was tried and rejected (all of it sounded bad, the kids worst). Full voice acting is off the table for now; **babble** (per-character blips while text types) is the backup plan. The kid stays silent |
 | 2026-10-07 | **Sound and music from free CC0 packs** (OpenGameArt), through a rebuildable pipeline like the art |
 | 2026-10-07 | **A settings menu like a normal game**: rebindable controls, graphics, display, audio and gameplay options, saved between sessions |
 | 2026-10-07 | **One public release, `tech-demo`**: a tech demo of the game mechanics for Windows and Linux, updated in place as mechanics are polished (no version numbers) |
@@ -65,6 +66,21 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: voices (one or two words)
+
+* Walk up and talk to someone: they say hello in their own voice. A line's
+  emotion tag can add a voiced reaction ("(relieved)" -> "Okay", "(surprised)"
+  -> a gasp, "(laughing)" -> a laugh, "(confused)" -> "What?")
+* Characters pick a voice in their CharacterData (`voice`); Audio.VOICES lists
+  each voice's clips by kind (greet, question, agree, disagree, laugh,
+  surprise, bye). A missing kind plays nothing: silence beats a wrong word
+* Maya: cicifyre's bright female voice (hey, hello, what, why, okay, bye, a
+  laugh, a gasp). Dad: the male adventurer voice (hello, yes, no). The kid is
+  silent (the player's character, like the original). Dex has no voice yet:
+  there's no free boy's voice pack
+* Tried first: Kokoro (a free local AI voice) reading prologue lines. Rejected
+  on listening
 
 ## Done: ambience, and assets for hidden items
 

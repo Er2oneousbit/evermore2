@@ -228,6 +228,10 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
 * New files come from `tools/audio/build_audio.py` (`SFX` and `MUSIC`
   tables): add a row, run it, commit the OGG files and
   `credits/audio/credits.txt`. Needs numpy, soundfile, ffmpeg and 7-Zip.
+* Voices: give a character a voice in its CharacterData (`voice = "bright"`).
+  It says hello when you start talking to it, and emotion tags in .dlg lines
+  play reactions (`Audio.EMOTION_VOICE`). New voices: add clips to the
+  pipeline's `VOICE` table and a set to `Audio.VOICES`.
 * Ambience: `Audio.set_ambience("outdoor")` (or `const AMBIENCE := ""` on an
   AsciiRealm for silence). The loop follows the time of day by itself
   (`Audio.AMBIENCE_SETS`); the pipeline's `AMBIENCE` table makes the loops.
