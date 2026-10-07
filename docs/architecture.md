@@ -83,7 +83,7 @@ The kid and the dog only collide with **world**, so they never block each other.
 | 10 | HUD | no |
 | 100 | Debug overlay | no |
 
-## 3. How a realm is built (the Big Yard test map)
+## 3. How a realm is built (the test yard)
 
 `realms/big_yard/prototype_yard.gd` turns an ASCII `LAYOUT` into a world:
 

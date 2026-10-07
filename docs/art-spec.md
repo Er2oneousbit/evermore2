@@ -207,23 +207,24 @@ Each realm gets its own `Atmosphere` presets (tint, grade, particles). LPC
 Revised ships summer, spring, autumn and winter tilesets, which cover a lot of
 ground before any recolors.
 
-| Realm | Mood | Likely base |
+The realms are being redesigned (design-bible.md section 8). Places the story
+already has:
+
+| Place | Mood | Likely base |
 |---|---|---|
-| Hub mansion | Warm sepia, 1965 lamplight | LPC interiors + sepia grade |
-| The Big Yard | Saturated golden-hour greens and oranges | LPC Revised summer (in use) |
-| Saltreach | Teal, sand, storm grey | Revised summer sand/water + storm grade |
-| Frostheim | Deep navy, aurora greens, lantern orange | Revised winter |
-| Vernia | Brass, copper, sky blue | Revised spring + brass props |
-| The Grand Carlton | Black, gold, emerald (Art Deco) | Interiors, heavy recolor |
-| The Off Switch | Desaturated lab greys, one red light | Interiors + desaturated grade |
+| Podunk at dusk (prologue) | Cool October dusk turning to night, porch lights, the phone flashlight | Revised autumn + night preset |
+| The mansion (prologue) | Dust, moonlight through sheets, one flashlight beam | LPC interiors + night grade |
+| Hub: The Mansion That Was | Warm sepia, 1965 lamplight | LPC interiors + sepia grade |
+| Dad's dream: Main Street, 1995 | Dusk, the theater marquee glowing | Town tiles + golden preset |
+| The test yard (tech demo only) | Saturated golden-hour greens and oranges | LPC Revised summer (in use) |
 
 ## 8. SNES-style effects worth doing
 
 | Effect | Where | How | Status |
 |---|---|---|---|
-| Fake Mode 7 | Ship travel (Saltreach), airship travel (Vernia) | Shader on a map texture | Later |
-| 2D lighting | Frostheim lantern, prologue phone flashlight | `PointLight2D` + occluders + Atmosphere | **Done** (flashlight) |
-| Parallax | Saltreach sea, Vernia sky | `Parallax2D` | Later |
+| Fake Mode 7 | Overworld or vehicle travel, if a realm needs it | Shader on a map texture | Later |
+| Lighting | Prologue phone flashlight, night scenes | 3D lights in HD-2D (`HdView`); `PointLight2D` in the 2D view | **Done** (flashlight) |
+| Parallax | Skies and seas, if a realm needs them | `Parallax2D` / 3D backdrop | Later |
 | Transitions | Carltron flash, realm entry | Fullscreen shader | Later |
 | Wading | Shallow water in every realm | LPC Revised ships splash/ripple FX + a wading overlay | Later |
 
