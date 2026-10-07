@@ -89,12 +89,14 @@ func _ready() -> void:
 func _play_intro() -> void:
 	_kid.set_physics_process(false)
 	Audio.play_music("home", 0.0)
+	Audio.set_ambience("")  # dinner is indoors
 	await _show_card(Names.text("town") + ".  October 2025.", 2.5)
 	Dialogue.start(DIALOGUE, "dinner")
 	await Dialogue.ended
 	Audio.stop_music(1.5)
 	await _show_card("Later that night.", 1.8)
 	Audio.play_music("lot", 2.5)
+	Audio.set_ambience("outdoor")
 	var fade := create_tween()
 	fade.tween_property(_black, "modulate:a", 0.0, 1.5)
 	await fade.finished
@@ -125,6 +127,7 @@ func _end_slice() -> void:
 	var fade := create_tween()
 	fade.tween_property(_black, "modulate:a", 1.0, 2.0)
 	Audio.stop_music(3.0)
+	Audio.set_ambience("")
 	await fade.finished
 	_card.text = "To be continued: the mansion."
 	_card.modulate.a = 1.0

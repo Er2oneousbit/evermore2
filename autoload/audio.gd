@@ -5,6 +5,9 @@
 #          Audio.play_at("swing", kid.global_position)   a sound in the world
 #          Audio.play("ui_move")                          a menu / HUD sound
 #          Audio.play_music("lot")                        crossfades the music
+#          Audio.set_ambience("outdoor")                  birds by day, crickets
+#                                                         at night (follows the
+#                                                         time of day by itself)
 #        SOUNDS is the one table of sound names: which files (one is picked at
 #        random, so repeats don't sound robotic), how loud, how much the pitch
 #        wanders. The files come from tools/audio/build_audio.py (all CC0, see
@@ -14,8 +17,8 @@
 #        they pan and fade with distance from the 2D camera (which follows
 #        whoever you drive, in both views) and pause with the game. Menu
 #        sounds use a separate pool that keeps playing while paused. Music has
-#        two players on the "Music" bus for crossfades. The volumes in the
-#        settings menu drive those buses (Settings).
+#        two players on the "Music" bus for crossfades, ambience two on the
+#        "Ambience" bus. The volumes in the settings menu drive those buses.
 #
 # TESTS: `history` keeps the last sound names played (and music_name the
 #        track), so tests can check that a swing really made a sound.
@@ -53,6 +56,9 @@ const SOUNDS := {
 	# The dog's paws: the same steps, lighter and quicker.
 	"paw_grass":  {"files": ["step_grass_1", "step_grass_3", "step_grass_5"], "db": -22.0, "pitch": 0.08, "base": 1.35},
 	"paw_stone":  {"files": ["step_stone_1", "step_stone_3", "step_stone_5"], "db": -25.0, "pitch": 0.08, "base": 1.4},
+	"dig":        {"files": ["dig"], "db": -6.0, "pitch": 0.05},
+	"pickup":     {"files": ["pickup"], "db": -8.0, "pitch": 0.0},
+	"bird":       {"files": ["bird_1", "bird_2", "bird_3"], "db": -20.0, "pitch": 0.12},
 	"ui_move":    {"files": ["ui_move"], "db": -14.0, "pitch": 0.02},
 	"ui_confirm": {"files": ["ui_confirm"], "db": -16.0, "pitch": 0.0},
 	"ui_back":    {"files": ["ui_back"], "db": -12.0, "pitch": 0.0},
@@ -63,6 +69,19 @@ const SOUNDS := {
 }
 ## Music name -> file in MUSIC_DIR. The tracks loop seamlessly.
 const MUSIC := {"home": "home", "lot": "lot", "yard": "yard", "arena": "arena"}
+
+const AMBIENCE_DIR := "res://assets/audio/ambience/"
+## Ambience loop -> [file in AMBIENCE_DIR, volume dB]. Both sit about 10 dB
+## under the music (measured: day -24 dBFS, night -19 dBFS before this).
+const AMBIENCE := {"day": ["day", -6.0], "night": ["night", -11.0]}
+## A kind of place -> which loop for each time of day ("" = none).
+const AMBIENCE_SETS := {
+	"outdoor": {"day": "day", "golden": "day", "night": "night"},
+}
+## Outdoors by day, a bird calls every so often (seconds, random in between),
+## from somewhere around the camera (px).
+const BIRD_EVERY := Vector2(7.0, 16.0)
+const BIRD_DISTANCE := Vector2(140.0, 380.0)
 
 const WORLD_VOICES := 16
 const UI_VOICES := 4
@@ -78,6 +97,9 @@ const MAX_PER_FRAME := 2
 var history: Array[String] = []
 ## The music playing now ("" = none).
 var music_name := ""
+## The ambience loop playing now ("" = none) and the kind of place.
+var ambience_name := ""
+var ambience_set := ""
 
 var _streams: Dictionary = {}  # file -> AudioStream
 var _world: Array[AudioStreamPlayer2D] = []
@@ -85,6 +107,11 @@ var _ui: Array[AudioStreamPlayer] = []
 var _music: Array[AudioStreamPlayer] = []
 var _music_on := 0  # which of the two music players is current
 var _fade: Tween
+var _amb: Array[AudioStreamPlayer] = []
+var _amb_on := 0
+var _amb_fade: Tween
+var _time_name := "day"
+var _bird_timer := 0.0
 var _frame_counts: Dictionary = {}
 var _frame := -1
 ## Headless runs (tests, CI) pick and log sounds but never start playback:
@@ -116,6 +143,31 @@ func _ready() -> void:
 		p.volume_db = -80.0
 		add_child(p)
 		_music.append(p)
+	for i in 2:
+		var p := AudioStreamPlayer.new()
+		p.bus = "Ambience"
+		p.volume_db = -80.0
+		p.process_mode = Node.PROCESS_MODE_PAUSABLE  # the world goes quiet in the pause menu
+		add_child(p)
+		_amb.append(p)
+	_bird_timer = randf_range(BIRD_EVERY.x, BIRD_EVERY.y)
+	EventBus.time_of_day_changed.connect(func(t: String) -> void:
+		_time_name = t
+		_update_ambience(2.5))
+
+
+func _process(delta: float) -> void:
+	# Now and then a bird, outdoors by day (not while paused).
+	if get_tree().paused or ambience_name != "day":
+		return
+	_bird_timer -= delta
+	if _bird_timer <= 0.0:
+		_bird_timer = randf_range(BIRD_EVERY.x, BIRD_EVERY.y)
+		var cam := get_viewport().get_camera_2d()
+		if cam:
+			var at := cam.get_screen_center_position() \
+					+ Vector2.from_angle(randf() * TAU) * randf_range(BIRD_DISTANCE.x, BIRD_DISTANCE.y)
+			play_at("bird", at)
 
 
 ## Quitting with sounds still playing would leave their playbacks alive past
@@ -127,6 +179,7 @@ func _exit_tree() -> void:
 	all.append_array(_world)
 	all.append_array(_ui)
 	all.append_array(_music)
+	all.append_array(_amb)
 	for p in all:
 		p.stop()
 		p.stream = null
@@ -190,6 +243,51 @@ func play_music(track: String, fade := 1.0) -> void:
 		new.play()
 	_crossfade(new, old, fade)
 	Debug.log_verbose("Audio: music -> %s" % track)
+
+
+## What kind of place this is ("outdoor", or "" for silence); the loop then
+## follows the time of day by itself.
+func set_ambience(kind: String) -> void:
+	if kind != "" and not AMBIENCE_SETS.has(kind):
+		Debug.log_warn("Audio: unknown ambience '%s'" % kind)
+		kind = ""
+	ambience_set = kind
+	_update_ambience(1.5)
+
+
+func _update_ambience(fade: float) -> void:
+	var want := ""
+	if ambience_set != "":
+		want = AMBIENCE_SETS[ambience_set].get(_time_name, "")
+	if want == ambience_name:
+		return
+	ambience_name = want
+	var old := _amb[_amb_on]
+	_amb_on = 1 - _amb_on
+	var new := _amb[_amb_on]
+	if _amb_fade:
+		_amb_fade.kill()
+	if want == "" and not old.playing:
+		return  # nothing to start, nothing to fade out
+	_amb_fade = create_tween().set_parallel(true)
+	if want != "":
+		var stream := _load(AMBIENCE_DIR + AMBIENCE[want][0] + ".ogg")
+		if stream is AudioStreamOggVorbis:
+			(stream as AudioStreamOggVorbis).loop = true
+		new.stream = stream
+		new.volume_db = -40.0
+		if not _silent:
+			new.play()
+		_amb_fade.tween_property(new, "volume_db", AMBIENCE[want][1], fade)
+	if old.playing:
+		_amb_fade.tween_property(old, "volume_db", -60.0, fade)
+		_amb_fade.chain().tween_callback(old.stop)
+	Debug.log_verbose("Audio: ambience -> %s" % (want if want != "" else "none"))
+
+
+## The player of the current ambience loop (tests read it).
+func ambience_player() -> AudioStreamPlayer:
+	return _amb[_amb_on]
 
 
 func stop_music(fade := 1.0) -> void:

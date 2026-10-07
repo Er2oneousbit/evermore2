@@ -93,7 +93,7 @@ func _test_applied() -> void:
 	Settings.set_value("max_aspect", 2.3333)
 	_check(is_equal_approx(ScreenScaler.max_aspect, 2.3333), "the widest view applies to the scaler")
 	Settings.set_value("max_aspect", 0.0)
-	for bus in ["Master", "Music", "SFX"]:
+	for bus in ["Master", "Music", "SFX", "Ambience"]:
 		_check(AudioServer.get_bus_index(bus) >= 0, "the %s audio bus exists" % bus)
 	Settings.set_value("volume_music", 0.5)
 	var db := AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music"))
