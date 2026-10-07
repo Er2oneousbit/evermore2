@@ -164,6 +164,24 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
 * **Exports:** `.dlg` files aren't a Godot resource type, so when export presets
   are added, include `*.dlg` in the export's resource filter.
 
+## Combat
+
+* **Weapons** are `WeaponData` resources in `data/weapons/`: damage, reach, arc,
+  the LPC swing animation and the frame the blow lands on, the highest charge
+  level (1-3) and how fast the meter fills.
+* **Enemies** are `EnemyData` resources in `data/enemies/`: the sprite sheet and
+  its animations (idle, walk, attack, die), stats before difficulty, and the
+  attack's timing (aggro and leash radius, telegraph length, cooldown). Place one
+  with a letter in an AsciiRealm's `ENEMIES_BY_CHAR`, or `Enemy.create(data, pos)`.
+* **Difficulty** levers are one table in `autoload/difficulty.gd`. Code asks for
+  numbers (`Difficulty.enemy_hp(base)`), never "is this Hard?". Start on Hard
+  with `godot --path . -- --hard`.
+* **The arena** for trying it: `godot --path . res://realms/test/combat_arena_hd.tscn`.
+* **Effects** (damage numbers, slash trails) go through `Fx`, which projects
+  world positions through whichever camera is live, so they sit right in both
+  the 2D and the HD-2D view. Anything timed (hit-stop, typing, guards) counts
+  frame time, never the wall clock.
+
 ## Code style and rules
 
 1. **No hardcoded names.** Characters, places and items come from

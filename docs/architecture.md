@@ -18,15 +18,20 @@ GAME
 │   ├── SaveManager  JSON save/load (human-readable for debugging)      [todo]
 │   ├── Dialogue     Runs .dlg conversations, owns the text box          [done]
 │   ├── Interaction  What the kid would talk to; drives the HUD prompt   [done]
+│   ├── Difficulty   Normal/Hard levers in one table                     [done]
+│   ├── Fx           Damage numbers, slash trails, hit-stop, shake       [done]
+│   ├── Party        Kid + dog: knockouts, revives (switching: next)     [done]
 │   └── Economy      Per-realm currencies, exchange rates, trade routes [todo]
 │
 ├── Actors
 │   ├── Kid          LPC sprite, run/walk by stick tilt, flashlight     [done]
-│   │                Weapons, charge attack, alchemy casting            [todo]
+│   │                Weapon swing, auto charge, health                   [done]
+│   │                Alchemy casting                                     [todo]
 │   ├── Dog          Breadcrumb follow, string pulling, stay, sprite    [done]
 │   │                Sniff, forms, P2 control, commands                 [todo]
 │   ├── Npc          Talks when interacted with, faces the kid           [done]
-│   └── Enemies      State machine: idle → patrol → chase → attack      [todo]
+│   └── Enemy        Data-driven: wake by distance, chase, telegraph,    [done]
+│                    attack, recover, hurt, return home, die
 │
 ├── Systems
 │   ├── GameCamera       World bounds; centers maps narrower than screen [done]
@@ -83,6 +88,7 @@ The kid and the dog only collide with **world**, so they never block each other.
 |---|---|---|
 | 0 | The 2D world (with the realm's CanvasModulate tint); in HD-2D mode the 3D view renders underneath and the 2D world is hidden | yes |
 | 3 | Ambient particles (pollen, fireflies) - follow the camera, no tint | yes |
+| 5 | Combat FX (Fx): damage numbers, slash trails, projected through the live camera | no |
 | 4 | Color grade full-screen pass (Atmosphere) | - |
 | 10 | HUD | no |
 | 100 | Debug overlay | no |
@@ -178,6 +184,32 @@ Npc.interact() / DialogueTrigger ──> Dialogue.start(file, node)
 * **HdView** mirrors every node in group `hd_actor` (kid, dog, NPCs), with the
   same rule: the actor's own visibility, not the hidden World's.
 
+## 3d. Combat
+
+```
+attack pressed -> Kid.attack(): ChargeMeter.spend() -> [multiplier, level]
+   LPC swing animation ... frame == WeaponData.hit_frame
+   -> Combat.strike(origin, facing, reach, arc, "player", _make_hit, level)
+        Combat.hits_in_arc(): every Hurtbox of the other team inside the slice
+        Hurtbox.receive(HitInfo) -> Health.take_hit() (armor, i-frames)
+                                 -> actor.on_hit() (knockback, flash, stagger)
+        Fx: damage numbers, hit-stop, shake        (Enemy attacks use the same path)
+```
+
+* **No physics overlaps for hits.** At the impact frame the attacker asks for
+  every hurtbox in its arc: exact, frame-rate proof, and easy to test.
+* **Teams** ("player", "enemy") decide who can hurt whom.
+* **Enemy** is one generic actor reading an `EnemyData` resource; its stats
+  pass through `Difficulty`. It wakes by distance from the party, never by
+  being on screen (ultrawide players must not wake more enemies).
+* **Party** (autoload) knows the kid and the dog; a knocked-out member gets back
+  up after 8 s with 30% HP, both down restarts the scene. Control switching,
+  Stay put and stances come next (phase B).
+* **HD-2D**: enemies are `hd_actor`s; HdView picks up actors that appear after
+  load (every 0.2 s) and drops them when they leave. Hit flashes and the orange
+  telegraph mirror through `modulate`. Keep sprite colors at or below 1.0:
+  brighter-than-white trips the bloom and haloes everything nearby.
+
 ## 4. Dog follow AI (how it works)
 
 1. The kid drops a **breadcrumb** every 10 px of movement.
@@ -212,6 +244,7 @@ it and confirming the test fails:
 | `tests/smoke_follow.tscn` | no | Dog follow AI on the pen route, stay command, night + flashlight |
 | `tests/smoke_visuals.tscn` | no | LPC animation rows, Atmosphere presets/particles, Prop building |
 | `tests/smoke_dialogue.tscn` | no | .dlg parsing and errors, the runner (choices, flags, conditions, commands, loop guard), every game script loads, talking to Maya in 2D and HD-2D |
+| `tests/smoke_combat.tscn` | no | Charge meter math, health/armor, difficulty levers, the swing (front only, x1 to x4), enemies (wake by distance, telegraph, bite, team rules, death), talk beats attack, rats and late spawns in HD-2D |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |

@@ -19,6 +19,9 @@ extends DirectionalSprite
 @export var frame_px := Vector2i(48, 48)
 ## Where the paws touch the ground inside a frame.
 @export var paws_y := 42
+## A different animation table (enemies: idle/walk/attack/die). Empty = the
+## dog's table below.
+@export var anims_override: Dictionary = {}
 
 const ANIMS := {
 	&"idle":  {"row": 0, "frames": [0], "fps": 1.0, "loop": true},
@@ -34,6 +37,8 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	if not anims_override.is_empty():
+		anims = anims_override
 	frame_size = frame_px
 	feet_y = paws_y
 	if texture:

@@ -37,6 +37,10 @@ signal dialogue_ended(node_name: String)
 @warning_ignore("unused_signal")
 signal interaction_target_changed(target: Node)
 
+## Shake the camera (both the 2D and the HD-2D camera listen). px, seconds.
+@warning_ignore("unused_signal")
+signal camera_shake(strength: float, seconds: float)
+
 ## A story/progress flag was set via GameState.set_flag().
 @warning_ignore("unused_signal")
 signal flag_changed(flag: String, value: Variant)

@@ -127,6 +127,11 @@ var _kid3d: Sprite3D
 var _dog3d: Sprite3D
 ## [2D actor, its Sprite3D, depth bias] for every mirrored actor.
 var _actors: Array = []
+## Actors already mirrored (instance id -> true), so late arrivals are found.
+var _mirrored: Dictionary = {}
+## Seconds until the next look for actors that arrived after load.
+var _scan_timer := 0.0
+const SCAN_SECONDS := 0.2
 var _ground: MeshInstance3D
 var _water: MeshInstance3D
 var _clouds: MeshInstance3D
@@ -143,7 +148,17 @@ var _tween: Tween
 var _prop_count := 0
 
 
+var _shake := 0.0
+var _shake_time := 0.0
+var _shake_left := 0.0
+
+
 func _ready() -> void:
+	add_to_group("hd_view")
+	EventBus.camera_shake.connect(func(s: float, t: float) -> void:
+		_shake = maxf(_shake, s)
+		_shake_time = maxf(t, 0.01)
+		_shake_left = maxf(_shake_left, t))
 	_realm = get_node_or_null(realm_path) as Node2D
 	if _realm == null:
 		Debug.log_error("HdView: realm_path doesn't point at a 2D realm")
@@ -192,6 +207,11 @@ func set_enabled(on: bool) -> void:
 	Debug.log_verbose("HD-2D view %s" % ("on" if on else "off"))
 
 
+## The HD-2D camera (Fx projects effects through it).
+func camera() -> Camera3D:
+	return _cam
+
+
 ## 2D pixel position -> 3D meters on the ground plane.
 static func to3(p: Vector2, height := 0.0) -> Vector3:
 	return Vector3(p.x * PX, height, p.y * PX)
@@ -208,16 +228,23 @@ static func renderer_caps() -> Dictionary:
 func _process(delta: float) -> void:
 	if not enabled or not is_instance_valid(_kid2d):
 		return
+	# Enemies spawned mid-fight, NPCs walking in: mirror anything new.
+	_scan_timer -= delta
+	if _scan_timer <= 0.0:
+		_scan_timer = SCAN_SECONDS
+		_add_new_actors()
 	for a: Array in _actors:
-		var actor := a[0] as Node2D
 		var s3 := a[1] as Sprite3D
-		if not is_instance_valid(actor):
+		# Check before casting: enemies are freed when they die.
+		if not is_instance_valid(a[0]):
 			s3.visible = false
 			continue
+		var actor := a[0] as Node2D
 		# The actor's OWN visibility: in HD mode the whole 2D World is hidden on
 		# purpose, so is_visible_in_tree() would hide every actor here too.
-		s3.visible = actor.visible
-		_sync_actor(s3, actor.get_node("Sprite") as Sprite2D, actor.global_position, a[2])
+		var s2 := actor.get_node("Sprite") as Sprite2D
+		s3.visible = actor.visible and s2.visible
+		_sync_actor(s3, s2, actor.global_position, a[2])
 	_follow_camera(delta)
 	_aim_flashlight()
 	# Particles live in world space; keep their spawn boxes over the view.
@@ -463,9 +490,7 @@ func _wood_material(tex: Texture2D) -> StandardMaterial3D:
 func _build_actors() -> void:
 	_kid3d = _add_actor(_kid2d, KID_DEPTH_BIAS)
 	_dog3d = _add_actor(_dog2d, DOG_DEPTH_BIAS)
-	for n in get_tree().get_nodes_in_group("hd_actor"):
-		if n != _kid2d and n != _dog2d and n is Node2D and n.has_node("Sprite"):
-			_add_actor(n, NPC_DEPTH_BIAS)
+	_add_new_actors()
 	_flash = SpotLight3D.new()
 	_flash.name = "Flashlight"
 	_flash.light_color = Color(1.0, 0.93, 0.8)
@@ -486,10 +511,30 @@ func _build_actors() -> void:
 	add_child(_phone)
 
 
+## Mirror every "hd_actor" that doesn't have a 3D sprite yet. Runs every
+## SCAN_SECONDS, so it must only ever ADD SPRITES (lights and other one-time
+## setup belong in _build_actors: they once leaked in here and piled up five
+## lights a second on the kid).
+func _add_new_actors() -> void:
+	for n in get_tree().get_nodes_in_group("hd_actor"):
+		if not _mirrored.has(n.get_instance_id()) and n is Node2D and n.has_node("Sprite"):
+			_add_actor(n, NPC_DEPTH_BIAS)
+
+
 func _add_actor(actor: Node2D, depth_bias: float) -> Sprite3D:
 	var s3 := _make_actor_sprite(actor.get_node("Sprite") as Sprite2D, actor.name)
 	_actors.append([actor, s3, depth_bias])
+	_mirrored[actor.get_instance_id()] = true
+	# Drop the 3D sprite when its actor leaves for good.
+	actor.tree_exiting.connect(func() -> void: _forget_actor(actor, s3), CONNECT_ONE_SHOT)
 	return s3
+
+
+func _forget_actor(actor: Node2D, s3: Sprite3D) -> void:
+	_mirrored.erase(actor.get_instance_id())
+	_actors = _actors.filter(func(a: Array) -> bool: return a[1] != s3)
+	if is_instance_valid(s3):
+		s3.queue_free()
 
 
 func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:
@@ -527,6 +572,7 @@ func _sync_actor(s3: Sprite3D, s2: Sprite2D, pos: Vector2, depth_bias: float) ->
 	s3.position = to3(pos) + Vector3(0.0, 0.0, depth_bias)
 	s3.frame_coords = s2.frame_coords
 	s3.flip_h = s2.flip_h
+	s3.modulate = s2.modulate  # hit flashes, attack telegraphs
 
 
 func _aim_flashlight() -> void:
@@ -604,6 +650,14 @@ func _clamp_to_map(p: Vector3) -> Vector3:
 func _place_camera() -> void:
 	var pitch := deg_to_rad(camera_pitch_deg)
 	_cam.position = _target + Vector3(0.0, sin(pitch), cos(pitch)) * camera_distance
+	if _shake_left > 0.0:
+		_shake_left -= get_process_delta_time()
+		var k := maxf(_shake_left / _shake_time, 0.0)
+		_cam.h_offset = randf_range(-1, 1) * _shake * k * PX
+		_cam.v_offset = randf_range(-1, 1) * _shake * k * PX
+	elif _cam.h_offset != 0.0 or _cam.v_offset != 0.0:
+		_cam.h_offset = 0.0
+		_cam.v_offset = 0.0
 
 
 # -----------------------------------------------------------------------------

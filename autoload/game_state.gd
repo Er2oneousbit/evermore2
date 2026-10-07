@@ -24,6 +24,9 @@ var dog_name := ""
 ## Each AsciiRealm sets it from its REALM_NAME_KEY when it loads.
 var current_realm := "realm_test_yard"
 
+## "normal" or "hard" (see Difficulty). Chosen when a game starts.
+var difficulty := "normal"
+
 var _flags: Dictionary = {}
 
 

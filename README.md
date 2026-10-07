@@ -14,13 +14,16 @@ reflective pond and drifting cloud shadows. It runs pixel-perfect on any
 monitor, from a Steam Deck to a 48:9 triple-wide.
 
 > **Early prototype.** The story's opening is playable: dinner with Dad, then
-> the dare at the Ruffleberg place, with people to talk to. There's also a test
-> yard showing off day, golden hour and night. No combat or menus yet. See the
+> the dare at the Ruffleberg place, with people to talk to. Combat is in: a
+> test arena with giant rats shows the swing and its auto charge. No menus yet. See the
 > [roadmap](docs/ROADMAP.md) for what's next.
 
 | Dinner with Dad | The dare at the Ruffleberg place |
 |---|---|
 | ![dinner](docs/screenshots/prologue_dinner.png) | ![maya](docs/screenshots/prologue_maya.png) |
+
+**Combat:** a fully charged swing (x4) on a giant rat.
+![combat](docs/screenshots/combat_swing.png)
 
 | Golden hour | Koi pond | Rose garden |
 |---|---|---|
@@ -55,6 +58,7 @@ runs, without the light shafts, reflections and blur.
 |---|---|---|
 | Move (full tilt runs, partial walks) | WASD / Arrow keys | Left stick / D-pad |
 | Phone flashlight | F | Y |
+| Attack (waiting charges it up) | J / Space | A |
 | Talk / interact | E / Enter | A |
 | Dog: stay / follow | Q | X |
 | Time of day (prototype) | F2 | |

@@ -79,6 +79,8 @@ enum State { IDLE, FOLLOW, CATCH_UP, STAY }
 @export_flags_2d_physics var blocking_mask := 1
 
 var state: State = State.IDLE
+## Knocked out: lies down until Party revives him.
+var downed := false
 var facing := Vector2.RIGHT
 ## How many times the safety-net warp fired. If this climbs during normal
 ## play, the follow logic is failing somewhere (shown on the F3 overlay).
@@ -96,6 +98,7 @@ var _shape_query := PhysicsShapeQueryParameters2D.new()
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _on_screen: VisibleOnScreenNotifier2D = $OnScreen
 @onready var _sprite: AnimalSprite = $Sprite
+@onready var health: Health = $Health
 
 # Debug trail colors (F3 overlay).
 const COLOR_TRAIL := Color(1, 0.55, 0.1, 0.8)
@@ -105,6 +108,8 @@ const COLOR_TRAIL_NEXT := Color(1, 1, 0.2, 1)
 func _ready() -> void:
 	add_to_group("dog")
 	add_to_group("hd_actor")
+	health.died.connect(_on_died)
+	Party.register(self)
 	_resolve_target()
 	# Shortcut checks sweep the dog's real body shape, not a thin ray, so a
 	# "clear" result means the whole dog fits through, corners included.
@@ -120,6 +125,11 @@ func _physics_process(delta: float) -> void:
 			return  # Nothing to follow (already warned once in _resolve_target).
 
 	_record_crumb()
+
+	if downed:
+		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
+		move_and_slide()
+		return
 
 	if state == State.STAY:
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
@@ -176,6 +186,26 @@ func _unhandled_input(event: InputEvent) -> void:
 			_trail.clear()
 	elif event.is_action_pressed("debug_warp_dog"):
 		warp_to_target()
+
+
+## Called by his Hurtbox when a hit lands.
+func on_hit(info: HitInfo, _dealt: int) -> void:
+	velocity += info.knockback
+	_sprite.modulate = Color(1.0, 0.45, 0.45)
+	create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.25)
+
+
+func revive(fraction := 0.3) -> void:
+	downed = false
+	health.revive(fraction)
+	_trail.clear()
+	_set_state(State.IDLE)
+
+
+func _on_died() -> void:
+	downed = true
+	# Head down on the ground: the last frame of the sniff row, held.
+	_sprite.play(&"sniff", facing, true)
 
 
 ## Teleport next to the kid and reset the trail. Safe to call any time.
@@ -280,6 +310,8 @@ func _next_waypoint() -> Vector2:
 ## Walk while following, run while catching up, stand otherwise. Playback
 ## speed follows actual speed so the paws plant instead of skating.
 func _update_animation() -> void:
+	if downed:
+		return
 	var speed := velocity.length()
 	if speed < 8.0:
 		_sprite.speed_scale = 1.0

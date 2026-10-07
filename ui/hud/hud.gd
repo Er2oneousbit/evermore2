@@ -16,16 +16,51 @@ extends CanvasLayer
 
 ## "[E] Talk to Maya": shown while something is in reach (see Interaction).
 var _prompt: Label
+var _charge_bar: ChargeBar
+var _kid: Node2D
+var _dog: Node2D
 
 
 func _ready() -> void:
-	# Placeholder numbers until a health system exists.
-	_kid_status.text = "%s  HP 10/10" % GameState.get_kid_name()
-	_dog_status.text = "%s  HP 10/10" % GameState.get_dog_name()
+	_kid = get_tree().get_first_node_in_group("kid")
+	_dog = get_tree().get_first_node_in_group("dog")
+	_watch_health(_kid, _kid_status, GameState.get_kid_name())
+	_watch_health(_dog, _dog_status, GameState.get_dog_name())
+	_build_charge_bar()
 	_build_prompt()
 	EventBus.interaction_target_changed.connect(_on_target_changed)
 	EventBus.dialogue_started.connect(_on_dialogue_started)
 	EventBus.dialogue_ended.connect(_on_dialogue_ended)
+
+
+## Keep a status label in step with a party member's Health.
+func _watch_health(member: Node2D, label: Label, who: String) -> void:
+	var h: Health = member.get_node_or_null("Health") if member else null
+	if h == null:
+		label.text = who
+		return
+	var update := func(hp: int, max_hp: int) -> void:
+		label.text = "%s  HP %d/%d%s" % [who, hp, max_hp, "  KO" if hp <= 0 else ""]
+	update.call(h.max_hp if h.hp == 0 and not h.is_dead() else h.hp, h.max_hp)
+	h.changed.connect(update)
+
+
+func _build_charge_bar() -> void:
+	_charge_bar = ChargeBar.new()
+	_charge_bar.name = "ChargeBar"
+	_charge_bar.anchor_top = 1.0
+	_charge_bar.anchor_bottom = 1.0
+	_charge_bar.offset_left = 5
+	_charge_bar.offset_right = 75
+	_charge_bar.offset_top = -21
+	_charge_bar.offset_bottom = -16
+	$SafeFrame.add_child(_charge_bar)
+
+
+func _process(_delta: float) -> void:
+	if _charge_bar and is_instance_valid(_kid) and _kid.get("charge") != null:
+		_charge_bar.meter = _kid.charge
+		_charge_bar.visible = _kid_status.visible
 
 
 func _build_prompt() -> void:
@@ -50,6 +85,7 @@ func _on_dialogue_started(_node: String) -> void:
 	_prompt.visible = false
 	_kid_status.visible = false
 	_dog_status.visible = false
+	_charge_bar.visible = false
 
 
 func _on_dialogue_ended(_node: String) -> void:

@@ -36,6 +36,7 @@ Usage:  godot --path <project folder> -- [options]
   --help, -h     Show this help and quit
   --debug        Start with the debug overlay visible (toggle any time with F3)
   --verbose      Print extra VERBOSE log lines (AI state changes, spawns, etc.)
+  --hard         Play on Hard (enemies tougher, prices higher)
 
 In-game debug keys (always available in prototypes):
   F2   Cycle time of day (day / golden hour / night)
@@ -120,5 +121,7 @@ func _parse_args(args: PackedStringArray) -> void:
 				overlay_visible = true
 			"--verbose":
 				verbose = true
+			"--hard":
+				GameState.difficulty = "hard"
 			_:
 				log_warn("Unknown option '%s' (run with -- --help for the list)" % arg)

@@ -11,6 +11,7 @@ WHAT:  Takes the ORIGINAL art packs (downloaded from OpenGameArt, cached in
          data/props/big_yard/*.tres                       PropData per prop
          assets/characters/dog/dog_lpc*.png               the dog (recolored)
          assets/textures/hd/*.png                         3D fence wood (HD-2D view)
+         assets/characters/enemies/*/                     enemy sheets (the rat)
          credits/<pack>/...                               license + credit files
 
        The outputs are committed to git, so nobody NEEDS to run this to play.
@@ -25,7 +26,7 @@ USAGE:
   python3 tools/art/build_art.py --offline  build from the cache only
   python3 tools/art/build_art.py --list     list packs, licenses, cache status
   python3 tools/art/build_art.py --only props,dog   rebuild some steps only
-  Steps: tileset, props, hd, dog, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
+  Steps: tileset, props, hd, dog, enemies, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
 
 Written with help from Claude (Anthropic) via Claude Code.
 Made with love from your friendly hacker - er2oneousbit
@@ -303,6 +304,22 @@ def build_hd_textures():
     rail.rotate(90).save(out_path("assets", "textures", "hd", "wood_post.png"))  # grain runs up the post
 
 
+def build_enemies():
+    """Enemy sheets. The LPC 2022 giant rat: 80x64 frames, 12 per row, rows
+    down/left/right/up; frames 0-3 walk, 4-7 attack, 8-11 die (the down/up
+    rows have 3 death frames and a solid magenta filler cell, cleared here)."""
+    log("Enemies: the giant rat")
+    for name, out in [("giant rat (Sevarihk).png", "rat_lpc.png"), ("giant rat shadow (Sevarihk).png", "rat_lpc_shadow.png")]:
+        img = Image.open(src(ANIMALS, name)).convert("RGBA")
+        px = img.load()
+        for y in range(img.height):
+            for x in range(img.width):
+                r, g, b, a = px[x, y]
+                if a and r > 240 and g < 20 and b > 200:  # the magenta filler
+                    px[x, y] = (0, 0, 0, 0)
+        img.save(out_path("assets", "characters", "enemies", "rat", out))
+
+
 def build_dog():
     """Golden shiba -> brown brindle shelter mutt (see docs/design-bible.md #7)."""
     log("Dog: recoloring the shiba into a brown brindle mutt")
@@ -362,9 +379,17 @@ def build_credits():
             "license, including the shiba dog, shark, giant rat, walking mushroom, and underwater tile sprites.\n\n"
             "Modifications by this project: recolored from golden to brown with brindle stripes\n"
             "(tools/art/build_art.py, build_dog).\n")
+    with open(out_path("credits", "enemies", "credits.txt"), "w") as f:
+        f.write(
+            "Enemy sprites\n"
+            "=============\n\n"
+            "assets/characters/enemies/rat/: the giant rat by Sevarihk, adapted for LPC by tapatilorenzo.\n"
+            f"Pack: {PACKS['animals']['title']}\n{PACKS['animals']['page']}\nLicense: {PACKS['animals']['license']}\n"
+            "Modifications by this project: the magenta filler cells cleared (tools/art/build_art.py, build_enemies).\n")
 
 
-STEPS = {"tileset": build_tileset, "props": build_props, "hd": build_hd_textures, "dog": build_dog, "credits": build_credits}
+STEPS = {"tileset": build_tileset, "props": build_props, "hd": build_hd_textures, "dog": build_dog,
+         "enemies": build_enemies, "credits": build_credits}
 
 
 def main():

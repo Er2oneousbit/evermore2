@@ -93,6 +93,14 @@ func _run() -> void:
 	await _frames(2)
 	_check(hd.enabled and not yard.get_node("World").visible and ScreenScaler.native_3d, "F6 didn't switch back to HD")
 
+	# --- 4b. Nothing piles up over time (a leak once added 5 lights a second) ---
+	var lights_before := hd.find_children("*", "Light3D", true, false).size()
+	var nodes_before := hd.get_child_count()
+	await _wait(1.5)
+	var lights_after := hd.find_children("*", "Light3D", true, false).size()
+	_check(lights_after == lights_before, "3D lights must not pile up (%d -> %d)" % [lights_before, lights_after])
+	_check(hd.get_child_count() == nodes_before, "HdView children must not grow by themselves (%d -> %d)" % [nodes_before, hd.get_child_count()])
+
 	# --- 5. Time of day reaches the 3D lights ------------------------------------
 	atmo.set_time("night", 0.0)
 	await _wait(1.0)
