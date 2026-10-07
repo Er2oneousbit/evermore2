@@ -25,8 +25,10 @@ Carltron waking) into the first realm.
 
 1. **Combat**: a weapon swing with the **auto-filling charge meter** (no
    holding a button), using the kid's LPC slash animations; one test enemy;
-   hit-stop, damage numbers, enemy activation by distance; the **stances**
-   (kid: Offensive/Defensive, dog: Offensive/Search) for whoever the AI plays.
+   hit-stop, damage numbers, enemy activation by distance; **switching
+   control** between kid and dog, **Stay put** for the partner, and the
+   **stances** (kid: Offensive/Defensive, dog: Offensive/Search) for whoever
+   the AI plays.
 2. **Hidden items and the dog's nose**: buried, tucked and secret items; the
    dog's Search stance points and digs; sniff mode shows scent trails; a found
    counter per area.
@@ -54,6 +56,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-07 | **Switch control between the kid and the dog any time**, and a **"Stay put" command** for the partner, so mazes and puzzles can need them to split up |
 | 2026-10-07 | **Gameplay rules** (design-bible.md section 10): hidden items; the dog sniffs them out; stances (kid Offensive/Defensive, dog Offensive/Search); the weapon charge builds by itself, no holding a button; armor slots: head, body, legs, boots, hands, arms, and the dog's collar; text boxes fit their text |
 | 2026-10-06 | **At least 8 hours of play** for the main story, with each realm built from multiple areas, challenges and mini-bosses, like the original |
 | 2026-10-06 | **The first realm lineup is scrapped**, The Big Yard and Mission 1 included. Realms get redesigned; the story spine (Dad is the 1995 boy, one night, the torn clipping) stays |
