@@ -22,6 +22,7 @@
 #   any key of PROPS_BY_CHAR       one of those props (picked per cell)
 #   any key of NPCS_BY_CHAR        an NPC who stands there
 #   any key of TRIGGERS_BY_CHAR    walking onto it starts a conversation
+#   any key of ENEMIES_BY_CHAR     an enemy (data/enemies/<id>.tres) waits there
 #
 # SCENE: the realm's .tscn needs Ground, Water (TileMapLayers), Solids
 #        (StaticBody2D), Occluders (Node2D), World (y_sort) with World/Fences,
@@ -74,6 +75,8 @@ const DEFAULTS := {
 	"NPCS_BY_CHAR": {},
 	## char -> {"start": "gate", "once": true}
 	"TRIGGERS_BY_CHAR": {},
+	## char -> enemy id (data/enemies/<id>.tres)
+	"ENEMIES_BY_CHAR": {},
 	## The .dlg file NPCs and triggers in this realm talk from.
 	"DIALOGUE": "",
 	## names.json key of the realm's display name (log line, debug overlay).
@@ -93,7 +96,7 @@ var layout: Array = []
 var _cfg: Dictionary = {}
 var _tiler: WangAutotiler
 var _prop_cache: Dictionary = {}
-var _counts := {"props": 0, "decals": 0, "solids": 0, "npcs": 0, "triggers": 0}
+var _counts := {"props": 0, "decals": 0, "solids": 0, "npcs": 0, "triggers": 0, "enemies": 0}
 
 
 func _ready() -> void:
@@ -112,9 +115,9 @@ func _ready() -> void:
 	var key: String = cfg("REALM_NAME_KEY")
 	if not key.is_empty():
 		GameState.current_realm = key
-	Debug.log_info("%s loaded (%dx%d tiles, %d props, %d decals, %d NPCs, %d solid shapes). Run with -- --help for options."
+	Debug.log_info("%s loaded (%dx%d tiles, %d props, %d decals, %d NPCs, %d enemies, %d solid shapes). Run with -- --help for options."
 			% [Names.text(key) if not key.is_empty() else name, layout[0].length(), layout.size(),
-			_counts["props"], _counts["decals"], _counts["npcs"], _counts["solids"]])
+			_counts["props"], _counts["decals"], _counts["npcs"], _counts["enemies"], _counts["solids"]])
 
 
 ## A setting: the realm's constant if it declared one, else the default.
@@ -163,7 +166,7 @@ func _validate_layout() -> bool:
 	var ok := true
 	var known := ".KD" + "".join(cfg("TERRAIN_BY_CHAR").keys()) + "".join(cfg("FENCES").keys()) \
 			+ "".join(cfg("PROPS_BY_CHAR").keys()) + "".join(cfg("NPCS_BY_CHAR").keys()) \
-			+ "".join(cfg("TRIGGERS_BY_CHAR").keys())
+			+ "".join(cfg("TRIGGERS_BY_CHAR").keys()) + "".join(cfg("ENEMIES_BY_CHAR").keys())
 	for y in layout.size():
 		if layout[y].length() != width:
 			Debug.log_error("LAYOUT row %d is %d chars wide, expected %d" % [y, layout[y].length(), width])
@@ -280,6 +283,7 @@ func _build_cells() -> void:
 	var props: Dictionary = cfg("PROPS_BY_CHAR")
 	var npcs: Dictionary = cfg("NPCS_BY_CHAR")
 	var triggers: Dictionary = cfg("TRIGGERS_BY_CHAR")
+	var enemies: Dictionary = cfg("ENEMIES_BY_CHAR")
 	var decals: Array = cfg("DECALS")
 	var big: String = cfg("BIG_PROP_CHARS")
 	var density: float = cfg("DECAL_DENSITY")
@@ -296,6 +300,8 @@ func _build_cells() -> void:
 				_spawn_npc(npcs[ch], cell_base)
 			elif triggers.has(ch):
 				_add_trigger(triggers[ch], Vector2i(x, y))
+			elif enemies.has(ch):
+				_spawn_enemy(enemies[ch], cell_base)
 			elif ch == ".":
 				if not decals.is_empty() and float(h % 1000) / 1000.0 < density:
 					_place(decals[(h >> 10) % decals.size()], cell_base + _jitter(h), (h >> 3) & 1 == 1)
@@ -315,6 +321,17 @@ func _spawn_npc(spec: Dictionary, at: Vector2) -> void:
 	npc.position = at
 	_world.add_child(npc)
 	_counts["npcs"] += 1
+
+
+func _spawn_enemy(id: String, at: Vector2) -> void:
+	var data := load("res://data/enemies/%s.tres" % id) as EnemyData
+	if data == null:
+		Debug.log_error("Missing enemy data/enemies/%s.tres" % id)
+		return
+	var e := Enemy.create(data, at)
+	_counts["enemies"] += 1
+	e.name = "%s_%d" % [id.capitalize(), _counts["enemies"]]
+	_world.add_child(e)
 
 
 func _add_trigger(spec: Dictionary, cell: Vector2i) -> void:

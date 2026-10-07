@@ -5,6 +5,8 @@
 [ext_resource type="Script" path="res://systems/animation/lpc_sprite.gd" id="3_lpc"]
 [ext_resource type="Texture2D" path="res://assets/characters/kid/kid_lpc.png" id="4_sheet"]
 [ext_resource type="Texture2D" path="res://assets/fx/soft_shadow.tres" id="5_shadow"]
+[ext_resource type="Script" path="res://systems/combat/health.gd" id="h_health"]
+[ext_resource type="Script" path="res://systems/combat/hurtbox.gd" id="h_hurt"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_feet"]
 size = Vector2(14, 8)
@@ -23,6 +25,7 @@ fill_to = Vector2(0.5, 0)
 
 [node name="Kid" type="CharacterBody2D"]
 collision_layer = 2
+collision_mask = 9
 motion_mode = 1
 script = ExtResource("1_kid")
 
@@ -52,3 +55,14 @@ texture = SubResource("GradientTexture2D_light")
 position_smoothing_enabled = true
 script = ExtResource("2_cam")
 position_smoothing_speed = 6.0
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("h_health")
+max_hp = 40
+invuln_seconds = 0.8
+
+[node name="Hurtbox" type="Node2D" parent="."]
+position = Vector2(0, -14)
+script = ExtResource("h_hurt")
+team = "player"
+radius = 9.0

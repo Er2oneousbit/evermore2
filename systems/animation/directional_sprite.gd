@@ -99,6 +99,11 @@ func play(anim: StringName, facing := Vector2.ZERO, restart := false) -> void:
 	_apply_frame()
 
 
+## Index into the current animation's frame list (attacks land on a frame).
+func frame_index() -> int:
+	return _frame_index
+
+
 ## True while a non-looping animation still has frames left to show.
 func is_playing_once() -> bool:
 	return not anims.get(current, {}).get("loop", true) and not _finished

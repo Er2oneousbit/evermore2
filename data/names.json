@@ -22,6 +22,11 @@
   "place_ruffleberg_mansion": "The Ruffleberg Mansion",
   "realm_hub": "The Mansion That Was",
   "realm_test_yard": "The Test Yard",
+  "realm_combat_arena": "The Combat Arena",
+
+  "_section_items": "---- Weapons, enemies ----",
+  "weapon_stick": "Old Stick",
+  "enemy_rat": "Giant Rat",
 
   "_section_pop_culture": "---- Fictional pop culture (the kid's references and Dad's movies; working titles, never real brands) ----",
   "game_battle_royale": "Dropzone Dynasty",

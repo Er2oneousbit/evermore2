@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://systems/combat/enemy_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/characters/enemies/rat/rat_lpc.png" id="2_sheet"]
+[ext_resource type="Texture2D" path="res://assets/characters/enemies/rat/rat_lpc_shadow.png" id="3_shadow"]
+
+[resource]
+script = ExtResource("1_script")
+name_key = "enemy_rat"
+sheet = ExtResource("2_sheet")
+shadow_sheet = ExtResource("3_shadow")
+frame_px = Vector2i(80, 64)
+paws_y = 55
+anims = {
+&"idle": {"row": 0, "frames": [0], "fps": 1.0, "loop": true},
+&"walk": {"row": 0, "frames": [0, 1, 2, 3], "fps": 9.0, "loop": true},
+&"attack": {"row": 0, "frames": [4, 5, 6, 7], "fps": 11.0, "loop": false},
+&"die": {"row": 0, "frames": [8, 9, 10], "fps": 7.0, "loop": false}
+}
+attack_hit_frame = 2
+hp = 18
+armor = 0.0
+damage = 5.0
+walk_speed = 40.0
+chase_speed = 85.0
+knockback_taken = 1.0
+aggro_radius = 140.0
+leash_radius = 320.0
+attack_range = 28.0
+attack_reach = 30.0
+attack_arc = 100.0
+windup_seconds = 0.4
+attack_cooldown = 1.1
+knockback_dealt = 140.0
+stagger_dealt = 0.2
+hurt_radius = 11.0
+body_size = Vector2(18, 8)

@@ -33,10 +33,32 @@ extends Camera2D
 const NO_LIMIT := 10000000
 
 
+var _shake := 0.0
+var _shake_time := 0.0
+var _shake_left := 0.0
+
+
 func _ready() -> void:
+	EventBus.camera_shake.connect(func(s: float, t: float) -> void:
+		_shake = maxf(_shake, s)
+		_shake_time = maxf(t, 0.01)
+		_shake_left = maxf(_shake_left, t))
 	get_viewport().size_changed.connect(_apply_limits)
 	ScreenScaler.view_changed.connect(func(_view: Vector2i, _scale: int) -> void: _apply_limits())
 	_apply_limits()
+
+
+func _process(delta: float) -> void:
+	if _shake_left <= 0.0:
+		if offset != Vector2.ZERO:
+			offset = Vector2.ZERO
+		return
+	_shake_left -= delta
+	var k := maxf(_shake_left / _shake_time, 0.0)
+	# Whole pixels only: the 2D view is pixel-perfect.
+	offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)).round() * ceilf(_shake * k)
+	if _shake_left <= 0.0:
+		_shake = 0.0
 
 
 func set_world_bounds(bounds: Rect2) -> void:

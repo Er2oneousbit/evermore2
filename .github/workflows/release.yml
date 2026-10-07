@@ -1,0 +1,104 @@
+# The tech demo release: exports Windows and Linux builds and publishes them
+# on the "tech-demo" release, replacing the previous files. There is one
+# release, updated in place (no version numbers while the design iterates).
+#
+# Two ways to run it:
+#   * push the tag:   git tag -f tech-demo && git push -f origin tech-demo
+#   * Actions tab -> Release -> Run workflow (it moves the tag to that commit)
+#
+# The tests gate the release, and each exported build is started headless
+# for every demo map: a file the export left out (it happened with the .dlg
+# dialogue files) fails the release instead of reaching players.
+name: Release
+
+on:
+  push:
+    tags: ["tech-demo"]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  # Keep in step with the version the project is developed on (docs/DEVELOPMENT.md).
+  GODOT_VERSION: 4.7.2
+  TAG: tech-demo
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download Godot ${{ env.GODOT_VERSION }} and its export templates
+        run: |
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" >> "$GITHUB_ENV"
+          curl -fsSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest"
+          unzip -q -j templates.tpz "templates/windows_release_x86_64.exe" "templates/linux_release.x86_64" "templates/version.txt" -d "$dest"
+          rm godot.zip templates.tpz
+
+      - name: Import the project
+        run: '"$GODOT" --headless --path . --import > /dev/null 2>&1 || true'
+
+      - name: Headless smoke tests
+        run: tests/run_all.sh "$GODOT"
+
+      - name: Export
+        run: |
+          mkdir -p export/windows export/linux
+          "$GODOT" --headless --path . --export-release Windows export/windows/Evermore2.exe
+          "$GODOT" --headless --path . --export-release Linux export/linux/Evermore2.x86_64
+          test -s export/windows/Evermore2.exe
+          test -s export/linux/Evermore2.x86_64
+
+      - name: Start the exported build on every demo map
+        run: |
+          chmod +x export/linux/Evermore2.x86_64
+          fail=0
+          for args in "" "--arena" "--yard" "--arena --hard"; do
+            out=$(export/linux/Evermore2.x86_64 --headless --quit-after 300 -- --verbose $args 2>&1) || true
+            if echo "$out" | grep -E "ERROR|SCRIPT ERROR" ; then
+              echo "::error::exported build logged errors with '$args'"
+              fail=1
+            else
+              echo "ok: '$args'"
+            fi
+          done
+          exit $fail
+
+      - name: Package
+        run: |
+          cp LICENSE CREDITS.md tools/release/README.txt export/windows/
+          cp tools/release/*.bat export/windows/
+          cp LICENSE CREDITS.md tools/release/README.txt export/linux/
+          cp tools/release/*.sh export/linux/
+          chmod +x export/linux/*.sh
+          mkdir -p dist
+          (cd export && mv windows Evermore2 && zip -qr ../dist/Evermore2-tech-demo-windows.zip Evermore2 && mv Evermore2 windows)
+          (cd export && mv linux Evermore2 && tar -czf ../dist/Evermore2-tech-demo-linux.tar.gz Evermore2 && mv Evermore2 linux)
+          ls -la dist
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Point the tag at this commit (a manual run may be on a newer one).
+          git tag -f "$TAG"
+          git push -f origin "refs/tags/$TAG"
+          title="Tech Demo: game mechanics"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --title "$title" --notes-file tools/release/release_notes.md --prerelease
+          else
+            gh release create "$TAG" --title "$title" --notes-file tools/release/release_notes.md --prerelease
+          fi
+          gh release upload "$TAG" dist/* --clobber

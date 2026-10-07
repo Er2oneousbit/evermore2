@@ -85,6 +85,13 @@ Full detail per layer: `credits/<name>/credits.txt` / `credits.csv`.
   (`tools/art/build_art.py`, `build_dog`).
 * Detail: `credits/dog/credits.txt`.
 
+## Enemies: `assets/characters/enemies/`
+
+* **Giant rat by Sevarihk**, adapted for LPC by **tapatilorenzo**, from
+  [[LPC] Bears, deer, lions and more](https://opengameart.org/content/lpc-bears-deer-lions-and-more).
+  License: **CC-BY 4.0**. Modified by this project: the magenta filler cells
+  cleared (`tools/art/build_art.py`, `build_enemies`). Detail: `credits/enemies/credits.txt`.
+
 ## Ground tileset: `assets/tilesets/lpc_revised/terrain_summer.png`
 
 * [LPC Revised - Fully Configured 4 Seasons Tilesets for Tiled Map Editor](https://opengameart.org/content/lpc-revised-fully-configured-4-seasons-tilesets-for-tiled-map-editor)

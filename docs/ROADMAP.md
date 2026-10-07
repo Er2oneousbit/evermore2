@@ -23,12 +23,10 @@ Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
-1. **Combat**: a weapon swing with the **auto-filling charge meter** (no
-   holding a button), using the kid's LPC slash animations; one test enemy;
-   hit-stop, damage numbers, enemy activation by distance; **switching
-   control** between kid and dog, **Stay put** for the partner, and the
-   **stances** (kid: Offensive/Defensive, dog: Offensive/Search) for whoever
-   the AI plays.
+1. **Combat, phase B**: **switching control** between kid and dog, **Stay
+   put** for the partner (with a call-back whistle and a partner arrow), the
+   **stances** (kid: Offensive/Defensive, dog: Offensive/Search) driving
+   whoever the AI plays, and the dog's bite.
 2. **Hidden items and the dog's nose**: buried, tucked and secret items; the
    dog's Search stance points and digs; sniff mode shows scent trails; a found
    counter per area.
@@ -56,6 +54,8 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-07 | **One public release, `tech-demo`**: a tech demo of the game mechanics for Windows and Linux, updated in place as mechanics are polished (no version numbers) |
+| 2026-10-07 | **Normal and Hard playthroughs**: on Hard, prices are higher and enemies have more HP and armor and hit harder |
 | 2026-10-07 | **Switch control between the kid and the dog any time**, and a **"Stay put" command** for the partner, so mazes and puzzles can need them to split up |
 | 2026-10-07 | **Gameplay rules** (design-bible.md section 10): hidden items; the dog sniffs them out; stances (kid Offensive/Defensive, dog Offensive/Search); the weapon charge builds by itself, no holding a button; armor slots: head, body, legs, boots, hands, arms, and the dog's collar; text boxes fit their text |
 | 2026-10-06 | **At least 8 hours of play** for the main story, with each realm built from multiple areas, challenges and mini-bosses, like the original |
@@ -67,6 +67,36 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: combat, phase A
+
+* **The swing**: attack (J / Space / gamepad A) swings the kid's weapon with his
+  LPC slash animation; the blow lands on the weapon's hit frame, in an arc in
+  front of him. Talking still wins the shared button when someone's in reach
+* **The auto charge**: the meter refills by itself after a swing (0.9 s per
+  level for the stick) and climbs to level 2 and 3 if the weapon allows: x1, x2,
+  x4 damage. Nobody holds a button. A hurried swing still does a quarter
+* **Enemies**: data-driven (`EnemyData` .tres). The first is the LPC giant rat:
+  it sleeps until a kid or dog comes close (distance, never "on screen"),
+  chases, flashes an orange warning, lunges, rests, staggers when hit, gives up
+  past its leash and walks home, and dies with its animation
+* **Feel**: hit-stop on every hit (longer for bigger swings), camera shake in
+  both views, damage numbers (gold for charged hits, red for hits on the kid),
+  slash trails, red hit flashes, knockback
+* **Health**: HP, armor, invulnerability after a hit; the HUD shows live HP for
+  the kid and the dog and the kid's charge bar with level pips. Knocked out
+  means down for 8 seconds, then back with 30% HP; both down restarts the scene
+* **Normal and Hard**: one table of difficulty levers (enemy HP, armor, damage,
+  prices); `-- --hard` starts on Hard
+* **A combat arena** test map with five rats (`realms/test/combat_arena_hd.tscn`)
+* Bugs caught on the way, each with a test: hit-stop ran on the wall clock and
+  never ended in fast headless runs (the game stuck at 5% speed); enemies
+  spawned after loading were invisible in HD-2D; effects were projected to the
+  wrong spot in HD-2D (the screenshots caught it); HdView re-created the
+  flashlight five times a second after a refactor, stacking 28 lights on the
+  kid (the new "nothing piles up" check fails on that); a bright telegraph
+  flash bloomed over the kid, so it's an orange pulse now
+* Tests: 8 headless runs pass, including the new combat test
 
 ## Done: the text box fits its text
 

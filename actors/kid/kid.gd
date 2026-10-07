@@ -11,6 +11,12 @@
 #        Full stick tilt = run cycle, partial tilt = walk cycle. Animation
 #        speed follows movement speed so the feet don't "skate".
 #
+# COMBAT: attack (J / Space / gamepad A) swings the equipped WeaponData. The
+#        charge meter fills by itself (ChargeMeter): a swing uses whatever level
+#        it reached (x1/x2/x4 at levels 1/2/3). If someone is in reach to talk,
+#        the button talks instead. Hits knock him back and flash him; at 0 HP
+#        he's downed and Party decides what happens next.
+#
 # ORIGIN CONVENTION: the node's origin is at the kid's FEET. Everything is
 #        drawn upward from (0, 0). This is what makes Y-sorting look right
 #        (walking "behind" a tree means your feet are above its trunk base).
@@ -38,6 +44,10 @@ extends CharacterBody2D
 @export var walk_anim_speed := 48.0
 ## How far in front of the kid the flashlight's center sits.
 @export var light_offset := 30.0
+## The equipped weapon (data/weapons/*.tres).
+@export var weapon: WeaponData = preload("res://data/weapons/stick.tres")
+## Movement speed kept while swinging (fraction of normal).
+@export_range(0.0, 1.0) var swing_move_factor := 0.15
 
 ## Flashlight brightness per time of day. A phone light is invisible at noon,
 ## so in daylight it would only wash out the scene. Unknown names use night.
@@ -51,9 +61,21 @@ const LIGHT_HEIGHT := -26.0
 ## the flashlight) read this to know which way the kid is looking.
 var facing := Vector2.DOWN
 var light_on := true
+## True while the player drives the kid (Party switches this in phase B).
+var controlled := true
+## The auto-filling attack charge (HUD reads it).
+var charge := ChargeMeter.new()
+var downed := false
+
+var _attacking := false
+var _swing_mult := 1.0
+var _swing_level := 1
+var _swing_landed := false
+var _stagger := 0.0
 
 @onready var _flashlight: PointLight2D = $Flashlight
 @onready var _sprite: LpcSprite = $Sprite
+@onready var health: Health = $Health
 
 
 func _ready() -> void:
@@ -61,6 +83,79 @@ func _ready() -> void:
 	add_to_group("hd_actor")
 	_flashlight.enabled = light_on
 	EventBus.time_of_day_changed.connect(_on_time_of_day_changed)
+	equip(weapon)
+	_sprite.animation_finished.connect(_on_animation_finished)
+	health.died.connect(_on_died)
+	Party.register(self)
+
+
+## Equip a weapon: the charge meter takes its levels and speed.
+func equip(w: WeaponData) -> void:
+	weapon = w
+	charge = ChargeMeter.new(w.max_level, w.seconds_per_level)
+
+
+## Swing the weapon now, with whatever charge has built up. Returns false if
+## he can't (already swinging, downed, staggered, talking).
+func attack() -> bool:
+	if _attacking or downed or _stagger > 0.0 or Dialogue.is_active():
+		return false
+	var spent := charge.spend()
+	_swing_mult = spent[0]
+	_swing_level = spent[1]
+	_swing_landed = false
+	_attacking = true
+	_sprite.speed_scale = weapon.swing_speed
+	_sprite.play(weapon.swing_anim, facing, true)
+	return true
+
+
+func is_attacking() -> bool:
+	return _attacking
+
+
+## Called by his Hurtbox when a hit lands.
+func on_hit(info: HitInfo, _dealt: int) -> void:
+	velocity += info.knockback
+	_stagger = maxf(_stagger, info.stagger)
+	var t := create_tween()
+	_sprite.modulate = Color(1.0, 0.45, 0.45)
+	t.tween_property(_sprite, "modulate", Color.WHITE, 0.25)
+
+
+func revive(fraction := 0.3) -> void:
+	downed = false
+	health.revive(fraction)
+	_sprite.play(&"idle", facing, true)
+
+
+func _on_died() -> void:
+	downed = true
+	_attacking = false
+	_sprite.speed_scale = 1.0
+	_sprite.play(&"hurt", Vector2.ZERO, true)  # LPC "hurt" is falling down
+
+
+func _on_animation_finished(anim: StringName) -> void:
+	if anim == weapon.swing_anim:
+		_attacking = false
+
+
+func _land_swing() -> void:
+	_swing_landed = true
+	var origin := global_position + Vector2(0, -6)
+	Fx.slash(global_position, facing, weapon.reach, weapon.arc_deg, _swing_level)
+	Combat.strike(get_tree(), origin, facing, weapon.reach, weapon.arc_deg, "player",
+			_make_hit, _swing_level)
+
+
+## One HitInfo per target for the current swing.
+func _make_hit(hb: Hurtbox) -> HitInfo:
+	var info := HitInfo.make(weapon.damage * _swing_mult, global_position, hb.global_position,
+			weapon.knockback, "player", self)
+	info.stagger = weapon.stagger
+	info.level = _swing_level
+	return info
 
 
 func _on_time_of_day_changed(time_name: String) -> void:
@@ -69,10 +164,24 @@ func _on_time_of_day_changed(time_name: String) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if downed:
+		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
+		move_and_slide()
+		return
+	charge.tick(delta)
+	_stagger = maxf(0.0, _stagger - delta)
 	var input_dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	# Stand still while talking (the stick moves the dialogue choices instead).
-	if Dialogue.is_active():
+	# Stand still while talking (the stick moves the dialogue choices instead),
+	# while staggered, or when the player is driving the dog.
+	if Dialogue.is_active() or _stagger > 0.0 or not controlled:
 		input_dir = Vector2.ZERO
+	if _attacking:
+		# Mostly planted during a swing; the blow lands on the weapon's frame.
+		velocity = velocity.move_toward(input_dir * move_speed * swing_move_factor, friction * delta)
+		move_and_slide()
+		if not _swing_landed and _sprite.frame_index() >= weapon.hit_frame:
+			_land_swing()
+		return
 
 	if input_dir != Vector2.ZERO:
 		facing = input_dir.normalized()
@@ -90,8 +199,14 @@ func _physics_process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if Dialogue.is_active():
 		return
-	if event.is_action_pressed("interact"):
-		if Interaction.try_interact():
+	if not controlled:
+		return
+	# Interact and attack share gamepad A: talking wins when someone's in reach.
+	if event.is_action_pressed("interact") and Interaction.try_interact():
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("attack"):
+		if attack():
 			get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("toggle_light"):

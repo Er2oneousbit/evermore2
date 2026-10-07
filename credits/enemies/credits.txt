@@ -1,0 +1,8 @@
+Enemy sprites
+=============
+
+assets/characters/enemies/rat/: the giant rat by Sevarihk, adapted for LPC by tapatilorenzo.
+Pack: [LPC] Bears, deer, lions and more (tapatilorenzo; shiba dog by Sevarihk)
+https://opengameart.org/content/lpc-bears-deer-lions-and-more
+License: CC-BY 4.0
+Modifications by this project: the magenta filler cells cleared (tools/art/build_art.py, build_enemies).
