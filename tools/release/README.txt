@@ -40,6 +40,7 @@ start it with:  Evermore2.exe --rendering-method gl_compatibility
 CONTROLS
 --------
                       Keyboard            Gamepad
+Pause menu/settings   Esc                 Start
 Move                  WASD / arrows       Left stick / D-pad
 Attack                J / Space           A
 Talk / interact       E / Enter           A
@@ -51,6 +52,10 @@ Partner's stance      R                   RB
 Time of day           F2
 Debug overlay         F3
 Classic 2D view       F6
+
+Every control except pause can be rebound: Esc > Settings > Controls.
+Settings also has graphics (quality presets, each effect, brightness),
+display (window mode, V-Sync, frame cap), volume and gameplay options.
 
 Attacking: you never hold a button. After a swing the charge meter under
 the kid's health refills by itself; wait longer and it climbs to x2 and

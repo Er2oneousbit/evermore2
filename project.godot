@@ -24,11 +24,13 @@ InputSetup="*res://autoload/input_setup.gd"
 Names="*res://autoload/names.gd"
 EventBus="*res://autoload/event_bus.gd"
 GameState="*res://autoload/game_state.gd"
+Settings="*res://autoload/settings.gd"
 Dialogue="*res://autoload/dialogue.gd"
 Interaction="*res://autoload/interaction.gd"
 Difficulty="*res://autoload/difficulty.gd"
 Fx="*res://autoload/fx.gd"
 Party="*res://autoload/party.gd"
+PauseMenu="*res://ui/menus/pause_menu.gd"
 
 [display]
 

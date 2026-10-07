@@ -20,6 +20,9 @@ The story, the realms and the real content come later.
   kid Offensive or Defensive, the dog Offensive or Search. The dog bites. An
   arrow points to him when he's out of view
 * **Normal and Hard**: the Hard launcher makes the rats tougher
+* **A pause menu with settings** (Esc / Start): rebind every key and button,
+  graphics quality presets and each effect on its own, brightness, window
+  mode, V-Sync, frame cap, volumes, text speed, screen shake, damage numbers
 
 ## Downloads
 

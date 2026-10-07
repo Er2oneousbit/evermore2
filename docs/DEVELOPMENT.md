@@ -198,6 +198,25 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
 * In a test that measures one member's attack, freeze the other
   (`set_physics_process(false)`): the AI partner on Offensive joins any fight.
 
+## Settings and the pause menu
+
+* Every option is a row in `Settings.SCHEMA` (`autoload/settings.gd`): key,
+  tab, label, type (`choice`, `bool`, `range`) and default. The settings menu
+  builds itself from that table, so a new row shows up with no UI work.
+* Read options with `Settings.get_value("bloom")` and react to
+  `Settings.changed(key, value)`. Settings applies its own (window, V-Sync,
+  frame cap, widest view, volumes, bindings); HdView, Atmosphere, Fx and the
+  dialogue box apply theirs.
+* Saved to `user://settings.cfg` (on Windows:
+  `%APPDATA%\Godot\app_userdata\Secret of Evermore 2- Return to Evermore`).
+  Delete it to get the defaults back.
+* Tests never read or write it: a run whose scene is under `res://tests/`
+  keeps settings in memory, on the defaults.
+* Rebinding goes through `InputSetup` (`REBINDABLE`, `rebind`,
+  `bindings_of`); `pause` (Esc / Start) is fixed so nobody can lock
+  themselves out of the menu.
+* F6 flips the View setting, so it's remembered like the menu option.
+
 ## The tech demo release
 
 There's one release, **`tech-demo`**: a tech demo of the game mechanics,

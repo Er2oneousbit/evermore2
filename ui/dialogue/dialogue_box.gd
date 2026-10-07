@@ -29,8 +29,11 @@ extends CanvasLayer
 signal advance_requested
 signal choice_made(index: int)
 
-## Letters per second while typing.
+## Letters per second while typing at the Normal text speed (the player's
+## Text speed setting scales it).
 @export var chars_per_second := 48.0
+## The Normal text speed in Settings, which chars_per_second is tuned for.
+const DEFAULT_CPS := 48.0
 ## Input is ignored this long after the box opens (game time), so the press
 ## that started the conversation can't also skip its first line.
 @export var open_guard_seconds := 0.15
@@ -195,8 +198,13 @@ func _process(delta: float) -> void:
 	_since_open += delta
 	if not _typing:
 		return
-	_char_time += delta * chars_per_second
 	var total := _text.get_total_character_count()
+	# The player's text speed (Settings); 0 = whole pages at once.
+	var cps: float = Settings.get_value("text_speed")
+	if cps <= 0.0:
+		_char_time = total
+	else:
+		_char_time += delta * cps * chars_per_second / DEFAULT_CPS
 	_text.visible_characters = mini(int(_char_time), total)
 	if _text.visible_characters >= total:
 		_finish_typing()
