@@ -249,7 +249,52 @@ hold anyone as an anchor.
 dog between them. Dad starts to explain 1995. The kid says he knows, and quotes
 one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
 
-## 10. Open questions
+## 10. Gameplay rules
+
+**Locked (owner's calls, 2026-10-07):**
+
+| Rule | Decision |
+|---|---|
+| Hidden items | The world hides items: buried in the ground, tucked under bushes and rocks, behind things. Exploring pays |
+| The dog's nose | **The dog sniffs out items**: hidden items and alchemy ingredients |
+| Stances | **The kid: Offensive or Defensive. The dog: Offensive or Search.** Set any time |
+| Weapon charge | **Auto power-up: no holding a button.** The charge builds by itself between swings; a swing uses whatever level it reached |
+| Armor | **The kid: head, body, legs, boots, hands, arms** (six slots). **The dog: collar** |
+| Text box | Fits the amount of text: grows and shrinks, long lines turn into pages (done) |
+
+**How they'd work (DRAFT, for review):**
+
+- **Stances steer whoever the AI is playing.** You control the kid or the dog
+  (switch any time; Player 2 can take the other), and the one you're not
+  controlling follows his stance:
+  - *Kid, Offensive:* engages enemies near you, swings when his charge is high.
+  - *Kid, Defensive:* keeps his distance, only hits what's attacking him or the
+    dog, gets out of the way of big attacks.
+  - *Dog, Offensive:* goes after nearby enemies; doesn't search.
+  - *Dog, Search:* roams a short leash around the kid, nose down. Near a hidden
+    item he stops, points and barks, then digs it up. He only fights if
+    something attacks him.
+  - Set from the ring menu or the pause menu; the HUD shows a small icon.
+- **Sniffing:** besides Search stance, a sniff button (when you control the dog)
+  shows scent trails as colored wisps: one color for items, one for
+  ingredients, one for people. The trail leads to the nearest few within range.
+- **Hidden items, three kinds:**
+  - *Buried:* only the dog finds them (sniff, then dig).
+  - *Tucked:* under a bush or rock; the kid can search it (interact) if he
+    notices the tell (a glint, a disturbed patch of ground), or the dog points it out.
+  - *Secret:* behind breakable things or in nooks off the path; found by looking.
+  - Every realm says how many it has and how many you've found (no silent missables).
+- **Auto charge:** after a swing the charge meter refills on its own, about a
+  second to 100% (level 1), then keeps climbing to level 2 and 3 if the weapon's
+  mastery allows. Attack whenever you like: a quick tap gives a weaker swing,
+  waiting gives the bigger one. The meter shows on the HUD by the kid.
+  (The original filled to 100% by itself but needed the button held for levels 2 and 3.)
+- **Armor:** each piece adds defense, and some add one small perk (resist
+  cold, faster charge, quieter footsteps for the dog's sneaking...). Pieces come
+  from shops, chests, hidden caches and bosses. The dog's collar works the same
+  way, with perks for the dog (a wider sniff range, harder bites).
+
+## 11. Open questions
 
 - **The realms**: direction, lineup, and the dog's form in each (section 8)
 - **Review the story spine (section 4)**, then lock or change it

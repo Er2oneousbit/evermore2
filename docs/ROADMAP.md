@@ -23,15 +23,20 @@ Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
-1. **Combat**: a weapon swing with the charge meter, using the kid's LPC
-   slash animations; one test enemy; hit-stop, damage numbers, enemy activation
-   by distance.
-2. **Ring menu + the first alchemy formula**: data-driven `.tres` resources.
-3. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
+1. **Combat**: a weapon swing with the **auto-filling charge meter** (no
+   holding a button), using the kid's LPC slash animations; one test enemy;
+   hit-stop, damage numbers, enemy activation by distance; the **stances**
+   (kid: Offensive/Defensive, dog: Offensive/Search) for whoever the AI plays.
+2. **Hidden items and the dog's nose**: buried, tucked and secret items; the
+   dog's Search stance points and digs; sniff mode shows scent trails; a found
+   counter per area.
+3. **Ring menu, equipment and the first alchemy formula**: data-driven `.tres`
+   resources; armor slots (kid: head, body, legs, boots, hands, arms; dog: collar).
+4. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
    kitchen, lab), the torn clipping, Carltron waking, the flash. Needs interior
    tiles and HD-2D height (stairs, a basement). Dinner deserves a real kitchen
    instead of a black screen.
-4. **The first realm** (once the realms are designed): painted in the editor,
+5. **The first realm** (once the realms are designed): painted in the editor,
    finding the dog, the first boss, sniff mode.
 
 Alongside: the dog's look (notched floppy ear, one ear up, the orange shelter
@@ -49,6 +54,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-07 | **Gameplay rules** (design-bible.md section 10): hidden items; the dog sniffs them out; stances (kid Offensive/Defensive, dog Offensive/Search); the weapon charge builds by itself, no holding a button; armor slots: head, body, legs, boots, hands, arms, and the dog's collar; text boxes fit their text |
 | 2026-10-06 | **At least 8 hours of play** for the main story, with each realm built from multiple areas, challenges and mini-bosses, like the original |
 | 2026-10-06 | **The first realm lineup is scrapped**, The Big Yard and Mission 1 included. Realms get redesigned; the story spine (Dad is the 1995 boy, one night, the torn clipping) stays |
 | 2026-10-06 | **Versions frozen at 0.3.0 during iterative design.** No bump per change; progress is tracked by milestone below. The version moves only for a real release, when the owner asks |
@@ -58,6 +64,18 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: the text box fits its text
+
+* The box grows and shrinks with the line (one line of narration is a slim
+  strip; a portrait sets the minimum), and long text turns into pages: a press
+  finishes the typing, the next turns the page, and only then does the
+  conversation move on
+* The wrapping is measured in the box's own font and handed to the label
+  line by line, so nothing can spill out
+* Tests: the dialogue test checks short vs long boxes, the portrait minimum,
+  that every page fits, that no word is lost across pages, and the page-turn
+  order; a fixed-height box or no paging makes it fail
 
 ## Done: dialogue, NPCs, and the prologue's first scene
 
