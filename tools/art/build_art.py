@@ -12,6 +12,7 @@ WHAT:  Takes the ORIGINAL art packs (downloaded from OpenGameArt, cached in
          assets/characters/dog/dog_lpc*.png               the dog (recolored)
          assets/textures/hd/*.png                         3D fence wood (HD-2D view)
          assets/characters/enemies/*/                     enemy sheets (the rat)
+         assets/items/lpc_items.png                       32x32 item icons (not used yet)
          credits/<pack>/...                               license + credit files
 
        The outputs are committed to git, so nobody NEEDS to run this to play.
@@ -26,7 +27,7 @@ USAGE:
   python3 tools/art/build_art.py --offline  build from the cache only
   python3 tools/art/build_art.py --list     list packs, licenses, cache status
   python3 tools/art/build_art.py --only props,dog   rebuild some steps only
-  Steps: tileset, props, hd, dog, enemies, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
+  Steps: tileset, props, hd, dog, enemies, items, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
 
 Written with help from Claude (Anthropic) via Claude Code.
 Made with love from your friendly hacker - er2oneousbit
@@ -63,6 +64,12 @@ PACKS = {
         "url": "https://opengameart.org/sites/default/files/lpc-revised-exterior-tilesets.zip",
         "page": "https://opengameart.org/content/lpc-revised-fully-configured-4-seasons-tilesets-for-tiled-map-editor",
         "license": "OGA-BY 3.0 / CC-BY 3.0",
+    },
+    "items": {
+        "title": "[LPC] Items and game effects (Reemax et al.)",
+        "url": "https://opengameart.org/sites/default/files/ItemsAndEffects_0.zip",
+        "page": "https://opengameart.org/content/lpc-items-and-game-effects",
+        "license": "CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0",
     },
     "animals": {
         "title": "[LPC] Bears, deer, lions and more (tapatilorenzo; shiba dog by Sevarihk)",
@@ -174,7 +181,7 @@ def write_prop(name, img, base, *, footprint=(0, 0), footprint_offset=(0, 0), sw
         lines.append(f"occluder_size = {vec(occluder)}")
     tres = (f'[gd_resource type="Resource" script_class="PropData" load_steps={len(ext) + 1} format=3]\n\n'
             + "\n".join(ext) + "\n\n[resource]\n" + "\n".join(lines) + "\n")
-    with open(out_path("data", "props", "big_yard", name + ".tres"), "w") as f:
+    with open(out_path("data", "props", "big_yard", name + ".tres"), "w", newline="\n") as f:
         f.write(tres)
     vlog(f"prop {name:18s} {img.width}x{img.height} base={base}")
 
@@ -320,6 +327,14 @@ def build_enemies():
         img.save(out_path("assets", "characters", "enemies", "rat", out))
 
 
+def build_items():
+    """Item icons for hidden items, equipment and the ring menu later: a 16x16
+    grid of 32x32 icons (weapons, armor, potions, food, keys, tools, maps).
+    Copied as-is; slicing into item data comes with the items milestone."""
+    log("Items: the LPC item icon sheet")
+    shutil.copyfile(src(("items", "ItemsAndEffects"), "items1.png"), out_path("assets", "items", "lpc_items.png"))
+
+
 def build_dog():
     """Golden shiba -> brown brindle shelter mutt (see docs/design-bible.md #7)."""
     log("Dog: recoloring the shiba into a brown brindle mutt")
@@ -352,7 +367,7 @@ def build_credits():
         p = os.path.join(four, folder, "Credits.txt")
         if os.path.isfile(p):
             shutil.copyfile(p, out_path("credits", "lpc_revised", f"Credits - {folder}.txt"))
-    with open(out_path("credits", "lpc_revised", "README.txt"), "w") as f:
+    with open(out_path("credits", "lpc_revised", "README.txt"), "w", newline="\n") as f:
         f.write(
             "LPC Revised art used by this game\n"
             "=================================\n\n"
@@ -369,7 +384,7 @@ def build_credits():
             "   Used for: assets/tilesets/lpc_revised/terrain_summer.png (+ data/tilesets/lpc_summer_wang.json).\n\n"
             "Modifications by this project: trees composed from separate canopy/trunk/shadow sprites,\n"
             "sprites cropped and trimmed (tools/art/build_art.py).\n")
-    with open(out_path("credits", "dog", "credits.txt"), "w") as f:
+    with open(out_path("credits", "dog", "credits.txt"), "w", newline="\n") as f:
         f.write(
             "Dog sprite (assets/characters/dog/dog_lpc.png, dog_lpc_shadow.png)\n"
             "==================================================================\n\n"
@@ -379,7 +394,16 @@ def build_credits():
             "license, including the shiba dog, shark, giant rat, walking mushroom, and underwater tile sprites.\n\n"
             "Modifications by this project: recolored from golden to brown with brindle stripes\n"
             "(tools/art/build_art.py, build_dog).\n")
-    with open(out_path("credits", "enemies", "credits.txt"), "w") as f:
+    shutil.copyfile(src(("items", "ItemsAndEffects"), "credits.txt"), out_path("credits", "items", "credits_from_pack.txt"))
+    with open(out_path("credits", "items", "credits.txt"), "w", newline="\n") as f:
+        f.write(
+            "Item icons (assets/items/lpc_items.png)\n"
+            "=======================================\n\n"
+            f"Pack: {PACKS['items']['title']}\n{PACKS['items']['page']}\nLicense: {PACKS['items']['license']}\n"
+            "Collaborators listed on the page: Sharm, ETTiNGRiNDER, wulax, Nila122, daneeklu, JaidynReiman,\n"
+            "pennomi, laetissima, makrohn and Jetrel. Per-item artists: credits_from_pack.txt (from the pack).\n"
+            "Modifications by this project: none (copied as items1.png -> lpc_items.png).\n")
+    with open(out_path("credits", "enemies", "credits.txt"), "w", newline="\n") as f:
         f.write(
             "Enemy sprites\n"
             "=============\n\n"
@@ -389,7 +413,7 @@ def build_credits():
 
 
 STEPS = {"tileset": build_tileset, "props": build_props, "hd": build_hd_textures, "dog": build_dog,
-         "enemies": build_enemies, "credits": build_credits}
+         "enemies": build_enemies, "items": build_items, "credits": build_credits}
 
 
 def main():

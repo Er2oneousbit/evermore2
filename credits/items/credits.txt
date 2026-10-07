@@ -1,0 +1,9 @@
+Item icons (assets/items/lpc_items.png)
+=======================================
+
+Pack: [LPC] Items and game effects (Reemax et al.)
+https://opengameart.org/content/lpc-items-and-game-effects
+License: CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0
+Collaborators listed on the page: Sharm, ETTiNGRiNDER, wulax, Nila122, daneeklu, JaidynReiman,
+pennomi, laetissima, makrohn and Jetrel. Per-item artists: credits_from_pack.txt (from the pack).
+Modifications by this project: none (copied as items1.png -> lpc_items.png).

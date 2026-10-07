@@ -72,6 +72,8 @@ const SCHEMA := [
 		"min": 0.0, "max": 1.0, "step": 0.05},
 	{"key": "volume_sfx", "tab": "audio", "label": "Sound effects", "type": "range", "default": 0.8,
 		"min": 0.0, "max": 1.0, "step": 0.05},
+	{"key": "volume_ambience", "tab": "audio", "label": "Ambience", "type": "range", "default": 0.8,
+		"min": 0.0, "max": 1.0, "step": 0.05},
 	# --- Gameplay --------------------------------------------------------------
 	{"key": "text_speed", "tab": "gameplay", "label": "Text speed", "type": "choice", "default": 48.0,
 		"options": [[24.0, "Slow"], [48.0, "Normal"], [96.0, "Fast"], [0.0, "Instant"]]},
@@ -94,7 +96,8 @@ const QUALITY_PRESETS := {
 }
 
 ## Audio buses the volumes drive (created if the project doesn't have them).
-const BUSES := {"volume_master": "Master", "volume_music": "Music", "volume_sfx": "SFX"}
+const BUSES := {"volume_master": "Master", "volume_music": "Music", "volume_sfx": "SFX",
+		"volume_ambience": "Ambience"}
 
 var _values: Dictionary = {}
 ## Saved control overrides: action -> {"keys": [...], "buttons": [...]}.
@@ -243,7 +246,7 @@ func _apply(key: String) -> void:
 			Engine.max_fps = int(v)
 		"max_aspect":
 			ScreenScaler.max_aspect = float(v)
-		"volume_master", "volume_music", "volume_sfx":
+		"volume_master", "volume_music", "volume_sfx", "volume_ambience":
 			var bus := AudioServer.get_bus_index(BUSES[key])
 			if bus >= 0:
 				AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(float(v), 0.0001)))

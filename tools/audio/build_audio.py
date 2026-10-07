@@ -9,6 +9,10 @@ WHAT:  Takes the ORIGINAL audio packs (downloaded from OpenGameArt, cached in
                                           peak-normalized (loudness per sound
                                           is set in autoload/audio.gd)
          assets/audio/music/<name>.ogg    looping music tracks, as released
+         assets/audio/ambience/<name>.ogg background loops (birds by day,
+                                          crickets at night), stereo, with
+                                          the end crossfaded into the start
+                                          so they loop without a seam
          credits/audio/credits.txt        every source, author and license
 
        A few sounds are generated here (the text blip, the kid's whistle, the
@@ -47,6 +51,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CACHE = os.path.join(ROOT, "tools", "audio", ".cache")
 SFX_OUT = os.path.join(ROOT, "assets", "audio", "sfx")
 MUSIC_OUT = os.path.join(ROOT, "assets", "audio", "music")
+AMBIENCE_OUT = os.path.join(ROOT, "assets", "audio", "ambience")
 CREDITS_OUT = os.path.join(ROOT, "credits", "audio", "credits.txt")
 OGA = "https://opengameart.org/sites/default/files/"
 RATE = 44100
@@ -79,6 +84,28 @@ PACKS = {
         "title": "Fantozzi's Footsteps (Grass/Sand & Stone)", "author": "Fantozzi (submitted by qubodup)",
         "license": "CC0", "url": OGA + "Fantozzi-footsteps.7z",
         "page": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+    },
+    "forest_birds": {
+        "title": "Forest bird sounds", "author": "pauliuw", "license": "CC0",
+        "url": OGA + "forest_birds.7z", "page": "https://opengameart.org/content/forest-bird-sounds",
+    },
+    "dig": {
+        "title": "Digging Underground", "author": "Almitory", "license": "CC0 (also CC-BY/CC-BY-SA/GPL/OGA-BY)",
+        "url": OGA + "dig_underground_1.mp3", "page": "https://opengameart.org/node/138434",
+    },
+    "pickup": {
+        "title": "Item Pickup / Key", "author": "Musheran", "license": "CC0",
+        "url": OGA + "key-176034.mp3", "page": "https://opengameart.org/content/item-pickup-key",
+    },
+    "birds_wind": {
+        "title": "Birds and Wind - Ambient", "author": "Spring Spring", "license": "CC0",
+        "url": OGA + "Birds%20and%20Wind%20-%20Ambient_1.ogg",
+        "page": "https://opengameart.org/content/birds-and-wind-ambient-birds-wind-and-synth",
+    },
+    "crickets": {
+        "title": "Crickets Ambient Noise - loopable", "author": "Wolfgang_ (attribution notice: Ted Kerr)",
+        "license": "CC0", "url": OGA + "crickets_1.mp3",
+        "page": "https://opengameart.org/content/crickets-ambient-noise-loopable",
     },
     "jrpg_exploration": {
         "title": "JRPG Music Pack #1 [Exploration]", "author": "Juhani Junkala (SubspaceAudio)", "license": "CC0",
@@ -136,6 +163,13 @@ SFX = {
        for i, (s, n) in enumerate([("L", 1), ("R", 1), ("L", 2), ("R", 2), ("L", 3), ("R", 3)])},
     **{"step_stone_%d" % (i + 1): ("footsteps", "Fantozzi-footsteps/flac/Fantozzi-Stone%s%d.flac" % (s, n), None)
        for i, (s, n) in enumerate([("L", 1), ("R", 1), ("L", 2), ("R", 2), ("L", 3), ("R", 3)])},
+    # Hidden items (the dog digs, the kid picks it up).
+    "dig": ("dig", "dig_underground_1.mp3", [0.1, 2.1]),
+    "pickup": ("pickup", "key-176034.mp3", None),
+    # A bird now and then by day, on top of the ambience.
+    "bird_1": ("forest_birds", "Forest Birds/Forest Birds 9.wav", None),
+    "bird_2": ("forest_birds", "Forest Birds/Forest Birds 8.wav", None),
+    "bird_3": ("forest_birds", "Forest Birds/Forest Birds 10.wav", None),
     # Menus.
     "ui_move": ("rpg_sound_pack", "RPG Sound Pack/interface/interface1.wav", None),
     "ui_confirm": ("rpg_sound_pack", "RPG Sound Pack/interface/interface6.wav", [0.0, 0.25]),
@@ -149,6 +183,13 @@ MUSIC = {
     "lot": ("jrpg_calm", "Calm2 - Childhood Friends.ogg"),           # the dare
     "yard": ("jrpg_exploration", "Exploration1 - Grasslands.ogg"),    # the test yard
     "arena": ("jrpg_action", "Action3 - Preparing For Battle.ogg"),   # the combat arena
+}
+
+
+## Ambience loops: output name -> (pack, file, crossfade seconds for the seam).
+AMBIENCE = {
+    "day": ("birds_wind", "Birds%20and%20Wind%20-%20Ambient_1.ogg", 3.0),
+    "night": ("crickets", "crickets_1.mp3", 0.6),
 }
 
 
@@ -174,8 +215,13 @@ def fetch(key, offline):
         sys.exit(f"ERROR: {key} isn't cached and --offline was given")
     os.makedirs(CACHE, exist_ok=True)
     url = PACKS[key]["url"]
-    archive = os.path.join(CACHE, key + (".7z" if url.endswith(".7z") else ".zip"))
     print(f"  downloading {PACKS[key]['title']} ...")
+    if not (url.endswith(".7z") or url.endswith(".zip")):
+        # A single sound file: keep it under its own (URL) name.
+        os.makedirs(d, exist_ok=True)
+        urllib.request.urlretrieve(url, os.path.join(d, url.rsplit("/", 1)[1]))
+        return d
+    archive = os.path.join(CACHE, key + (".7z" if url.endswith(".7z") else ".zip"))
     urllib.request.urlretrieve(url, archive)
     z = seven_zip()
     if z is None:
@@ -221,15 +267,28 @@ def finish(data, sr):
     return data
 
 
-def write_ogg(data, sr, out):
+def make_loop(data, sr, xfade):
+    """Seamless loop: the last `xfade` seconds fade into the first ones, and
+    the loop is that much shorter, so the end runs straight into the start."""
+    n = int(sr * xfade)
+    ramp = np.linspace(0.0, 1.0, n)[:, None]
+    body = data[:-n].copy()
+    body[:n] = data[:n] * ramp + data[-n:] * (1.0 - ramp)
+    return body
+
+
+def write_ogg(data, sr, out, channels=1):
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
         sys.exit("ERROR: ffmpeg is needed for OGG encoding (ffmpeg on PATH)")
     with tempfile.TemporaryDirectory() as tmp:
         wav = os.path.join(tmp, "x.wav")
         sf.write(wav, data.astype(np.float32), sr, subtype="PCM_16")
-        subprocess.run([ffmpeg, "-loglevel", "error", "-y", "-i", wav, "-ar", str(RATE), "-ac", "1",
-                        "-c:a", "libvorbis", "-q:a", "5", out], check=True)
+        subprocess.run([ffmpeg, "-loglevel", "error", "-y", "-i", wav, "-ar", str(RATE), "-ac", str(channels),
+                        "-c:a", "libvorbis", "-q:a", "5",
+                        # Same input, same bytes: no random stream serial or version
+                        # tag, so a rebuild doesn't rewrite every file in git.
+                        "-fflags", "+bitexact", "-flags:a", "+bitexact", out], check=True)
 
 
 # --- Generated sounds (original to this project) -------------------------------
@@ -281,6 +340,15 @@ def build(offline):
     for name, (key, rel) in MUSIC.items():
         shutil.copyfile(source(key, rel, offline), os.path.join(MUSIC_OUT, name + ".ogg"))
         print("  music %s" % name)
+    os.makedirs(AMBIENCE_OUT, exist_ok=True)
+    for name, (key, rel, xfade) in AMBIENCE.items():
+        data, sr = sf.read(source(key, rel, offline), always_2d=True)
+        if data.shape[1] == 1:
+            data = np.repeat(data, 2, axis=1)
+        data = make_loop(data, sr, xfade)
+        data *= 10 ** (-3.0 / 20) / max(np.abs(data).max(), 1e-6)  # peak -3 dBFS
+        write_ogg(data, sr, os.path.join(AMBIENCE_OUT, name + ".ogg"), channels=2)
+        print("  amb   %s" % name)
     write_credits()
 
 
@@ -291,9 +359,12 @@ def write_credits():
         used.setdefault(key, []).append(f"{name}.ogg  <-  {rel}")
     for name, (key, rel) in MUSIC.items():
         used.setdefault(key, []).append(f"music/{name}.ogg  <-  {rel}")
+    for name, (key, rel, _x) in AMBIENCE.items():
+        used.setdefault(key, []).append(f"ambience/{name}.ogg  <-  {rel} (looped)")
     lines = ["Audio used by Secret of Evermore 2: Return to Evermore",
              "Rebuilt by tools/audio/build_audio.py. Every source below is CC0 (public domain);",
-             "credit is given anyway, with thanks.", ""]
+             "credit is given anyway, with thanks. Sound effects are trimmed, mixed to mono and",
+             "normalized; ambience loops have their end crossfaded into their start.", ""]
     for key, files in used.items():
         p = PACKS[key]
         lines += [f"{p['title']}", f"  by {p['author']}", f"  license: {p['license']}", f"  {p['page']}"]

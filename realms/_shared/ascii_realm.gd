@@ -45,6 +45,9 @@ const DEFAULTS := {
 	"TERRAIN_BY_CHAR": {":": "Dirt", "~": "Shallow Water"},
 	## Music track for this map (autoload/audio.gd MUSIC). "" = silence.
 	"MUSIC": "",
+	## Background sound (autoload/audio.gd AMBIENCE_SETS): "outdoor" = birds by
+	## day, crickets at night. "" = none.
+	"AMBIENCE": "outdoor",
 	"TERRAIN_PRIORITY": ["Grass", "Dirt", "Shallow Water"],
 	"SOLID_CHARS": "~",
 	"WATER_EDGE_PX": 11,
@@ -119,6 +122,7 @@ func _ready() -> void:
 	if not key.is_empty():
 		GameState.current_realm = key
 	Audio.play_music(cfg("MUSIC"), 1.5)
+	Audio.set_ambience(cfg("AMBIENCE"))
 	Debug.log_info("%s loaded (%dx%d tiles, %d props, %d decals, %d NPCs, %d enemies, %d solid shapes). Run with -- --help for options."
 			% [Names.text(key) if not key.is_empty() else name, layout[0].length(), layout.size(),
 			_counts["props"], _counts["decals"], _counts["npcs"], _counts["enemies"], _counts["solids"]])

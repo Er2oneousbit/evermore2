@@ -137,8 +137,25 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
   ([OpenGameArt](https://opengameart.org/content/dog-sounds))
 * **Fantozzi's Footsteps** by Fantozzi (submitted by qubodup): grass and stone
   steps ([OpenGameArt](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone))
+* **Birds and Wind - Ambient** by Spring Spring: the daytime ambience
+  ([OpenGameArt](https://opengameart.org/content/birds-and-wind-ambient-birds-wind-and-synth))
+* **Crickets Ambient Noise** by Wolfgang_ (attribution notice: Ted Kerr): the
+  night ambience ([OpenGameArt](https://opengameart.org/content/crickets-ambient-noise-loopable))
+* **Forest bird sounds** by pauliuw: the occasional bird by day
+  ([OpenGameArt](https://opengameart.org/content/forest-bird-sounds))
+* **Digging Underground** by Almitory and **Item Pickup / Key** by Musheran:
+  digging and picking up (ready for hidden items)
+  ([dig](https://opengameart.org/node/138434), [pickup](https://opengameart.org/content/item-pickup-key))
 * Made by this project (generated in `tools/audio/build_audio.py`): the text
   blip, the kid's whistle, the switch chime
+
+## Item icons: `assets/items/lpc_items.png` (not used yet)
+
+* **[LPC] Items and game effects** by Reemax, with Sharm, ETTiNGRiNDER, wulax,
+  Nila122, daneeklu, JaidynReiman, pennomi, laetissima, makrohn and Jetrel
+  ([OpenGameArt](https://opengameart.org/content/lpc-items-and-game-effects)).
+  License: **CC-BY-SA 3.0 / GPL 3.0 / GPL 2.0**. Unmodified. Per-item artists:
+  `credits/items/credits_from_pack.txt`.
 
 ## Code-made effects
 

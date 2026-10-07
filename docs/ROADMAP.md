@@ -66,6 +66,20 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: ambience, and assets for hidden items
+
+* **Birds by day, crickets at night**: an Ambience bus (with its own volume
+  slider) and two loop players that crossfade when the time of day changes;
+  a bird calls now and then by day. Maps choose it (`AMBIENCE`, "outdoor" by
+  default); dinner in the prologue is indoors, so it's quiet
+* The audio pipeline makes seamless loops (the end is crossfaded into the
+  start: the birds track faded out at its end) and writes byte-identical files
+  on a rebuild (ffmpeg's random stream serial made every rebuild rewrite every
+  sound in git)
+* Ready for the hidden items milestone: a digging sound, a pickup sound, and
+  the LPC item icon sheet (weapons, armor, potions, food, keys, tools, maps)
+  through the art pipeline
+
 ## Done: sound and music
 
 * **An audio pipeline** (`tools/audio/build_audio.py`), like the art one: it

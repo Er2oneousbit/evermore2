@@ -22,7 +22,8 @@ The story, the realms and the real content come later.
 * **Normal and Hard**: the Hard launcher makes the rats tougher
 * **Sound and music**: swings, hits, the rat's warning squeak before it
   bites (listen for it), the dog's barks and bites, footsteps that change on
-  the dirt road, menu ticks, a text blip, and music for each place
+  the dirt road, menu ticks, a text blip, music for each place, and birds by
+  day and crickets at night that follow the time of day
 * **A pause menu with settings** (Esc / Start): rebind every key and button,
   graphics quality presets and each effect on its own, brightness, window
   mode, V-Sync, frame cap, volumes, text speed, screen shake, damage numbers

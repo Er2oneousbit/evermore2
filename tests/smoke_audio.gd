@@ -12,6 +12,9 @@
 #           "home" for dinner, crossfades and stops work
 #        5. Menus and dialogue: pause opens/moves/closes with ticks, the text
 #           box blips while typing
+#        6. Ambience: birds by day, crickets at night (following the time of
+#           day), loops, a bird now and then by day, silence when a map asks,
+#           none during dinner
 #        Headless Audio picks and logs sounds without playing them (no audio
 #        device), so this checks the wiring; ears check the mix.
 #
@@ -44,6 +47,7 @@ func _run() -> void:
 	await _test_footsteps()
 	await _test_music()
 	await _test_menus_and_text()
+	await _test_ambience()
 	if _failures.is_empty():
 		print("[TEST] PASS  smoke_audio")
 		get_tree().quit(0)
@@ -59,6 +63,9 @@ func _test_files() -> void:
 		for f: String in Audio.SOUNDS[sound]["files"]:
 			var path := Audio.SFX_DIR + f + ".ogg"
 			_check(ResourceLoader.exists(path) and load(path) is AudioStream, "sound file %s loads (for '%s')" % [path, sound])
+	for amb: String in Audio.AMBIENCE:
+		var apath: String = Audio.AMBIENCE_DIR + Audio.AMBIENCE[amb][0] + ".ogg"
+		_check(ResourceLoader.exists(apath) and load(apath) is AudioStream, "ambience %s loads" % apath)
 	for track: String in Audio.MUSIC:
 		var path: String = Audio.MUSIC_DIR + Audio.MUSIC[track] + ".ogg"
 		_check(ResourceLoader.exists(path) and load(path) is AudioStream, "music %s loads" % path)
@@ -224,6 +231,39 @@ func _test_menus_and_text() -> void:
 	_check(_heard.count("text_blip") >= 3, "typing text blips (%d)" % _heard.count("text_blip"))
 	box.hide_box()
 	arena.queue_free()
+	await _frames(2)
+
+
+func _test_ambience() -> void:
+	var arena := await _load(ARENA)  # starts in daylight
+	_check(Audio.ambience_set == "outdoor" and Audio.ambience_name == "day", "outdoors by day: the birds loop (%s)" % Audio.ambience_name)
+	var stream := Audio.ambience_player().stream as AudioStreamOggVorbis
+	_check(stream != null and stream.loop and stream.resource_path.ends_with("day.ogg"), "the day ambience loops")
+	_heard.clear()
+	Audio._bird_timer = 0.0
+	await _frames(2)
+	_expect("bird", "a bird calls now and then by day")
+	var atmo: Atmosphere = arena.get_node("Atmosphere")
+	atmo.set_time("night", 0.0)
+	await _frames(2)
+	_check(Audio.ambience_name == "night", "night brings the crickets (%s)" % Audio.ambience_name)
+	_heard.clear()
+	Audio._bird_timer = 0.0
+	await _frames(2)
+	_check(not _heard.has("bird"), "no birds at night")
+	atmo.set_time("golden", 0.0)
+	await _frames(2)
+	_check(Audio.ambience_name == "day", "golden hour is still birds")
+	Audio.set_ambience("")
+	_check(Audio.ambience_name == "", "a map can ask for silence")
+	arena.queue_free()
+	await _frames(2)
+	var lot: Node = load(LOT).instantiate()
+	add_child(lot)  # with the intro: dinner, indoors
+	await _frames(10)
+	_check(Audio.ambience_name == "", "no birds during dinner (%s)" % Audio.ambience_name)
+	Dialogue._finish()
+	lot.queue_free()
 	await _frames(2)
 
 
