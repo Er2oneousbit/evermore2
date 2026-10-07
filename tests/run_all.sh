@@ -5,7 +5,7 @@
 # USAGE:  tests/run_all.sh [path/to/godot]        (or set GODOT=...)
 # RUNS:   smoke_follow at 30, 60 and 120 RENDER fps (physics stays at 60 Hz;
 #         this proves nothing depends on the render frame rate, e.g. a 144 Hz
-#         monitor), smoke_visuals, smoke_hd, smoke_dialogue, smoke_combat, smoke_aspect. No display needed. For the live ultrawide checks use run_aspect_matrix.sh.
+#         monitor), smoke_visuals, smoke_hd, smoke_dialogue, smoke_combat, smoke_party, smoke_aspect. No display needed. For the live ultrawide checks use run_aspect_matrix.sh.
 # EXIT:   0 if everything passed, 1 otherwise.
 #
 # Written with help from Claude (Anthropic) via Claude Code.
@@ -46,6 +46,7 @@ run "visuals"        res://tests/smoke_visuals.tscn --fixed-fps 60
 run "hd-2d view"     res://tests/smoke_hd.tscn --fixed-fps 60
 run "dialogue"       res://tests/smoke_dialogue.tscn --fixed-fps 60
 run "combat"         res://tests/smoke_combat.tscn --fixed-fps 60
+run "party"          res://tests/smoke_party.tscn --fixed-fps 60
 run "aspect (math)"  res://tests/smoke_aspect.tscn
 
 [ $fail -eq 0 ] && echo "ALL TESTS PASSED" || echo "SOME TESTS FAILED"

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_data.gd" id="1_w"]
+
+[resource]
+script = ExtResource("1_w")
+name_key = "weapon_dog_bite"
+damage = 5.0
+reach = 28.0
+arc_deg = 110.0
+swing_anim = &"bite"
+hit_frame = 1
+swing_speed = 1.0
+max_level = 2
+seconds_per_level = 0.7
+knockback = 110.0
+stagger = 0.2

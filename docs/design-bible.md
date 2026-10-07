@@ -273,29 +273,37 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
 | Difficulty | **Normal and Hard playthroughs** (owner, 2026-10-07). On Hard, things cost more and enemies have more HP and armor and hit harder. Every lever lives in one table (`autoload/difficulty.gd`) |
 | Text box | Fits the amount of text: grows and shrinks, long lines turn into pages (done) |
 
-**How they'd work (DRAFT, for review):**
+**How they work** (built in combat phase B, 2026-10-07; still open to tuning):
 
 - **Stances steer whoever the AI is playing.** You control the kid or the dog
-  (switch any time; Player 2 can take the other), and the one you're not
+  (switch any time; Player 2 can take the other, later), and the one you're not
   controlling follows his stance:
-  - *Kid, Offensive:* engages enemies near you, swings when his charge is high.
-  - *Kid, Defensive:* keeps his distance, only hits what's attacking him or the
-    dog, gets out of the way of big attacks.
-  - *Dog, Offensive:* goes after nearby enemies; doesn't search.
-  - *Dog, Search:* roams a short leash around the kid, nose down. Near a hidden
-    item he stops, points and barks, then digs it up. He only fights if
-    something attacks him.
-  - Set from the ring menu or the pause menu; the HUD shows a small icon.
-- **Stay put and splitting up (DRAFT):**
-  - *Stay put / Follow* toggles the partner (Q / gamepad X): playing the kid
-    it tells the dog, playing the dog it tells the kid. A partner who's staying
-    put holds his spot; he still defends himself by his stance but never wanders.
-  - *Switch* (its own button) moves control and the camera to the other one,
-    wherever he is.
-  - *Call back*: hold the button to whistle the partner over, so a split can
-    never strand you. Puzzle areas can block the call on purpose.
+  - *Kid, Offensive:* goes after awake enemies near you and swings as soon as
+    his charge reaches level 1.
+  - *Kid, Defensive:* stays with you and only swings at enemies already within
+    reach, waiting for a full charge (fewer, bigger hits).
+  - *Dog, Offensive:* bites awake enemies near you.
+  - *Dog, Search:* stays out of fights, nose down (he sniffs when he stands
+    still). He only bites back at something that's after him. Finding hidden
+    items comes with the hidden items milestone: near one he'll stop, point and
+    bark, then dig it up.
+  - The AI never wakes sleeping enemies and never fights more than 240 px from
+    you (past that it drops the fight and catches up).
+  - R / gamepad RB cycles the partner's stance for now; the ring menu takes it
+    over later. The HUD shows it next to his HP.
+- **Stay put and splitting up:**
+  - *Stay put* toggles the partner (Q / gamepad X): playing the kid it tells
+    the dog, playing the dog it tells the kid. A staying partner holds his
+    spot; he still swings at anything within reach but never moves.
+  - *Switch* (Tab / gamepad Back) moves control and the camera to the other
+    one, wherever he is. **Stay put stays on through a switch**, so the one you
+    just left stands still: leave the dog on a plate, switch, walk the kid on.
+  - *Call back*: press Stay put again. He retraces your path, and if he's stuck
+    out of sight he warps in, so a split can never strand you. (Puzzle areas
+    that block the call: later, if a puzzle needs it.)
   - A partner arrow at the screen edge shows where he is when he's off screen,
-    and flashes red when he's under attack.
+    and flashes red while he's being hit.
+  - Conversations belong to the kid: starting one hands control back to him.
   - Puzzles it opens up: the dog squeezes through a gap the kid can't; one holds
     a pressure plate while the other crosses; the kid waits while the dog sniffs
     a way through a dark maze; a door stays open only while someone stands on

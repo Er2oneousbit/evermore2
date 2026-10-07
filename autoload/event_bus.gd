@@ -41,6 +41,18 @@ signal interaction_target_changed(target: Node)
 @warning_ignore("unused_signal")
 signal camera_shake(strength: float, seconds: float)
 
+## The player now drives `leader` (the kid or the dog). See Party.
+@warning_ignore("unused_signal")
+signal control_changed(leader: Node2D)
+
+## Stay put was switched on or off for the partner. See Party.
+@warning_ignore("unused_signal")
+signal partner_stay_changed(staying: bool)
+
+## A party member's stance changed ("offensive", "defensive", "search").
+@warning_ignore("unused_signal")
+signal stance_changed(member: Node2D, stance: String)
+
 ## A story/progress flag was set via GameState.set_flag().
 @warning_ignore("unused_signal")
 signal flag_changed(flag: String, value: Variant)

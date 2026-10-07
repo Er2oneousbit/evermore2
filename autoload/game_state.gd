@@ -27,6 +27,11 @@ var current_realm := "realm_test_yard"
 ## "normal" or "hard" (see Difficulty). Chosen when a game starts.
 var difficulty := "normal"
 
+## How the AI plays each one when he isn't the one you drive (see Party).
+## The kid: "offensive" or "defensive". The dog: "offensive" or "search".
+var kid_stance := "offensive"
+var dog_stance := "offensive"
+
 var _flags: Dictionary = {}
 
 

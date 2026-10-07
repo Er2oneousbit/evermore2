@@ -23,20 +23,16 @@ Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
-1. **Combat, phase B**: **switching control** between kid and dog, **Stay
-   put** for the partner (with a call-back whistle and a partner arrow), the
-   **stances** (kid: Offensive/Defensive, dog: Offensive/Search) driving
-   whoever the AI plays, and the dog's bite.
-2. **Hidden items and the dog's nose**: buried, tucked and secret items; the
+1. **Hidden items and the dog's nose**: buried, tucked and secret items; the
    dog's Search stance points and digs; sniff mode shows scent trails; a found
    counter per area.
-3. **Ring menu, equipment and the first alchemy formula**: data-driven `.tres`
+2. **Ring menu, equipment and the first alchemy formula**: data-driven `.tres`
    resources; armor slots (kid: head, body, legs, boots, hands, arms; dog: collar).
-4. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
+3. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
    kitchen, lab), the torn clipping, Carltron waking, the flash. Needs interior
    tiles and HD-2D height (stairs, a basement). Dinner deserves a real kitchen
    instead of a black screen.
-5. **The first realm** (once the realms are designed): painted in the editor,
+4. **The first realm** (once the realms are designed): painted in the editor,
    finding the dog, the first boss, sniff mode.
 
 Alongside: the dog's look (notched floppy ear, one ear up, the orange shelter
@@ -67,6 +63,32 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: combat, phase B (the duo)
+
+* **Switching control**: Tab / gamepad Back hands the stick to the dog and
+  back. The camera glides over in both views; the one you left follows you
+  along your breadcrumb trail (the dog's follow brain is shared now:
+  `systems/party/follower.gd`). If the one you drive is knocked out, control
+  jumps to the other; you can't switch to a knocked-out partner
+* **Stay put**: Q / gamepad X. The partner holds his spot, and it stays on
+  through a switch, so the two can split up for puzzles. Press again to call
+  him back (he retraces your path, or warps in if he's stuck out of sight)
+* **Stances** drive the AI partner (`systems/party/partner_brain.gd`): the kid
+  Offensive or Defensive, the dog Offensive or Search; R / gamepad RB cycles
+  the partner's. The AI never wakes sleeping enemies and stays within 240 px
+* **The dog's bite**: his own weapon data and charge meter (two levels), a
+  lunge, and the hit on the bite's frame
+* **HUD**: "> " marks the one you drive; the partner shows his stance and
+  "Stay"; both have a charge bar; an arrow points to an off-screen partner and
+  flashes red while he's being hit
+* Conversations belong to the kid: starting one hands control back to him, and
+  nothing is in reach to talk to while you drive the dog
+* Tests: a new duo test (switching, the glide, following, Stay put through a
+  switch, call-back, knockouts, every stance, the bite, the HUD, talking, the
+  HD-2D camera); each check was broken on purpose to confirm it fails. The
+  dog's follow numbers are unchanged after the refactor (max gap 76 px,
+  1 state change, 0 warps at 30/60/120 fps). 9 headless runs pass
 
 ## Done: combat, phase A
 

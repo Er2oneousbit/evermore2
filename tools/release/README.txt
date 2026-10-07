@@ -44,7 +44,10 @@ Move                  WASD / arrows       Left stick / D-pad
 Attack                J / Space           A
 Talk / interact       E / Enter           A
 Phone flashlight      F                   Y
-Dog: stay / follow    Q                   X
+Switch kid / dog      Tab                 Back (View)
+Partner: Stay put     Q                   X
+  (press again to call him back)
+Partner's stance      R                   RB
 Time of day           F2
 Debug overlay         F3
 Classic 2D view       F6
@@ -54,6 +57,15 @@ the kid's health refills by itself; wait longer and it climbs to x2 and
 x4 damage. Swinging early still hits, for less.
 
 Talking wins over attacking when someone is in reach.
+
+The duo: you drive one, the AI plays the other by his stance.
+  The kid:  Offensive (goes after enemies near you) or Defensive (stays
+            close, swings only at what comes within reach, at full power)
+  The dog:  Offensive (bites enemies near you) or Search (keeps out of
+            fights, sniffs around, bites back if something's after him)
+Stay put leaves the partner where he is, even through a switch: leave the
+kid on one side, switch to the dog, explore. An arrow at the screen edge
+points to him when he's out of view (red while he's being hit).
 
 
 FEEDBACK AND BUGS

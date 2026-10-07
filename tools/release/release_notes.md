@@ -14,6 +14,11 @@ The story, the realms and the real content come later.
   holding a button: wait and it climbs to x2 and x4), giant rats that wake
   as you get close, warn before they bite, stagger, and give up if you run
   far enough. Hit-stop, damage numbers, knockouts and revives
+* **The duo**: switch between the kid and the dog any time (the camera
+  glides over), leave the other on **Stay put** (it survives a switch, so the
+  two can split up), and set how the AI plays the one you aren't driving: the
+  kid Offensive or Defensive, the dog Offensive or Search. The dog bites. An
+  arrow points to him when he's out of view
 * **Normal and Hard**: the Hard launcher makes the rats tougher
 
 ## Downloads

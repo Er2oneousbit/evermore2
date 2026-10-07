@@ -117,6 +117,8 @@ func _test_difficulty() -> void:
 func _test_swing() -> void:
 	var arena := await _load(ARENA)
 	var kid: Kid = arena.get_node("World/Kid")
+	# Only the kid's swing here: the dog (Offensive) would join in.
+	arena.get_node("World/Dog").set_physics_process(false)
 	_clear_enemies()
 	var front := _add_rat(arena, kid.global_position + Vector2(0, 24))
 	var behind := _add_rat(arena, kid.global_position + Vector2(0, -26))
