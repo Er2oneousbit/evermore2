@@ -17,6 +17,7 @@ script = ExtResource("1_yard")
 
 [node name="Atmosphere" type="Node" parent="."]
 script = ExtResource("5_atmo")
+start_time = "day"
 
 [node name="Ground" type="TileMapLayer" parent="."]
 z_index = -20

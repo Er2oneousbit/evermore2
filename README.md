@@ -25,8 +25,9 @@ monitor, from a Steam Deck to a 48:9 triple-wide.
 |---|---|
 | ![dinner](docs/screenshots/prologue_dinner.png) | ![maya](docs/screenshots/prologue_maya.png) |
 
-**Combat:** a fully charged swing (x4) on a giant rat.
-![combat](docs/screenshots/combat_swing.png)
+| Combat: a fully charged swing (x4) on a giant rat | Settings (Esc / Start) |
+|---|---|
+| ![combat](docs/screenshots/combat_swing.png) | ![settings](docs/screenshots/settings.png) |
 
 | Golden hour | Koi pond | Rose garden |
 |---|---|---|
@@ -77,6 +78,7 @@ runs, without the light shafts, reflections and blur.
 
 | Action | Keyboard | Gamepad |
 |---|---|---|
+| Pause menu and **settings** | Esc | Start |
 | Move (full tilt runs, partial walks) | WASD / Arrow keys | Left stick / D-pad |
 | Phone flashlight | F | Y |
 | Attack (waiting charges it up) | J / Space | A |
@@ -86,6 +88,11 @@ runs, without the light shafts, reflections and blur.
 | Partner's stance (Offensive, Defensive / Search) | R | RB |
 | Time of day (prototype) | F2 | |
 | Classic 2D view (prototype) | F6 | |
+
+Every control except the pause button can be rebound in **Settings →
+Controls**. Settings also has graphics (quality presets, each effect,
+brightness, HD-2D or classic 2D), display (window mode, V-Sync, frame cap),
+audio volumes and gameplay options (text speed, screen shake, damage numbers).
 
 ## Found a bug?
 

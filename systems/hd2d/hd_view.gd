@@ -49,6 +49,7 @@ const NPC_DEPTH_BIAS := 0.015
 const DOG_DEPTH_BIAS := 0.01
 
 const SPRITE_SHADER := preload("res://assets/shaders/hd_sprite.gdshader")
+const ACTOR_SHADER := preload("res://assets/shaders/hd_actor.gdshader")
 const WATER_SHADER := preload("res://assets/shaders/hd_water.gdshader")
 const CLOUD_SHADER := preload("res://assets/shaders/hd_cloud_shadow.gdshader")
 const RIPPLE_NOISE := preload("res://assets/shaders/ripple_noise.tres")
@@ -62,6 +63,9 @@ const WOOD_POST := preload("res://assets/textures/hd/wood_post.png")
 ## top-left of the screen, shadows falling toward the bottom-right.
 ## Tuning lesson: tint the SUN warm and keep the AMBIENT cool, keep fog thin.
 ## Warm sun + warm fog + warm ambient turns everything into orange soup.
+## Readability lesson (golden hour, 2026-10-07): a low sun into thick fog
+## scattered toward the camera washed the whole screen yellow and drained the
+## sprites. Keep the sun above ~30 degrees, fog near the day value, shadows lifted.
 const PRESETS := {
 	"day": {
 		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "sun_elev": 55.0, "sun_yaw": 205.0,
@@ -70,16 +74,16 @@ const PRESETS := {
 		"fog_density": 0.0025, "fog_albedo": Color(0.92, 0.95, 1.0),
 		"exposure": 1.0, "saturation": 1.08, "contrast": 1.04, "glow": 0.3,
 		"flashlight": 0.0, "pollen": 0.4, "fireflies": 0.0, "clouds": 0.42, "dof": 0.06,
-		"water_glow": 0.3, "phone_glow": 0.0,
+		"water_glow": 0.3, "phone_glow": 0.0, "actor_lift": 0.08,
 	},
 	"golden": {
-		"sun_color": Color(1.0, 0.74, 0.47), "sun_energy": 2.05, "sun_elev": 20.0, "sun_yaw": 215.0,
-		"ambient": Color(0.52, 0.5, 0.74), "ambient_energy": 0.68,
+		"sun_color": Color(1.0, 0.76, 0.52), "sun_energy": 1.75, "sun_elev": 30.0, "sun_yaw": 215.0,
+		"ambient": Color(0.56, 0.56, 0.78), "ambient_energy": 0.82,
 		"sky_top": Color(0.34, 0.4, 0.76), "sky_horizon": Color(1.0, 0.66, 0.42),
-		"fog_density": 0.0075, "fog_albedo": Color(1.0, 0.84, 0.64),
-		"exposure": 1.0, "saturation": 1.16, "contrast": 1.07, "glow": 0.5,
+		"fog_density": 0.003, "fog_albedo": Color(1.0, 0.86, 0.7),
+		"exposure": 1.0, "saturation": 1.1, "contrast": 1.1, "glow": 0.3,
 		"flashlight": 0.4, "pollen": 1.0, "fireflies": 0.0, "clouds": 0.3, "dof": 0.08,
-		"water_glow": 0.24, "phone_glow": 0.0,
+		"water_glow": 0.24, "phone_glow": 0.0, "actor_lift": 0.12,
 	},
 	"night": {
 		"sun_color": Color(0.58, 0.68, 1.0), "sun_energy": 0.28, "sun_elev": 52.0, "sun_yaw": 160.0,
@@ -88,7 +92,7 @@ const PRESETS := {
 		"fog_density": 0.008, "fog_albedo": Color(0.5, 0.6, 0.95),
 		"exposure": 1.0, "saturation": 0.92, "contrast": 1.06, "glow": 0.8,
 		"flashlight": 7.0, "pollen": 0.0, "fireflies": 1.0, "clouds": 0.0, "dof": 0.08,
-		"water_glow": 0.05, "phone_glow": 0.9,
+		"water_glow": 0.05, "phone_glow": 0.9, "actor_lift": 0.06,
 	},
 }
 
@@ -129,6 +133,12 @@ var _dog3d: Sprite3D
 var _actors: Array = []
 ## Actors already mirrored (instance id -> true), so late arrivals are found.
 var _mirrored: Dictionary = {}  # instance id -> its Sprite3D
+var _actor_materials: Dictionary = {}  # texture id -> ShaderMaterial
+## The time of day's exposure, before the player's brightness.
+var _exposure := 1.0
+## Settings that change how this view draws.
+const GRAPHICS_KEYS := ["shadows", "light_shafts", "reflections", "ambient_occlusion",
+		"tilt_shift", "bloom", "particles", "clouds", "brightness"]
 ## Seconds until the next look for actors that arrived after load.
 var _scan_timer := 0.0
 const SCAN_SECONDS := 0.2
@@ -183,13 +193,49 @@ func _ready() -> void:
 
 	EventBus.time_of_day_changed.connect(func(t: String) -> void: _apply_time(t, 0.8))
 	_apply_time(_atmo.time_name, 0.0)
-	set_enabled(true)
+	_apply_graphics()
+	Settings.changed.connect(_on_setting_changed)
+	set_enabled(Settings.get_value("view") == "hd2d")
 	Debug.log_info("HD-2D view ready (%d sprite props). F6 toggles the classic 2D view." % _prop_count)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_toggle_view"):
-		set_enabled(not enabled)
+		# Same as the View option in the settings menu (and remembered like it).
+		Settings.set_value("view", "classic" if enabled else "hd2d")
+
+
+func _on_setting_changed(key: String, value: Variant) -> void:
+	if key == "view":
+		set_enabled(value == "hd2d")
+	elif key in GRAPHICS_KEYS:
+		_apply_graphics()
+
+
+## The player's graphics options (Settings), on top of what the renderer can
+## do at all (renderer_caps). Called at build and whenever one changes.
+func _apply_graphics() -> void:
+	var caps := renderer_caps()
+	_env.volumetric_fog_enabled = caps["volumetric_fog"] and Settings.get_value("light_shafts")
+	if _env.volumetric_fog_enabled and not _to.is_empty():
+		_env.volumetric_fog_density = _to["fog_density"]
+		_env.volumetric_fog_albedo = _to["fog_albedo"]
+	_env.ssr_enabled = caps["ssr"] and Settings.get_value("reflections")
+	_env.ssao_enabled = caps["ssao"] and Settings.get_value("ambient_occlusion")
+	_env.glow_enabled = Settings.get_value("bloom")
+	var attrs := _cam.attributes as CameraAttributesPractical
+	var dof: bool = caps["dof"] and Settings.get_value("tilt_shift")
+	attrs.dof_blur_far_enabled = dof
+	attrs.dof_blur_near_enabled = dof
+	var shadows: String = Settings.get_value("shadows")
+	_sun.shadow_enabled = shadows != "off"
+	_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if shadows == "low" \
+			else DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	RenderingServer.directional_shadow_atlas_set_size(2048 if shadows == "low" else 4096, true)
+	_pollen.visible = Settings.get_value("particles")
+	_fireflies.visible = Settings.get_value("particles")
+	_clouds.visible = Settings.get_value("clouds")
+	_env.tonemap_exposure = _exposure * Settings.get_value("brightness")
 
 
 ## Show the HD-2D view (true) or the classic 2D one (false).
@@ -549,6 +595,8 @@ func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:
 	s.offset = Vector2(src.offset.x, -src.offset.y)
 	s.shaded = true
 	s.double_sided = true
+	# Lit like the ground it stands on, never backlit (see hd_actor.gdshader).
+	s.material_override = _actor_material(src.texture)
 	s.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	s.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
@@ -566,6 +614,18 @@ func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:
 	blob.cull_mask = GROUND_LAYER  # only the ground, never the sprites
 	s.add_child(blob)
 	return s
+
+
+## One character material per sprite sheet.
+func _actor_material(tex: Texture2D) -> ShaderMaterial:
+	var key := tex.get_instance_id() if tex else 0
+	if not _actor_materials.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = ACTOR_SHADER
+		m.set_shader_parameter("tex", tex)
+		m.set_shader_parameter("lift", _to.get("actor_lift", 0.08) if not _to.is_empty() else 0.08)
+		_actor_materials[key] = m
+	return _actor_materials[key]
 
 
 func _sync_actor(s3: Sprite3D, s2: Sprite2D, pos: Vector2, depth_bias: float) -> void:
@@ -823,7 +883,8 @@ func _blend(t: float) -> void:
 	if _env.volumetric_fog_enabled:
 		_env.volumetric_fog_density = v["fog_density"]
 		_env.volumetric_fog_albedo = v["fog_albedo"]
-	_env.tonemap_exposure = v["exposure"]
+	_exposure = v["exposure"]
+	_env.tonemap_exposure = _exposure * Settings.get_value("brightness")
 	_env.adjustment_saturation = v["saturation"]
 	_env.adjustment_contrast = v["contrast"]
 	_env.glow_intensity = v["glow"]
@@ -836,3 +897,5 @@ func _blend(t: float) -> void:
 	_cloud_mat.set_shader_parameter("coverage", v["clouds"])
 	_pollen.transparency = 1.0 - v["pollen"]
 	_fireflies.transparency = 1.0 - v["fireflies"]
+	for m: ShaderMaterial in _actor_materials.values():
+		m.set_shader_parameter("lift", v["actor_lift"])

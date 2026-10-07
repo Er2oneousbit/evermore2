@@ -49,6 +49,8 @@ func world_to_screen(p: Vector2, height_px := 0.0) -> Vector2:
 
 
 func damage_number(world_pos: Vector2, amount: int, kind := "enemy", level := 1) -> void:
+	if not Settings.get_value("damage_numbers"):
+		return
 	var l := Label.new()
 	l.text = str(amount)
 	var big := kind == "enemy" and level >= 2
@@ -114,7 +116,9 @@ func is_hit_stopped() -> bool:
 
 
 func shake(strength: float, seconds: float) -> void:
-	EventBus.camera_shake.emit(strength, seconds)
+	var k: float = Settings.get_value("screen_shake")  # the player's comfort setting
+	if k > 0.0:
+		EventBus.camera_shake.emit(strength * k, seconds)
 
 
 ## A swing trail: a fading arc drawn in screen space around the attacker,

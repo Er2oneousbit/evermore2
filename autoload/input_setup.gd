@@ -6,6 +6,11 @@
 #        merge-conflict bait. This table is the single source of truth, and a
 #        future rebinding menu only has to edit these actions at runtime.
 #
+# REBINDING: the settings menu (Controls tab) changes keys and buttons at
+#   runtime through bindings_of / set_bindings / rebind; Settings saves them.
+#   Only actions in REBINDABLE show up there (debug keys and pause don't).
+#   The analog sticks stay as they are.
+#
 # HOW TO ADD AN ACTION: add a row to BINDINGS below. That's it.
 #   keys   -> Godot Key constants (physical keys, so WASD works on AZERTY too)
 #   buttons-> JoyButton constants (Xbox layout names: A/B/X/Y)
@@ -35,11 +40,46 @@ const BINDINGS := {
 	"switch_control":  {"keys": [KEY_TAB],          "buttons": [JOY_BUTTON_BACK]},
 	"partner_stay":    {"keys": [KEY_Q],            "buttons": [JOY_BUTTON_X]},
 	"partner_stance":  {"keys": [KEY_R],            "buttons": [JOY_BUTTON_RIGHT_SHOULDER]},
+	# --- Menus (fixed, so a player can always get back to the settings) -------
+	"pause":           {"keys": [KEY_ESCAPE],       "buttons": [JOY_BUTTON_START]},
 	# --- Debug (prototype only; gate behind a setting before release) ---------
 	"debug_cycle_time": {"keys": [KEY_F2]},
 	"debug_overlay":    {"keys": [KEY_F3]},
 	"debug_warp_dog":   {"keys": [KEY_F4]},
 	"debug_toggle_view": {"keys": [KEY_F6]},
+}
+
+
+## Actions the player can rebind, in the order the Controls tab lists them,
+## with the names it shows.
+const REBINDABLE := [
+	["move_up", "Move up"],
+	["move_down", "Move down"],
+	["move_left", "Move left"],
+	["move_right", "Move right"],
+	["attack", "Attack"],
+	["interact", "Talk / interact"],
+	["toggle_light", "Flashlight"],
+	["switch_control", "Switch kid / dog"],
+	["partner_stay", "Partner: Stay put"],
+	["partner_stance", "Partner's stance"],
+]
+## How many keyboard keys and gamepad buttons each action can have.
+const MAX_KEYS := 2
+const MAX_BUTTONS := 1
+## Actions that may share a binding on purpose (gamepad A talks or attacks:
+## the kid decides, talking wins).
+const SHARED_OK := [["interact", "attack"]]
+
+const BUTTON_NAMES := {
+	JOY_BUTTON_A: "A", JOY_BUTTON_B: "B", JOY_BUTTON_X: "X", JOY_BUTTON_Y: "Y",
+	JOY_BUTTON_BACK: "Back", JOY_BUTTON_GUIDE: "Guide", JOY_BUTTON_START: "Start",
+	JOY_BUTTON_LEFT_STICK: "L3", JOY_BUTTON_RIGHT_STICK: "R3",
+	JOY_BUTTON_LEFT_SHOULDER: "LB", JOY_BUTTON_RIGHT_SHOULDER: "RB",
+	JOY_BUTTON_DPAD_UP: "D-pad up", JOY_BUTTON_DPAD_DOWN: "D-pad down",
+	JOY_BUTTON_DPAD_LEFT: "D-pad left", JOY_BUTTON_DPAD_RIGHT: "D-pad right",
+	JOY_BUTTON_MISC1: "Share", JOY_BUTTON_PADDLE1: "P1", JOY_BUTTON_PADDLE2: "P2",
+	JOY_BUTTON_PADDLE3: "P3", JOY_BUTTON_PADDLE4: "P4", JOY_BUTTON_TOUCHPAD: "Touchpad",
 }
 
 
@@ -71,3 +111,106 @@ func _register(action: String, spec: Dictionary) -> void:
 		ev.axis = pair[0]
 		ev.axis_value = pair[1]
 		InputMap.action_add_event(action, ev)
+
+
+# -----------------------------------------------------------------------------
+# Rebinding (the Controls tab)
+# -----------------------------------------------------------------------------
+func is_rebindable(action: String) -> bool:
+	for pair: Array in REBINDABLE:
+		if pair[0] == action:
+			return true
+	return false
+
+
+## An action's current keys and buttons: {"keys": [Key...], "buttons": [JoyButton...]}.
+func bindings_of(action: String) -> Dictionary:
+	var keys: Array = []
+	var buttons: Array = []
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey:
+			keys.append(int((ev as InputEventKey).physical_keycode))
+		elif ev is InputEventJoypadButton:
+			buttons.append(int((ev as InputEventJoypadButton).button_index))
+	return {"keys": keys, "buttons": buttons}
+
+
+## Replace an action's keys and buttons (sticks are kept).
+func set_bindings(action: String, b: Dictionary) -> void:
+	if not InputMap.has_action(action):
+		return
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey or ev is InputEventJoypadButton:
+			InputMap.action_erase_event(action, ev)
+	for k in b.get("keys", []).slice(0, MAX_KEYS):
+		var ev := InputEventKey.new()
+		ev.physical_keycode = int(k) as Key
+		InputMap.action_add_event(action, ev)
+	for btn in b.get("buttons", []).slice(0, MAX_BUTTONS):
+		var ev := InputEventJoypadButton.new()
+		ev.button_index = int(btn) as JoyButton
+		InputMap.action_add_event(action, ev)
+
+
+## Put `event` (a key or a gamepad button) in slot `slot` of `action`, taking
+## it away from any other rebindable action that had it (except pairs that
+## share on purpose). Returns the actions it was taken from.
+func rebind(action: String, event: InputEvent, slot := 0) -> Array[String]:
+	var taken: Array[String] = []
+	var kind := "keys" if event is InputEventKey else "buttons"
+	var code := int((event as InputEventKey).physical_keycode) if event is InputEventKey \
+			else int((event as InputEventJoypadButton).button_index)
+	if kind == "keys" and code == 0:
+		code = int((event as InputEventKey).keycode)
+	for pair: Array in REBINDABLE:
+		var other: String = pair[0]
+		if other == action or _shared_ok(action, other):
+			continue
+		var ob := bindings_of(other)
+		if ob[kind].has(code):
+			ob[kind].erase(code)
+			set_bindings(other, ob)
+			taken.append(other)
+	var b := bindings_of(action)
+	var list: Array = b[kind]
+	list.erase(code)
+	var limit := MAX_KEYS if kind == "keys" else MAX_BUTTONS
+	if slot < list.size():
+		list[slot] = code
+	else:
+		list.append(code)
+	b[kind] = list.slice(0, limit)
+	set_bindings(action, b)
+	return taken
+
+
+## Take a key or button off an action.
+func unbind(action: String, kind: String, slot: int) -> void:
+	var b := bindings_of(action)
+	if slot < b[kind].size():
+		b[kind].remove_at(slot)
+		set_bindings(action, b)
+
+
+## Every rebindable action back to the BINDINGS table.
+func reset_to_defaults() -> void:
+	for pair: Array in REBINDABLE:
+		_register(pair[0], BINDINGS[pair[0]])
+
+
+## Readable name for a binding, e.g. "W", "Space", "RB".
+static func key_label(code: int) -> String:
+	var shown := DisplayServer.keyboard_get_keycode_from_physical(code as Key) if DisplayServer.get_name() != "headless" else code as Key
+	var s := OS.get_keycode_string(shown)
+	return s if s != "" else "Key %d" % code
+
+
+static func button_label(button: int) -> String:
+	return BUTTON_NAMES.get(button, "Button %d" % button)
+
+
+func _shared_ok(a: String, b: String) -> bool:
+	for pair: Array in SHARED_OK:
+		if pair.has(a) and pair.has(b):
+			return true
+	return false

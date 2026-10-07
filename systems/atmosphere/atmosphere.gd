@@ -101,6 +101,9 @@ func _ready() -> void:
 	ScreenScaler.view_changed.connect(_on_view_changed)
 	_on_view_changed(ScreenScaler.view_size, ScreenScaler.scale)
 	set_time(start_time, 0.0)
+	Settings.changed.connect(func(key: String, _v: Variant) -> void:
+		if key == "brightness" and presets.has(time_name):
+			_modulate.color = _bright(presets[time_name]["tint"]))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -142,14 +145,14 @@ func set_time(new_time: String, seconds := 0.8) -> void:
 		"cloud_strength": p.get("clouds", 0.0),
 	}
 	if seconds <= 0.0:
-		_modulate.color = p["tint"]
+		_modulate.color = _bright(p["tint"])
 		for key: String in params:
 			_grade_mat.set_shader_parameter(key, params[key])
 		_pollen.modulate.a = p["pollen"]
 		_fireflies.modulate.a = p["fireflies"]
 	else:
 		_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
-		_tween.tween_property(_modulate, "color", p["tint"], seconds)
+		_tween.tween_property(_modulate, "color", _bright(p["tint"]), seconds)
 		for key: String in params:
 			_tween.tween_property(_grade_mat, "shader_parameter/" + key, params[key], seconds)
 		_tween.tween_property(_pollen, "modulate:a", p["pollen"], seconds)
@@ -158,6 +161,12 @@ func set_time(new_time: String, seconds := 0.8) -> void:
 	_fireflies.emitting = p["fireflies"] > 0.0
 	EventBus.time_of_day_changed.emit(new_time)
 	Debug.log_verbose("Atmosphere: time of day -> %s" % new_time)
+
+
+## The world tint with the player's brightness (Settings) applied.
+func _bright(tint: Color) -> Color:
+	var b: float = Settings.get_value("brightness")
+	return Color(tint.r * b, tint.g * b, tint.b * b, tint.a)
 
 
 # -----------------------------------------------------------------------------

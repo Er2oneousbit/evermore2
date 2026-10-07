@@ -50,6 +50,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-07 | **A settings menu like a normal game**: rebindable controls, graphics, display, audio and gameplay options, saved between sessions |
 | 2026-10-07 | **One public release, `tech-demo`**: a tech demo of the game mechanics for Windows and Linux, updated in place as mechanics are polished (no version numbers) |
 | 2026-10-07 | **Normal and Hard playthroughs**: on Hard, prices are higher and enemies have more HP and armor and hit harder |
 | 2026-10-07 | **Switch control between the kid and the dog any time**, and a **"Stay put" command** for the partner, so mazes and puzzles can need them to split up |
@@ -63,6 +64,39 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: settings, and a readable golden hour
+
+* **Pause menu** (Esc / gamepad Start): Resume, Settings, Quit to desktop. The
+  game stops underneath
+* **Settings**, saved to the player's settings file and applied as you change
+  them, every option from one table (`autoload/settings.gd`):
+  * Graphics: HD-2D or classic 2D; Low / Medium / High / Ultra presets; each
+    effect on its own (shadows, light shafts and haze, water reflections,
+    ambient occlusion, tilt-shift blur, bloom, pollen and fireflies, cloud
+    shadows); brightness
+  * Display: windowed / borderless / exclusive fullscreen, V-Sync, frame rate
+    limit, widest view (for players who'd rather not see 32:9)
+  * Audio: master, music, effects (the buses are ready for when sound arrives)
+  * Gameplay: text speed (up to instant), screen shake (down to off), damage
+    numbers
+  * Controls: two keys and a gamepad button per action, rebound by pressing
+    the new one; a key another action had moves over (talk and attack share
+    gamepad A on purpose); reset per page
+  * Works with mouse, keyboard or gamepad: left/right changes a value, LB/RB
+    switches tabs
+* **Golden hour was washing the screen out**: a low sun shining through thick,
+  warm haze toward the camera turned everything yellow and flat. The sun sits
+  higher now, the haze is thin and the shadows are lifted. The combat arena
+  starts in daylight
+* **Characters were dark**: the sun shines from the top of the screen toward
+  the camera, so camera-facing sprites were always backlit. Characters now use
+  their own material, lit like the ground they stand on, with a little lift so
+  they stay the clearest thing on screen
+* Tests: a new settings test (values, presets, saving and loading, every
+  graphics switch reaching the 3D view, gameplay options, rebinding, the menus
+  driven by key presses); each check broken on purpose to confirm it fails.
+  Test runs never touch the player's settings file. 10 headless runs pass
 
 ## Done: combat, phase B (the duo)
 
