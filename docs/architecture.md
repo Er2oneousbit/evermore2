@@ -16,6 +16,8 @@ GAME
 │   ├── EventBus     Game-wide signals                                  [done]
 │   ├── GameState    Player names, current realm, story flags          [done]
 │   ├── SaveManager  JSON save/load (human-readable for debugging)      [todo]
+│   ├── Dialogue     Runs .dlg conversations, owns the text box          [done]
+│   ├── Interaction  What the kid would talk to; drives the HUD prompt   [done]
 │   └── Economy      Per-realm currencies, exchange rates, trade routes [todo]
 │
 ├── Actors
@@ -23,6 +25,7 @@ GAME
 │   │                Weapons, charge attack, alchemy casting            [todo]
 │   ├── Dog          Breadcrumb follow, string pulling, stay, sprite    [done]
 │   │                Sniff, forms, P2 control, commands                 [todo]
+│   ├── Npc          Talks when interacted with, faces the kid           [done]
 │   └── Enemies      State machine: idle → patrol → chase → attack      [todo]
 │
 ├── Systems
@@ -37,7 +40,8 @@ GAME
 │   ├── Alchemy          Formula + Ingredient resources, mastery         [todo]
 │   ├── RingMenu         The radial menu                                 [todo]
 │   ├── DogForms         Per-realm form resources                        [todo]
-│   └── Dialogue         Data-driven                                     [todo]
+│   ├── AsciiRealm       Builds a realm from an ASCII LAYOUT + constants  [done]
+│   └── DialogueScript/Runner  .dlg parsing and playback (data-driven)   [done]
 │
 └── Content
     ├── realms/      One folder per realm (+ _shared/ building blocks)
@@ -83,9 +87,14 @@ The kid and the dog only collide with **world**, so they never block each other.
 | 10 | HUD | no |
 | 100 | Debug overlay | no |
 
-## 3. How a realm is built (the test yard)
+## 3. How a realm is built
 
-`realms/big_yard/prototype_yard.gd` turns an ASCII `LAYOUT` into a world:
+Every map is an `AsciiRealm` (`realms/_shared/ascii_realm.gd`): a subclass
+declares constants (`LAYOUT`, `PROPS_BY_CHAR`, `FENCES`, `NPCS_BY_CHAR`,
+`TRIGGERS_BY_CHAR`, `DIALOGUE`...) and the base class builds the rest; settings
+a realm leaves out come from `AsciiRealm.DEFAULTS`. The test yard
+(`realms/big_yard/prototype_yard.gd`) and the prologue
+(`realms/podunk/ruffleberg_lot.gd`) share every line of builder code. The steps:
 
 1. **Terrain.** Each cell's character maps to a terrain (grass, dirt, water).
    `WangAutotiler.vertices_from_cells()` turns that into a corner grid (the
@@ -141,6 +150,34 @@ upright sprites on the same row sit at the same depth and z-fight. HdView
 nudges props 3 cm back and actors 1-2 cm forward. Verified by parking the kid
 on an oak's row: without the nudge he disappears into the trunk.
 
+## 3c. Dialogue and NPCs
+
+```
+.dlg file ──DialogueScript (parse, line-numbered errors)──> nodes
+                                   │
+Npc.interact() / DialogueTrigger ──> Dialogue.start(file, node)
+                                   │      (autoload, one conversation at a time)
+                       DialogueRunner.advance() ──> line / choices / end
+                          │ @set/@clear -> GameState flags
+                          │ @command    -> Dialogue.command -> the scene
+                                   v
+                       DialogueBox (CanvasLayer 20, inside a SafeFrame)
+                       portrait (CharacterData crop), name, typed text, choices
+```
+
+* **Who's talking** comes from `data/characters/<ID>.tres` (`CharacterData`):
+  name key, sprite sheet, portrait crop. The ID is the speaker in `.dlg` files.
+* **While someone talks** the kid ignores movement (it reads
+  `Dialogue.is_active()`), the HUD hides, and the box takes interact/attack and
+  up/down. The box's open guard and typing use game time, never the wall clock,
+  so they behave the same at any frame rate and in headless tests.
+* **Interaction** (autoload) picks the nearest node in group `interactable`
+  within reach and not behind the kid; the HUD shows its `interact_label()`.
+  It checks each node's *own* visibility: in HD-2D mode the 2D World is hidden
+  on purpose and its NPCs must stay talkable (a bug the screenshots caught).
+* **HdView** mirrors every node in group `hd_actor` (kid, dog, NPCs), with the
+  same rule: the actor's own visibility, not the hidden World's.
+
 ## 4. Dog follow AI (how it works)
 
 1. The kid drops a **breadcrumb** every 10 px of movement.
@@ -174,6 +211,7 @@ it and confirming the test fails:
 | `tests/run_all.sh` / `.ps1` | no | Runs every headless test below in one go |
 | `tests/smoke_follow.tscn` | no | Dog follow AI on the pen route, stay command, night + flashlight |
 | `tests/smoke_visuals.tscn` | no | LPC animation rows, Atmosphere presets/particles, Prop building |
+| `tests/smoke_dialogue.tscn` | no | .dlg parsing and errors, the runner (choices, flags, conditions, commands, loop guard), every game script loads, talking to Maya in 2D and HD-2D |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |

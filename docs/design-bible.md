@@ -31,6 +31,7 @@ it's not decided yet. **Locked** = agreed, don't change without discussion.
 | Lead | The kid, **player-named**, age 13 (original boy reads as about 13; the game never states it) |
 | Dog | **Shelter dog**, medium to large, adopted two weeks before the game. Player-named; default "Biscuit" |
 | Arrival | Kid and dog are **separated** when they arrive in Evermore 2.0 |
+| Length | **At least 8 hours of play** for the main story (the original runs roughly 15 to 20). Density over length: every area earns its time with people, challenges, secrets and set pieces; each realm has multiple areas, challenges and mini-bosses |
 | Realms | **To be designed** (the first lineup was scrapped on 2026-10-06, see section 8). Rule that stays: **none of the original realms are reused** |
 | Ruffleberg | Survived 1995, **died in 2014** |
 | Carltron | Never died. **Powered down** by Ruffleberg because of the unstable v2 chip |
@@ -159,6 +160,9 @@ nobody gets left behind, not Dad, and in the true ending not Carltron either.
 
 ## 5. Opening (prologue)
 
+*Playable through step 1 (dinner and the dare): the first-draft lines are in
+`data/dialogue/prologue.dlg`. Dinner currently plays over black.*
+
 0. **(Draft) Dinner, the same evening.** Dad, the kid, the dog under the table.
    The kid mentions the Ruffleberg place. Dad goes still: *"Stay away from that
    house."* No reason given. Mom's shift starts at seven.
@@ -202,6 +206,22 @@ appears when Dad comes in (section 4).
 - **Carltron's own ground**, where the kid beats him once
 - **the finale**, where Carltron stands at the switch
 - room for **Dad's dream** (Main Street, 1995) and a realm or opening where the kid finds the dog
+
+**Content yardstick** (from studying the original's walkthroughs; the full notes
+are local, in `research/`). Guidance, not rules:
+- The original: about 54 areas over 4 realms (12 to 15 each), 17 major bosses
+  plus 12 to 14 mini-bosses, 6 towns, 34 alchemy formulas, about 16 hours for
+  the main story
+- Its rhythm: an area every ~18 minutes, a major boss every hour or so, a new
+  mechanic or set piece every 15 to 20 minutes; each realm resets the feel with
+  a new currency, dog form, weapon tier and alchemists
+- For our 8+ hours: roughly 30 areas, 8 to 10 bosses plus mini-bosses, the
+  first boss and first "wow" moment within the first hour
+- Copy: one clear gimmick per boss, kid/dog split sections, dense middle realms
+  (the original's market trade chain and banquet/jail sequences are its best
+  stretches)
+- Avoid: out-and-back errands to a hub, long empty traversal (the Desert of
+  Doom), magic that levels only by grinding, silent missables, a thin last realm
 
 **Scrapped on 2026-10-06** (don't bring back without the owner asking):
 - the first lineup: The Big Yard, Saltreach, Frostheim, Vernia, The Grand Carlton, The Off Switch

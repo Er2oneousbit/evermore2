@@ -104,6 +104,7 @@ const COLOR_TRAIL_NEXT := Color(1, 1, 0.2, 1)
 
 func _ready() -> void:
 	add_to_group("dog")
+	add_to_group("hd_actor")
 	_resolve_target()
 	# Shortcut checks sweep the dog's real body shape, not a thin ray, so a
 	# "clear" result means the whole dog fits through, corners included.

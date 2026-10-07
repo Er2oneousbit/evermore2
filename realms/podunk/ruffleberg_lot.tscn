@@ -1,0 +1,44 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://realms/podunk/ruffleberg_lot.gd" id="1_yard"]
+[ext_resource type="PackedScene" path="res://actors/kid/kid.tscn" id="2_kid"]
+[ext_resource type="PackedScene" path="res://actors/dog/dog.tscn" id="3_dog"]
+[ext_resource type="PackedScene" path="res://ui/hud/hud.tscn" id="4_hud"]
+[ext_resource type="Script" path="res://systems/atmosphere/atmosphere.gd" id="5_atmo"]
+[ext_resource type="Shader" path="res://assets/shaders/water_shimmer.gdshader" id="6_water"]
+[ext_resource type="Texture2D" path="res://assets/shaders/water_noise.tres" id="7_noise"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_water"]
+shader = ExtResource("6_water")
+shader_parameter/noise = ExtResource("7_noise")
+
+[node name="RufflebergLot" type="Node2D"]
+script = ExtResource("1_yard")
+
+[node name="Atmosphere" type="Node" parent="."]
+script = ExtResource("5_atmo")
+start_time = "golden"
+
+[node name="Ground" type="TileMapLayer" parent="."]
+z_index = -20
+
+[node name="Water" type="TileMapLayer" parent="."]
+z_index = -20
+material = SubResource("ShaderMaterial_water")
+
+[node name="Solids" type="StaticBody2D" parent="."]
+
+[node name="Occluders" type="Node2D" parent="."]
+
+[node name="World" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Fences" type="TileMapLayer" parent="World"]
+y_sort_enabled = true
+
+[node name="Kid" parent="World" instance=ExtResource("2_kid")]
+
+[node name="Dog" parent="World" instance=ExtResource("3_dog")]
+target_path = NodePath("../Kid")
+
+[node name="HUD" parent="." instance=ExtResource("4_hud")]

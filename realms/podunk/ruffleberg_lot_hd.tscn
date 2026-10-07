@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://realms/podunk/ruffleberg_lot.tscn" id="1_yard"]
+[ext_resource type="Script" path="res://systems/hd2d/hd_view.gd" id="2_hd"]
+
+[node name="RufflebergLotHD" type="Node"]
+
+[node name="Yard" parent="." instance=ExtResource("1_yard")]
+
+[node name="HdView" type="Node3D" parent="."]
+script = ExtResource("2_hd")
+realm_path = NodePath("../Yard")

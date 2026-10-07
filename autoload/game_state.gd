@@ -20,8 +20,9 @@ extends Node
 var kid_name := ""
 var dog_name := ""
 
-## Key from names.json for the realm the player is in, e.g. "realm_big_yard".
-var current_realm := "realm_big_yard"
+## Key from names.json for the place the player is in, e.g. "place_ruffleberg_lot".
+## Each AsciiRealm sets it from its REALM_NAME_KEY when it loads.
+var current_realm := "realm_test_yard"
 
 var _flags: Dictionary = {}
 

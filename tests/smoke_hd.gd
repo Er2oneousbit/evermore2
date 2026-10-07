@@ -67,6 +67,8 @@ func _run() -> void:
 	_check(kid3d.position.distance_to(HdView.to3(kid.global_position)) < 0.05, "kid 3D sprite not at the 2D kid's position")
 	_check(dog3d.position.distance_to(HdView.to3(dog.global_position)) < 0.05, "dog 3D sprite not at the 2D dog's position")
 	_check(kid3d.frame_coords == (kid.get_node("Sprite") as Sprite2D).frame_coords, "kid 3D frame differs from the 2D animation frame")
+	# The 2D World is hidden in HD mode; the 3D actors must still show.
+	_check(kid3d.visible and dog3d.visible, "kid/dog 3D sprites must be visible in HD mode (kid %s, dog %s)" % [kid3d.visible, dog3d.visible])
 	# Same-row tie: the kid must be in front of a prop standing on his row,
 	# and in front of the dog (otherwise they z-fight into stripes).
 	_check(HdView.KID_DEPTH_BIAS > HdView.DOG_DEPTH_BIAS and HdView.DOG_DEPTH_BIAS > HdView.PROP_DEPTH_BIAS,

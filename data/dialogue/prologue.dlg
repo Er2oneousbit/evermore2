@@ -1,0 +1,137 @@
+# =============================================================================
+# prologue.dlg  -  Dinner with Dad, then the dare at the Ruffleberg place
+# -----------------------------------------------------------------------------
+# Format: systems/dialogue/dialogue_script.gd (header). Speakers are
+# data/characters/<ID>.tres; {kid} and {dog} are the names the player picked;
+# any other {key} comes from data/names.json (proper nouns live there).
+# Scene commands handled by realms/podunk/ruffleberg_lot.gd:
+#   @time <day|golden|night> [seconds]     @end_slice
+# Story: docs/design-bible.md sections 4 and 5. Lines here are first drafts.
+#
+# Written with help from Claude (Anthropic) via Claude Code.
+# Made with love from your friendly hacker - er2oneousbit
+# =============================================================================
+
+== dinner
+: {town}. A Tuesday in late October.
+DAD: So I said to the guy, "Sir, that's not a lawnmower. That's a lifestyle."
+KID: Dad.
+DAD: {movie_lawnmower}? The sequel? Nobody?
+KID: Nobody, Dad.
+: Under the table, {dog} is pretending not to beg. Badly.
+DAD: Mom's on nights all week, so it's us and the leftovers. And him.
+KID: You still haven't said his name once.
+DAD: I'm getting there.
+KID: Dex says the Ruffleberg place has a basement that goes down, like, forever.
+: Dad's fork stops halfway to his mouth.
+DAD (serious): Stay away from that house.
+* Why? -> dinner_why
+* Okay, okay. -> dinner_okay
+
+== dinner_why
+KID: Why? It's just an old house.
+DAD: Because I said so.
+KID: That's not a reason. That's, like, a {streamer} take.
+DAD: It's the only one you're getting. Eat your peas.
+-> dinner_end
+
+== dinner_okay
+KID: Okay, okay. Relax.
+DAD: I'm relaxed.
+: He is not relaxed.
+-> dinner_end
+
+== dinner_end
+@set prologue.dad_warned
+: Dad doesn't say much for the rest of dinner.
+: Later, the house is quiet. {dog} is already asleep across the foot of the bed.
+: {kid}'s phone buzzes. Maya: "theyre doing it. ruffleberg place. 9. you coming???"
+
+== lot_arrive
+: The Ruffleberg place. Nobody has lived there since before anybody's parents were born.
+: Everybody in {town} has dared somebody. Nobody has ever gone in.
+KID: ({dog} followed me the whole way. Of course he did.)
+
+== maya
+[prologue.talked_to_maya] -> maya_again
+MAYA: You actually came.
+KID: You texted me with three question marks. That's basically a summons.
+MAYA: I texted you so you'd talk Dex out of it. Not so you'd do it.
+MAYA: He did this to Jordan last year. Jordan cried. On a livestream.
+* "I'm not gonna cry." -> maya_brave
+* "I just came to watch." -> maya_watch
+* [prologue.dad_warned] "My dad told me to stay away." -> maya_dad
+
+== maya_brave
+KID: I'm not gonna cry.
+MAYA: Everybody says that. Then a raccoon happens.
+-> maya_end
+
+== maya_watch
+KID: I just came to watch.
+MAYA (relieved): Good. Watching is good. Watching is free.
+-> maya_end
+
+== maya_dad
+KID: My dad told me to stay away from this place. Like, specifically.
+MAYA: Your dad? Your dad is the least dramatic person in {town}.
+KID: That's what's weird about it.
+-> maya_end
+
+== maya_end
+@set prologue.talked_to_maya
+MAYA: Whatever happens, I'll be right here by the fence. Text me.
+
+== maya_again
+[!prologue.dared] MAYA: Dex is waiting. You don't have to give him anything, you know.
+[prologue.dared] MAYA: If you're not back in an hour, I'm calling somebody.
+[prologue.dared] KID: Who?
+[prologue.dared] MAYA: I don't know! Somebody with a flashlight bigger than a phone.
+
+== dex
+[prologue.dared] -> dex_again
+DEX: Look who showed up. And he brought a dog. Cute.
+KID: He followed me. He does that.
+DEX: Here's the deal. You go in, you go down to the basement, you bring something back.
+DEX: Anything. A spoon. A creepy doll. A ghost, if it fits in your pocket.
+DEX: Or you're a baby forever. Like, legally.
+* "Easy." -> dex_easy
+* "What do I get?" -> dex_what
+* [prologue.talked_to_maya] "Maya says it's a bad idea." -> dex_maya
+
+== dex_easy
+KID: Easy. I've done scarier drops in {game_battle_royale}.
+DEX: That's a video game, man.
+KID: Ranked is scarier than a house.
+-> dex_end
+
+== dex_what
+KID: What do I get?
+DEX: You get to not be a baby forever. That's a pretty big deal.
+-> dex_end
+
+== dex_maya
+KID: Maya says it's a bad idea.
+DEX: Maya says everything is a bad idea. Maya says cereal is a bad idea after nine.
+MAYA: It IS a bad idea after nine!
+-> dex_end
+
+== dex_end
+@set prologue.dared
+DEX: Gate's that way. Clock's ticking.
+@time night 4
+: The last of the sun slides down behind the trees.
+
+== dex_again
+DEX: Gate's that way, baby. I mean, buddy.
+
+== gate
+[!prologue.dared] -> gate_not_yet
+: The gate isn't locked. It just looks like it should be.
+KID: ({dog}, go home. Seriously.)
+: {dog} sits down on {kid}'s foot and stays there.
+KID: (Okay. Together, then.)
+@end_slice
+
+== gate_not_yet
+KID: (Not yet. Dex is going to make a whole thing out of this either way.)

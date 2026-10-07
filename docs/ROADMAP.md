@@ -27,9 +27,10 @@ Carltron waking) into the first realm.
    slash animations; one test enemy; hit-stop, damage numbers, enemy activation
    by distance.
 2. **Ring menu + the first alchemy formula**: data-driven `.tres` resources.
-3. **The prologue**: Podunk at dusk, the dare, the mansion tutorial (foyer,
-   library, study, kitchen, lab), Carltron waking. Unaffected by the realm
-   redesign, so it can be built first; HD-2D height (stairs, a basement).
+3. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
+   kitchen, lab), the torn clipping, Carltron waking, the flash. Needs interior
+   tiles and HD-2D height (stairs, a basement). Dinner deserves a real kitchen
+   instead of a black screen.
 4. **The first realm** (once the realms are designed): painted in the editor,
    finding the dog, the first boss, sniff mode.
 
@@ -48,6 +49,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-06 | **At least 8 hours of play** for the main story, with each realm built from multiple areas, challenges and mini-bosses, like the original |
 | 2026-10-06 | **The first realm lineup is scrapped**, The Big Yard and Mission 1 included. Realms get redesigned; the story spine (Dad is the 1995 boy, one night, the torn clipping) stays |
 | 2026-10-06 | **Versions frozen at 0.3.0 during iterative design.** No bump per change; progress is tracked by milestone below. The version moves only for a real release, when the owner asks |
 | 2026-10-06 | **Public repo, bug reports only**, like Colonia: no pull requests (a workflow closes them), no feature requests. Code is MIT; art keeps its own licenses (CREDITS.md) |
@@ -56,6 +58,30 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: dialogue, NPCs, and the prologue's first scene
+
+* **Dialogue system**: conversations in a plain-text `.dlg` format (lines,
+  narration, emotions, choices, story flags, conditions, scene commands,
+  `{name}` substitution), with mistakes reported by file and line at load
+* **SNES-style text box**: portrait, name tab, letter-by-letter text, choices;
+  kept inside the 16:9 safe frame on ultrawide screens
+* **NPCs and triggers**: walk up and press E (gamepad A) to talk; NPCs turn to
+  face the kid; the HUD shows "[E] Talk to ..."; walking onto a trigger starts a
+  conversation. The dog's stay command moved to Q
+* **The cast**: Dad, Maya and Dex built with the LPC generator (Dad shares the
+  kid's hair and skin, for the photo reveal); portraits cropped from the sprites
+* **The prologue's first scene** (the new main scene): title card, dinner with
+  Dad, then the street outside the overgrown Ruffleberg lot at dusk. Talk to
+  Maya and Dex, take the dare, the sun sets, and the gate ends the slice
+* Maps are now built by one shared `AsciiRealm` class (the test yard and the
+  prologue), with several fence kinds per map (wood, wrought iron in 3D)
+* Bugs caught on the way: a duplicate node name hid a broken jump from the
+  error report; the text box's open guard used the wall clock and swallowed
+  presses in fast headless runs; in HD-2D, the actors and NPCs were invisible
+  and NPCs couldn't be talked to (the hidden 2D World made them count as
+  hidden). Each has a test that fails without its fix
+* Tests: 7 headless runs pass, including the new dialogue test
 
 ## Done: HD-2D, and the repo goes public
 

@@ -29,6 +29,9 @@ CLAUDE.md
 # Claude Code's working copies for parallel agents (git worktrees)
 .claude/worktrees/
 
+# Local research notes (walkthrough studies of the original game; personal)
+/research/
+
 # Throwaway probe scripts and scenes while investigating (never committed)
 /tests/_*
 

@@ -9,7 +9,7 @@
 #
 # USAGE:
 #   Names.text("robot")          -> "Carltron"
-#   Names.text("realm_big_yard") -> "The Big Yard"
+#   Names.text("realm_hub")      -> "The Mansion That Was"
 #   Missing keys return "[missing:key]" and log a warning ONCE, so typos show
 #   up loudly on screen instead of silently becoming blank labels.
 #

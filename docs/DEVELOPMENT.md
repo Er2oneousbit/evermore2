@@ -23,7 +23,8 @@ comes from free libraries with licenses that allow redistribution (see
 3. Open Godot, click **Import**, pick this folder's `project.godot`.
    (First open takes a few seconds while Godot builds its `.godot/` cache.)
 4. Press **F5** (or the ▶ Play button) to run. The main scene is
-   `realms/big_yard/yard_hd.tscn`.
+   `realms/podunk/ruffleberg_lot_hd.tscn` (the prologue). The test yard is
+   `realms/big_yard/yard_hd.tscn` (run it with `godot --path . res://realms/big_yard/yard_hd.tscn`).
 
 **Renderer:** use the default Forward+ (a GPU with Vulkan or Direct3D 12).
 Light shafts, pond reflections and ambient occlusion need it. Older GPU or a VM?
@@ -124,6 +125,45 @@ only, Node 18+ with Playwright. Playing and testing the game needs neither.
 On Windows, Python writes CRLF unless a file is opened with `newline=''`;
 `.gitattributes` keeps the repo LF.
 
+## Dialogue and NPCs
+
+Conversations are plain-text `.dlg` files in `data/dialogue/`. The full format
+is in the header of `systems/dialogue/dialogue_script.gd`; the short version:
+
+```
+== maya                          a node (NPCs and triggers start one by name)
+MAYA: You actually came.         SPEAKER: text  (speaker = data/characters/MAYA.tres)
+MAYA (relieved): Good.           an emotion (portrait variant; falls back)
+: The fridge hums.               narration
+KID: Hi, {dog}.                  {kid}/{dog} = the player's names; {key} = data/names.json
+* "Easy." -> dex_easy            a choice (consecutive * lines = one menu)
+* [prologue.talked_to_maya] ...  [flag] / [!flag] = only when the flag is set / not set
+@set prologue.dared              story flags (GameState); @clear flag
+@time night 4                    any other @command goes to the scene
+-> END                           jumps; a node ends when it runs out of lines
+```
+
+Mistakes are reported with file and line when the script loads, and
+`tests/smoke_dialogue` loads every `.dlg` file and checks that every speaker has
+a character file. Proper nouns go in `data/names.json`, never in the script text.
+
+* **A new character:** build them with the LPC generator (add a recipe to
+  `tools/lpc/characters.json`, run `node tools/lpc/build_character.js <key> <dir>`,
+  copy the sheet to `assets/characters/<key>/` and the credits to `credits/<key>/`,
+  credit them in `CREDITS.md`), add their name to `names.json`, then make
+  `data/characters/<ID>.tres` (a `CharacterData`). The portrait is cropped from
+  the sheet automatically. The character tool warns (exit code 3) if the
+  generator ignored a part of the recipe because of a misspelled item or color.
+* **An NPC in an AsciiRealm:** a letter in `LAYOUT` plus an `NPCS_BY_CHAR` entry
+  (`{"id": "MAYA", "start": "maya", "facing": Vector2.DOWN}`) and the realm's
+  `DIALOGUE` file. Elsewhere: drop `actors/npc/npc.tscn` in a scene.
+* **A conversation that starts when you walk somewhere:** a `TRIGGERS_BY_CHAR`
+  letter, or a `DialogueTrigger` node.
+* **Scene commands** (`@time`, `@end_slice`, ...) are handled by the scene's
+  script, connected to `Dialogue.command`.
+* **Exports:** `.dlg` files aren't a Godot resource type, so when export presets
+  are added, include `*.dlg` in the export's resource filter.
+
 ## Code style and rules
 
 1. **No hardcoded names.** Characters, places and items come from
@@ -165,18 +205,22 @@ On Windows, Python writes CRLF unless a file is opened with `newline=''`;
 ```
 evermore2/
 ├── project.godot        Engine settings (640x360 base, autoloads, version)
-├── autoload/            Debug, ScreenScaler, InputSetup, Names, EventBus, GameState
-├── actors/              kid/ (player), dog/ (companion AI)
+├── autoload/            Debug, ScreenScaler, InputSetup, Names, EventBus, GameState,
+│                        Dialogue (conversations, text box), Interaction (talk prompts)
+├── actors/              kid/ (player), dog/ (companion AI), npc/ (people who talk)
 ├── systems/
 │   ├── animation/         DirectionalSprite, LpcSprite (characters), AnimalSprite
 │   ├── atmosphere/        Time of day: tint, color grade, clouds, pollen, fireflies
 │   ├── camera/            GameCamera: map bounds + centering on wide screens
+│   ├── dialogue/          .dlg parser, runner, CharacterData, DialogueTrigger
 │   └── hd2d/              HdView: draws a 2D realm as an HD-2D 3D scene
 ├── realms/
-│   ├── _shared/           Prop + PropData, WangAutotiler (used by every realm)
-│   └── big_yard/          prototype_yard (2D game) + yard_hd (HD-2D view, main scene)
+│   ├── _shared/           AsciiRealm (builds maps from text), Prop + PropData, WangAutotiler
+│   ├── podunk/            The prologue: ruffleberg_lot (+ _hd, the main scene)
+│   └── big_yard/          The test yard (tech demo): prototype_yard + yard_hd
 ├── assets/              characters/, tilesets/, props/, shaders/, textures/hd/, fx/
-├── data/                names.json, props/ (PropData .tres), tilesets/ (autotile lookups)
+├── data/                names.json, dialogue/ (.dlg), characters/ (CharacterData),
+│                        props/ (PropData .tres), tilesets/ (autotile lookups)
 ├── credits/             Original credit files from each art pack (Godot ignores this)
 ├── tools/               art/ (build_art.py), lpc/ (character export), tiled/ (tsx to JSON)
 ├── ui/                  debug_overlay/ (F3), hud/ (placeholder HUD + SafeFrame)

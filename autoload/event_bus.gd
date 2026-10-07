@@ -27,6 +27,16 @@ signal dog_state_changed(state_name: String)
 @warning_ignore("unused_signal")
 signal time_of_day_changed(time_name: String)
 
+## A conversation started / ended (node name from the .dlg file).
+@warning_ignore("unused_signal")
+signal dialogue_started(node_name: String)
+@warning_ignore("unused_signal")
+signal dialogue_ended(node_name: String)
+
+## What the kid would interact with right now changed (null = nothing).
+@warning_ignore("unused_signal")
+signal interaction_target_changed(target: Node)
+
 ## A story/progress flag was set via GameState.set_flag().
 @warning_ignore("unused_signal")
 signal flag_changed(flag: String, value: Variant)

@@ -1,5 +1,5 @@
 {
-  "_comment": "Every proper noun in the game lives here. Code calls Names.text(\"key\"). Never hardcode these strings in scripts or scenes. Keys starting with _ are comments and are never displayed.",
+  "_comment": "Every proper noun in the game lives here. Code calls Names.text(\"key\"); dialogue writes {key}. Never hardcode these strings in scripts, scenes or .dlg files. Keys starting with _ are comments and are never displayed.",
 
   "game_title": "Secret of Evermore 2: Return to Evermore",
   "world": "Evermore",
@@ -8,26 +8,24 @@
   "_section_characters": "---- Characters ----",
   "kid_default": "Kid",
   "dog_default": "Biscuit",
+  "npc_dad": "Dad",
+  "npc_mom": "Mom",
+  "_npc_note": "Maya and Dex are placeholder names (design-bible.md section 4)",
+  "npc_maya": "Maya",
+  "npc_dex": "Dex",
   "professor": "Professor Sidney Ruffleberg",
   "professor_echo": "The Professor's Echo",
   "robot": "Carltron",
-  "npc_gnome_alchemist": "Gnorman",
-  "npc_mailman": "The Mailman",
 
-  "_section_realms": "---- Realms ----",
+  "_section_places": "---- Places ----",
+  "place_ruffleberg_lot": "The Ruffleberg Place",
+  "place_ruffleberg_mansion": "The Ruffleberg Mansion",
   "realm_hub": "The Mansion That Was",
-  "realm_big_yard": "The Big Yard",
-  "realm_saltreach": "Saltreach",
-  "realm_frostheim": "Frostheim",
-  "realm_vernia": "Vernia",
-  "realm_grand_carlton": "The Grand Carlton",
-  "realm_off_switch": "The Off Switch",
+  "realm_test_yard": "The Test Yard",
 
-  "_section_dog_forms": "---- Dog forms ----",
-  "dog_form_big_yard": "Sir Goodboy",
-  "dog_form_saltreach": "Newfoundland",
-  "dog_form_frostheim": "Malamute",
-  "dog_form_vernia": "Saint Bernard",
-  "dog_form_grand_carlton": "Borzoi",
-  "dog_form_off_switch": "Shelter Mutt"
+  "_section_pop_culture": "---- Fictional pop culture (the kid's references and Dad's movies; working titles, never real brands) ----",
+  "game_battle_royale": "Dropzone Dynasty",
+  "streamer": "GlitchGoblin",
+  "movie_lawnmower": "Attack of the Fifty-Foot Lawnmower",
+  "movie_pluto": "Revenge of the Pod People from Pluto"
 }
