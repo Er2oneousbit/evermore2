@@ -13,6 +13,10 @@
 #        4. Talking to an NPC in the prologue lot: the prompt appears, the
 #           text box opens, the kid can't walk while talking, choices work,
 #           and the conversation ends cleanly
+#        4b. The text box fits its text: short lines make a short box, a
+#           portrait sets the minimum height, long text turns into pages that
+#           each fit inside the box, no word is lost across pages, and a press
+#           turns the page before the conversation moves on
 #        5. The same in the HD-2D view (where the 2D World is hidden): Maya
 #           is still talkable and drawn in 3D
 #
@@ -80,6 +84,7 @@ func _run() -> void:
 	_test_runner()
 	_test_loop_guard()
 	_test_game_scripts()
+	await _test_box_sizing()
 	await _test_npc_talk()
 	await _test_hd_talk()
 	if _failures.is_empty():
@@ -256,6 +261,69 @@ func _test_npc_talk() -> void:
 	Input.action_release("move_left")
 	_check(kid.global_position.distance_to(before) > 5.0, "kid should walk again after the dialogue")
 	scene.queue_free()
+	await _frames(2)
+
+
+func _test_box_sizing() -> void:
+	var box: DialogueBox = Dialogue.get_box()
+	var portrait: Texture2D = Dialogue.character("DAD").portrait()
+	await _frames(2)
+
+	box.show_line("", "Short.", null)
+	await _frames(2)
+	var narration_h := box.box_height()
+	box.show_line("Dad", "Short.", portrait)
+	await _frames(2)
+	var portrait_h := box.box_height()
+	_check(portrait_h >= DialogueBox.PORTRAIT_PX, "a portrait line must be at least portrait height (%.0f)" % portrait_h)
+	_check(narration_h < portrait_h, "one-line narration (%.0f) should be shorter than a portrait line (%.0f)" % [narration_h, portrait_h])
+
+	var three := "Line one is here and it goes on for a while so that it wraps around. " \
+			+ "It keeps going a little more to make a third line in the box for sure."
+	box.show_line("", three, null)
+	await _frames(2)
+	_check(box.box_height() > narration_h, "longer narration should grow the box (%.0f vs %.0f)" % [box.box_height(), narration_h])
+
+	var words: PackedStringArray = []
+	for i in 120:
+		words.append("word%d" % i)
+	words.append("Supercalifragilisticexpialidociousandthensomemorelettersuntilitistoowideforanyline")
+	var long_text := " ".join(words)
+	box.show_line("Dad", long_text, portrait)
+	await _frames(2)
+	_check(box.page_count() >= 2, "long text should split into pages (got %d)" % box.page_count())
+	var width := box._text_width()
+	var font := box._font()
+	var rebuilt := ""
+	for p in box.paginate(long_text, width):
+		var lines := p.split("\n")
+		_check(lines.size() <= DialogueBox.MAX_LINES, "a page has %d lines (max %d)" % [lines.size(), DialogueBox.MAX_LINES])
+		for l in lines:
+			_check(box._width_of(font, l) <= width + 0.5, "a line is wider than the box: '%s'" % l)
+		rebuilt += p.replace("\n", "")
+	_check(rebuilt.replace(" ", "") == long_text.replace(" ", ""), "pagination lost or changed text")
+	_check(box.box_height() <= DialogueBox.MAX_LINES * box._line_height() + DialogueBox.PAD * 2 + 1,
+			"a full page must still fit the max box height (%.0f)" % box.box_height())
+
+	# Presses turn pages first; only after the last page does it ask for more.
+	var asked := [0]
+	var on_advance := func() -> void: asked[0] += 1
+	box.advance_requested.connect(on_advance)
+	await _frames(12)  # past the open guard
+	var pages := box.page_count()
+	for i in pages * 2:
+		_tap("interact")  # finish typing
+		await _frames(2)
+		if asked[0] > 0:
+			break
+		_tap("interact")  # next page (or the next beat on the last one)
+		await _frames(2)
+		if asked[0] > 0:
+			break
+	_check(asked[0] == 1 and box.current_page() == pages - 1,
+			"should reach the last page (%d/%d) before asking for the next line (asked %d)" % [box.current_page() + 1, pages, asked[0]])
+	box.advance_requested.disconnect(on_advance)
+	box.hide_box()
 	await _frames(2)
 
 

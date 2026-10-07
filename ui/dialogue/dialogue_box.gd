@@ -5,8 +5,15 @@
 #          show_line(name, text, portrait, color)   typed letter by letter
 #          show_choices(["Why?", "Okay."])          a menu above the box
 #        Interact (E / Enter / gamepad A) or attack (Space) finishes the
-#        typing, then asks for the next beat. Up/down move through choices.
-#        Built in code, so there's no fiddly node tree to keep in sync.
+#        typing, turns the page, then asks for the next beat. Up/down move
+#        through choices. Built in code, so there's no node tree to keep in sync.
+#
+# SIZE FOLLOWS THE TEXT: the box grows from one line up to MAX_LINES and
+#        shrinks back (never shorter than the portrait when there is one).
+#        Longer text is split into pages automatically. The wrapping is done
+#        here, word by word with the label's own font, and the label gets the
+#        lines ready-made (its own autowrap is off), so what we measure is
+#        exactly what's drawn: nothing can spill out of the box.
 #
 # ANY SCREEN: everything sits inside its own SafeFrame (centered 16:9), so on
 #        a 32:9 monitor the box stays in the middle of your view.
@@ -22,14 +29,20 @@ signal choice_made(index: int)
 
 ## Letters per second while typing.
 @export var chars_per_second := 48.0
-## Input is ignored this long after the box opens, so the press that started
-## the conversation can't also skip its first line.
+## Input is ignored this long after the box opens (game time), so the press
+## that started the conversation can't also skip its first line.
 @export var open_guard_seconds := 0.15
 
-const BOX_HEIGHT := 78
+## Most lines shown at once; more text turns into pages.
+const MAX_LINES := 4
 const MARGIN := 8
+const PAD := 6
 const PORTRAIT_PX := 64
+const PORTRAIT_GAP := 8
+## Room kept clear at the right edge for the blinking "more" arrow.
+const ARROW_ROOM := 14
 const FONT_SIZE := 11
+const LINE_GAP := 2
 const BG := Color(0.06, 0.05, 0.1, 0.9)
 const BORDER := Color(0.95, 0.85, 0.6)
 
@@ -44,6 +57,9 @@ var _arrow: Label
 var _choices_panel: PanelContainer
 var _choices_list: VBoxContainer
 
+var _full_text := ""
+var _pages: Array[String] = []
+var _page := 0
 var _typing := false
 var _char_time := 0.0
 var _options: PackedStringArray = []
@@ -67,11 +83,9 @@ func show_line(speaker: String, text: String, portrait: Texture2D, color := Colo
 	_name.add_theme_color_override("font_color", color)
 	_portrait_frame.visible = portrait != null
 	_portrait.texture = portrait
-	_text.text = text
-	_text.visible_characters = 0
-	_typing = true
-	_char_time = 0.0
-	_arrow.visible = false
+	_full_text = text
+	_pages = paginate(text, _text_width())
+	_show_page(0)
 
 
 ## Show a menu. The current line stays visible underneath.
@@ -90,6 +104,7 @@ func show_choices(options: PackedStringArray) -> void:
 		_choices_list.add_child(l)
 	_choices_panel.visible = true
 	_refresh_choices()
+	_layout()
 
 
 func hide_box() -> void:
@@ -106,9 +121,56 @@ func is_showing_choices() -> bool:
 	return _choices_panel.visible
 
 
-## The line currently on screen (tests read it).
+## The whole line being shown, across all its pages (tests read it).
 func current_text() -> String:
-	return _text.text
+	return _full_text
+
+
+func page_count() -> int:
+	return _pages.size()
+
+
+func current_page() -> int:
+	return _page
+
+
+## The box's height in base pixels right now (tests read it).
+func box_height() -> float:
+	return -_box.offset_top - MARGIN
+
+
+## Split text into pages of at most MAX_LINES lines, each at most `width`
+## pixels wide in the box font. Words longer than a whole line are broken.
+## Each page comes back with its lines joined by "\n".
+func paginate(text: String, width: float) -> Array[String]:
+	var font := _font()
+	var lines: PackedStringArray = []
+	for paragraph in text.split("\n"):
+		var line := ""
+		for word in paragraph.split(" ", false):
+			var candidate := word if line.is_empty() else line + " " + word
+			if _width_of(font, candidate) <= width:
+				line = candidate
+				continue
+			if not line.is_empty():
+				lines.append(line)
+				line = ""
+			# A single word wider than the box: break it by characters.
+			var rest := word
+			while _width_of(font, rest) > width and rest.length() > 1:
+				var cut := rest.length() - 1
+				while cut > 1 and _width_of(font, rest.substr(0, cut)) > width:
+					cut -= 1
+				lines.append(rest.substr(0, cut))
+				rest = rest.substr(cut)
+			line = rest
+		lines.append(line)
+	var pages: Array[String] = []
+	for i in range(0, lines.size(), MAX_LINES):
+		pages.append("\n".join(lines.slice(i, i + MAX_LINES)))
+	if pages.is_empty():
+		pages.append("")
+	return pages
 
 
 func _process(delta: float) -> void:
@@ -149,8 +211,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if _typing:
 			_finish_typing()
+		elif _page + 1 < _pages.size():
+			_show_page(_page + 1)
 		else:
 			advance_requested.emit()
+
+
+func _show_page(i: int) -> void:
+	_page = i
+	_text.text = _pages[i]
+	_text.visible_characters = 0
+	_typing = true
+	_char_time = 0.0
+	_arrow.visible = false
+	_layout()
 
 
 ## Game time, not the wall clock: the guard has to behave the same at any
@@ -185,6 +259,43 @@ func _refresh_choices() -> void:
 
 
 # -----------------------------------------------------------------------------
+# Sizing
+# -----------------------------------------------------------------------------
+func _font() -> Font:
+	return _text.get_theme_font("normal_font")
+
+
+func _width_of(font: Font, s: String) -> float:
+	return font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x
+
+
+func _line_height() -> float:
+	return _font().get_height(FONT_SIZE) + LINE_GAP
+
+
+## Width available for text inside the box right now.
+func _text_width() -> float:
+	var w := _frame.size.x - MARGIN * 2 - (PAD + 2) * 2 - ARROW_ROOM
+	if _portrait_frame.visible:
+		w -= PORTRAIT_PX + PORTRAIT_GAP
+	return maxf(w, 40.0)
+
+
+## Fit the box to the current page, then hang the name tab and the choices
+## off its top edge.
+func _layout() -> void:
+	var lines := _text.text.count("\n") + 1
+	var text_h := lines * _line_height()
+	var inner := maxf(text_h, PORTRAIT_PX if _portrait_frame.visible else 0.0)
+	var height := ceilf(inner + PAD * 2)
+	_box.offset_top = -MARGIN - height
+	var top := _box.offset_top
+	_name_tab.offset_top = top - 16
+	_name_tab.offset_bottom = top + 2
+	_choices_panel.offset_bottom = top - 4
+
+
+# -----------------------------------------------------------------------------
 # Building the nodes
 # -----------------------------------------------------------------------------
 func _build() -> void:
@@ -194,26 +305,25 @@ func _build() -> void:
 
 	_box = PanelContainer.new()
 	_box.name = "Box"
-	_box.add_theme_stylebox_override("panel", _style(BG, BORDER, 2, 6))
+	_box.add_theme_stylebox_override("panel", _style(BG, BORDER, 2, PAD))
 	_box.anchor_left = 0.0
 	_box.anchor_right = 1.0
 	_box.anchor_top = 1.0
 	_box.anchor_bottom = 1.0
 	_box.offset_left = MARGIN
 	_box.offset_right = -MARGIN
-	_box.offset_top = -BOX_HEIGHT - MARGIN
 	_box.offset_bottom = -MARGIN
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_frame.add_child(_box)
 
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", PORTRAIT_GAP)
 	_box.add_child(row)
 
 	_portrait_frame = PanelContainer.new()
 	_portrait_frame.add_theme_stylebox_override("panel", _style(Color(0.15, 0.13, 0.2), BORDER.darkened(0.3), 1, 0))
 	_portrait_frame.custom_minimum_size = Vector2(PORTRAIT_PX, PORTRAIT_PX)
-	_portrait_frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_portrait_frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	row.add_child(_portrait_frame)
 	_portrait = TextureRect.new()
 	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -226,10 +336,12 @@ func _build() -> void:
 	_text.bbcode_enabled = false
 	_text.fit_content = false
 	_text.scroll_active = false
+	# Lines arrive pre-wrapped (see paginate), so the label must not rewrap.
+	_text.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_text.add_theme_font_size_override("normal_font_size", FONT_SIZE)
 	_text.add_theme_color_override("default_color", Color(0.95, 0.95, 0.97))
-	_text.add_theme_constant_override("line_separation", 2)
+	_text.add_theme_constant_override("line_separation", LINE_GAP)
 	row.add_child(_text)
 
 	_arrow = Label.new()
@@ -252,8 +364,6 @@ func _build() -> void:
 	_name_tab.anchor_top = 1.0
 	_name_tab.anchor_bottom = 1.0
 	_name_tab.offset_left = MARGIN + 6
-	_name_tab.offset_top = -BOX_HEIGHT - MARGIN - 16
-	_name_tab.offset_bottom = -BOX_HEIGHT - MARGIN + 2
 	_frame.add_child(_name_tab)
 	_name = Label.new()
 	_name.add_theme_font_size_override("font_size", FONT_SIZE)
@@ -268,11 +378,11 @@ func _build() -> void:
 	_choices_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_choices_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_choices_panel.offset_right = -MARGIN
-	_choices_panel.offset_bottom = -BOX_HEIGHT - MARGIN - 4
 	_frame.add_child(_choices_panel)
 	_choices_list = VBoxContainer.new()
 	_choices_panel.add_child(_choices_list)
 	_choices_panel.visible = false
+	_layout()
 
 
 func _style(bg: Color, border: Color, border_px: int, pad: int) -> StyleBoxFlat:
