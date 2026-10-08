@@ -23,8 +23,10 @@ Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
-1. **Ring menu, equipment and the first alchemy formula**: data-driven `.tres`
-   resources; armor slots (kid: head, body, legs, boots, hands, arms; dog: collar).
+1. **More rings**: Items (use healing items, see key items), Alchemy (the
+   first formula), Party (stances, Stay put; takes over from R), with **quick
+   slots** to use an item or formula without opening the menu (the owner's
+   other pain point with the original). Equipment perks that do something.
 2. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
    kitchen, lab), the torn clipping, Carltron waking, the flash. Needs interior
    tiles and HD-2D height (stairs, a basement). Dinner deserves a real kitchen
@@ -47,6 +49,8 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-08 | **Ring menu, friendlier than the original** (owner: it "could be putsy"). The pain points: hunting across rings and opening it for everything. So every ring is a visible tab, and quick slots come with the Items and Alchemy rings. One menu for both: a button flips to the other's gear. First version: Equipment only |
+| 2026-10-08 | **Shadows point north and stay light** (owner: "They make things hard to see"). Straight up the screen, about half strength, a higher sun (shorter shadows), cloud shadows faint. Contact shadows under characters stay |
 | 2026-10-08 | **Walk by default, hold Run to run, and running costs the attack charge** (owner: "Original running took charge away from the attack"). At 0% you're winded (walking) until it refills partway. The dog pays a quarter as much ("Zoomies"). The AI partner pays nothing. (A separate stamina meter was tried first, the same day) |
 | 2026-10-08 | **The sun sits in front** (camera side): shadows fall back, up the screen, and faces are lit. It was behind, throwing shadows toward the camera |
 | 2026-10-07 | **Voices: one or two words, real voice actors** ("Hey!" when you talk to someone, short reactions). AI text-to-speech was tried and rejected (all of it sounded bad, the kids worst). Full voice acting is off the table for now; **babble** (per-character blips while text types) is the backup plan. The kid stays silent |
@@ -65,6 +69,50 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: the ring menu (Equipment) and equipment
+
+* **I / gamepad Y opens the ring menu** and pauses the game: a ring of gear
+  slots around whoever you drive (kid: weapon, head, body, arms, hands, legs,
+  boots; dog: collar), each showing what he wears, or a faded picture of
+  what goes there
+* **Friendlier than the original** (the owner's pain points: hunting across
+  rings, opening the menu for everything):
+  * every ring is a tab you can see at the top (just Equipment for now)
+  * left / right turn the ring quickly; hold to keep spinning
+  * up / down change what's in the slot right away, no confirm step; the
+    panel says what it is, what it does, and how your total changed ("Total
+    defense 20 (+8)")
+  * Tab / Back flips to the other one's gear, without switching who you drive
+  * it reopens where you left off
+* **Equipment**: pieces are items (`data/items/<id>.tres`, `EquipmentData`:
+  wearer, slot, defense, a WeaponData for weapons, a perk line). Armor adds
+  up on Health (100 halves damage); the weapon slot can't be empty; a new
+  weapon changes the swing and the charge meter (and what running spends)
+* **The demo kit**: the yard and the arena hand out a rusty sword (hits
+  harder, charges slower, up to x2), a bike helmet, a thick hoodie, hiking
+  boots, gardening gloves and a studded collar for the dog, once per run
+* The gamepad flashlight moved from Y to L3 (clicking the left stick): the
+  pad had no free buttons left
+* Not yet: the Items, Alchemy and Party rings; quick slots; perks that do
+  something (they're text for now); arms and legs pieces (the slots are there)
+* Tests: `smoke_ring` (the data, a new run and the kit once, the equipment
+  rules and armor cutting damage, a new weapon's swing and charge, the menu:
+  opening and pausing, tabs, one step per push, hold to spin and wrap, instant
+  change and the panel, taking a piece off, Tab to the dog without switching,
+  Esc closing without the pause menu, reopening where you left off, not
+  mid-conversation, opening on the dog when you drive him, HD-2D placement,
+  and the three review fixes). Each was proven by breaking it (14 sabotages).
+  All 13 runs pass
+* Review fixes before merging: swapping weapons refilled an empty charge
+  (swing, swap twice, swing again at full power); a weapon changed mid-swing
+  hit with the new weapon's damage at the old charge (now it waits for the
+  swing to end); an old saved control file kept gamepad Y on the flashlight,
+  so Y did two things (saved bindings now give up anything a newer action
+  uses by default)
+* **Shadows, readability** (owner: "They make things hard to see"): they
+  point straight north, at about half strength, with a higher sun (shorter
+  shadows) and faint cloud shadows. Contact shadows under characters stay
 
 ## Done: running costs your attack charge
 

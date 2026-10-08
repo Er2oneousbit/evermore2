@@ -108,6 +108,8 @@ const STEP_PX := 26.0
 var _step_left := 0.0
 
 var _attacking := false
+## A weapon put on mid-swing, equipped when the swing ends.
+var _pending_weapon: WeaponData
 var _swing_mult := 1.0
 var _swing_level := 1
 var _swing_landed := false
@@ -126,6 +128,8 @@ func _ready() -> void:
 	_flashlight.enabled = light_on
 	EventBus.time_of_day_changed.connect(_on_time_of_day_changed)
 	equip(weapon)
+	_apply_equipment("kid")
+	EventBus.equipment_changed.connect(_apply_equipment)
 	_sprite.animation_finished.connect(_on_animation_finished)
 	health.died.connect(_on_died)
 	_on_screen = VisibleOnScreenNotifier2D.new()
@@ -137,10 +141,30 @@ func _ready() -> void:
 	Party.register(self)
 
 
-## Equip a weapon: the charge meter takes its levels and speed.
+## What he wears (Equipment): the weapon, and armor from every piece. A
+## weapon changed mid-swing (the ring menu pauses a swing halfway) waits for
+## the swing to end: the blow lands with the weapon it started with.
+func _apply_equipment(who: String) -> void:
+	if who != "kid":
+		return
+	var w := Equipment.weapon("kid")
+	if w and w != weapon:
+		if _attacking:
+			_pending_weapon = w
+		else:
+			equip(w)
+	health.armor = Equipment.defense("kid")
+
+
+## Equip a weapon: the charge meter takes its levels and speed, and keeps
+## what's built up (capped to the new weapon): swapping weapons must not
+## refill an empty meter.
 func equip(w: WeaponData) -> void:
 	weapon = w
+	_pending_weapon = null
+	var built := charge.value if charge else 1.0
 	charge = ChargeMeter.new(w.max_level, w.seconds_per_level)
+	charge.value = minf(built, float(w.max_level))
 	if run:
 		run.charge = charge  # same legs, new weapon
 	else:
@@ -190,11 +214,15 @@ func _on_died() -> void:
 	_attacking = false
 	_sprite.speed_scale = 1.0
 	_sprite.play(&"hurt", Vector2.ZERO, true)  # LPC "hurt" is falling down
+	if _pending_weapon:
+		equip(_pending_weapon)
 
 
 func _on_animation_finished(anim: StringName) -> void:
 	if anim == weapon.swing_anim:
 		_attacking = false
+		if _pending_weapon:
+			equip(_pending_weapon)
 
 
 func _land_swing() -> void:

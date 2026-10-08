@@ -37,7 +37,9 @@ const BINDINGS := {
 	"attack":          {"keys": [KEY_J, KEY_SPACE], "buttons": [JOY_BUTTON_A]},
 	# Hold to run (or toggle, in Settings); running drains the attack charge.
 	"run":             {"keys": [KEY_SHIFT],        "buttons": [JOY_BUTTON_LEFT_SHOULDER]},
-	"toggle_light":    {"keys": [KEY_F],            "buttons": [JOY_BUTTON_Y]},
+	"toggle_light":    {"keys": [KEY_F],            "buttons": [JOY_BUTTON_LEFT_STICK]},
+	# The ring menu (equipment now; items and alchemy later). Pauses the game.
+	"ring_menu":       {"keys": [KEY_I],            "buttons": [JOY_BUTTON_Y]},
 	# --- The duo (Party) --------------------------------------------------------
 	"switch_control":  {"keys": [KEY_TAB],          "buttons": [JOY_BUTTON_BACK]},
 	"partner_stay":    {"keys": [KEY_Q],            "buttons": [JOY_BUTTON_X]},
@@ -64,6 +66,7 @@ const REBINDABLE := [
 	["run", "Run"],
 	["attack", "Attack"],
 	["interact", "Talk / interact"],
+	["ring_menu", "Ring menu"],
 	["toggle_light", "Flashlight"],
 	["switch_control", "Switch kid / dog"],
 	["partner_stay", "Partner: Stay put"],
@@ -188,6 +191,32 @@ func rebind(action: String, event: InputEvent, slot := 0) -> Array[String]:
 	b[kind] = list.slice(0, limit)
 	set_bindings(action, b)
 	return taken
+
+
+## Saved bindings from an older version can clash with an action that's new
+## (or newly bound) since: an old save kept gamepad Y on the flashlight after
+## Y became the ring menu. Each saved action gives up any key or button that
+## an action on its default binding uses (unless the pair may share).
+## Returns the saved actions that changed.
+func resolve_clashes(saved: Array) -> Array[String]:
+	var changed: Array[String] = []
+	for action: String in saved:
+		var b := bindings_of(action)
+		var dirty := false
+		for pair: Array in REBINDABLE:
+			var other: String = pair[0]
+			if other == action or saved.has(other) or _shared_ok(action, other):
+				continue
+			var ob := bindings_of(other)
+			for kind in ["keys", "buttons"]:
+				for code in ob[kind]:
+					if b[kind].has(code):
+						b[kind].erase(code)
+						dirty = true
+		if dirty:
+			set_bindings(action, b)
+			changed.append(action)
+	return changed
 
 
 ## Take a key or button off an action.

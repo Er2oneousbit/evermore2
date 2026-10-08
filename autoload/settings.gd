@@ -225,6 +225,10 @@ func _apply_all() -> void:
 		_apply(key)
 	for action: String in _controls:
 		InputSetup.set_bindings(action, _controls[action])
+	# An old save mustn't steal a binding from an action added since.
+	for action in InputSetup.resolve_clashes(_controls.keys()):
+		_controls[action] = InputSetup.bindings_of(action)
+		Debug.log_info("Controls: %s gave up a binding a newer action uses" % action)
 
 
 func _apply(key: String) -> void:

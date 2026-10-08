@@ -60,9 +60,13 @@ const WOOD_RAIL := preload("res://assets/textures/hd/wood_rail.png")
 const WOOD_POST := preload("res://assets/textures/hd/wood_post.png")
 
 ## Mood per time of day. Angles in degrees. sun_yaw 0 = light from the
-## camera's side, shadows falling straight up the screen; ~335 = shadows up
-## and a little to the right. The sun stays in front (owner, 2026-10-08):
-## shadows fall back, behind things, and faces are lit.
+## camera's side, shadows falling straight up the screen (north). The owner
+## wants them pointing north (2026-10-08): shadows fall back, behind things,
+## and faces are lit. Don't lean them.
+## Readability lesson (owner, 2026-10-08: "They make things hard to see"):
+## shadows are a hint of depth, not a dark patch to lose the kid in. Keep
+## shadow_opacity around half, the sun high (short shadows) and cloud
+## shadows faint.
 ## Tuning lesson: tint the SUN warm and keep the AMBIENT cool, keep fog thin.
 ## Warm sun + warm fog + warm ambient turns everything into orange soup.
 ## Readability lesson (golden hour, 2026-10-07): a low sun into thick fog
@@ -70,25 +74,25 @@ const WOOD_POST := preload("res://assets/textures/hd/wood_post.png")
 ## sprites. Keep the sun above ~30 degrees, fog near the day value, shadows lifted.
 const PRESETS := {
 	"day": {
-		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "sun_elev": 55.0, "sun_yaw": 335.0,
+		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "sun_elev": 68.0, "sun_yaw": 0.0, "shadow_opacity": 0.45,
 		"ambient": Color(0.62, 0.7, 0.88), "ambient_energy": 0.75,
 		"sky_top": Color(0.32, 0.55, 0.92), "sky_horizon": Color(0.78, 0.87, 0.96),
 		"fog_density": 0.0025, "fog_albedo": Color(0.92, 0.95, 1.0),
 		"exposure": 1.0, "saturation": 1.08, "contrast": 1.04, "glow": 0.3,
-		"flashlight": 0.0, "pollen": 0.4, "fireflies": 0.0, "clouds": 0.42, "dof": 0.06,
+		"flashlight": 0.0, "pollen": 0.4, "fireflies": 0.0, "clouds": 0.12, "dof": 0.06,
 		"water_glow": 0.3, "phone_glow": 0.0, "actor_lift": 0.08,
 	},
 	"golden": {
-		"sun_color": Color(1.0, 0.76, 0.52), "sun_energy": 1.75, "sun_elev": 30.0, "sun_yaw": 325.0,
+		"sun_color": Color(1.0, 0.76, 0.52), "sun_energy": 1.75, "sun_elev": 42.0, "sun_yaw": 0.0, "shadow_opacity": 0.5,
 		"ambient": Color(0.56, 0.56, 0.78), "ambient_energy": 0.82,
 		"sky_top": Color(0.34, 0.4, 0.76), "sky_horizon": Color(1.0, 0.66, 0.42),
 		"fog_density": 0.003, "fog_albedo": Color(1.0, 0.86, 0.7),
 		"exposure": 1.0, "saturation": 1.1, "contrast": 1.1, "glow": 0.3,
-		"flashlight": 0.4, "pollen": 1.0, "fireflies": 0.0, "clouds": 0.3, "dof": 0.08,
+		"flashlight": 0.4, "pollen": 1.0, "fireflies": 0.0, "clouds": 0.08, "dof": 0.08,
 		"water_glow": 0.24, "phone_glow": 0.0, "actor_lift": 0.12,
 	},
 	"night": {
-		"sun_color": Color(0.58, 0.68, 1.0), "sun_energy": 0.28, "sun_elev": 52.0, "sun_yaw": 20.0,
+		"sun_color": Color(0.58, 0.68, 1.0), "sun_energy": 0.28, "sun_elev": 52.0, "sun_yaw": 0.0, "shadow_opacity": 0.6,
 		"ambient": Color(0.18, 0.22, 0.42), "ambient_energy": 0.7,
 		"sky_top": Color(0.02, 0.03, 0.09), "sky_horizon": Color(0.06, 0.09, 0.18),
 		"fog_density": 0.008, "fog_albedo": Color(0.5, 0.6, 0.95),
@@ -885,6 +889,7 @@ func _blend(t: float) -> void:
 	_sun.light_color = v["sun_color"]
 	_sun.light_energy = v["sun_energy"]
 	_sun.rotation = Vector3(-deg_to_rad(v["sun_elev"]), deg_to_rad(v["sun_yaw"]), 0.0)
+	_sun.shadow_opacity = v["shadow_opacity"]
 	_env.ambient_light_color = v["ambient"]
 	_env.ambient_light_energy = v["ambient_energy"]
 	_sky_mat.sky_top_color = v["sky_top"]

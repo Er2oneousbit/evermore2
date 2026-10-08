@@ -45,7 +45,8 @@ Move                  WASD / arrows       Left stick / D-pad
 Run (hold)            Shift               LB
 Attack                J / Space           A
 Talk / interact       E / Enter           A
-Phone flashlight      F                   Y
+Ring menu             I                   Y
+Phone flashlight      F                   L3 (click left stick)
 Switch kid / dog      Tab                 Back (View)
 Partner: Stay put     Q                   X
   (press again to call him back)
@@ -76,6 +77,10 @@ The duo: you drive one, the AI plays the other by his stance.
   The dog:  Offensive (bites enemies near you) or Search (keeps out of
             fights, sniffs out hidden items, bites back if something's
             after him)
+
+The ring menu (I / Y) pauses and shows the gear of whoever you drive:
+left/right picks a slot, up/down changes what's in it, Tab shows the other
+one's gear. The test yard and the arena give you a kit of gear to try.
 
 Hidden items: the test yard hides five. The dog on Search finds buried
 ones and digs them up; drive him and press Sniff to see scent trails, then

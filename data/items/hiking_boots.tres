@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/items/equipment_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "hiking_boots"
+display_name = "Hiking boots"
+description = "Sturdy boots for rough ground."
+kind = "item"
+icon_cell = Vector2i(13, 3)
+wearer = "kid"
+slot = "boots"
+defense = 4.0
+perk = "Quieter on gravel (later)"

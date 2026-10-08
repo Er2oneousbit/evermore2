@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+name_key = "weapon_rusty_sword"
+damage = 9.0
+reach = 38.0
+arc_deg = 110.0
+swing_anim = &"slash"
+hit_frame = 3
+swing_speed = 0.9
+max_level = 2
+seconds_per_level = 1.1
+knockback = 180.0
+stagger = 0.3

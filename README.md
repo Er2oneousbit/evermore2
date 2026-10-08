@@ -81,7 +81,8 @@ runs, without the light shafts, reflections and blur.
 | Pause menu and **settings** | Esc | Start |
 | Move | WASD / Arrow keys | Left stick / D-pad |
 | Run (hold; drains the attack charge) | Shift | LB |
-| Phone flashlight | F | Y |
+| Ring menu (equipment) | I | Y |
+| Phone flashlight | F | L3 (click the left stick) |
 | Attack (waiting charges it up) | J / Space | A |
 | Talk / interact | E / Enter | A |
 | Switch between the kid and the dog | Tab | Back / View |

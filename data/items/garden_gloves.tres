@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/items/equipment_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "garden_gloves"
+display_name = "Gardening gloves"
+description = "Thorn-proof, mostly."
+kind = "item"
+icon_cell = Vector2i(2, 1)
+wearer = "kid"
+slot = "hands"
+defense = 4.0
+perk = ""
