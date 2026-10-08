@@ -215,6 +215,12 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   Dog re-apply on `EventBus.equipment_changed`. What's worn:
   `GameState.equipped`.
 * Demo maps can hand out gear with `START_ITEMS` (once per run).
+* A weapon's look in hand: `overlay_fg` / `overlay_bg` / `overlay_frame` on its
+  WeaponData, from the LPC generator (add it to `WEAPON_ART` in
+  `tools/art/build_art.py`, run `--only weapons,credits`). One row per
+  direction, one column per frame of its `swing_anim` in play order (check
+  the generator's `sources/custom-animations.ts` for which body frames the art
+  was drawn against: the club's are the slash reversed).
 * `RingMenu` (autoload, `ui/menus/ring_menu.gd`) pauses the tree; its
   directions are polled (a stick sends a stream of motion events). New rings
   go in `RINGS` and show as tabs.

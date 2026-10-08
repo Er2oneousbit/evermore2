@@ -34,3 +34,13 @@ extends Resource
 @export var knockback := 160.0
 ## Seconds an enemy can't act after being hit.
 @export var stagger := 0.25
+
+@export_group("In hand")
+## The weapon drawn in his hand while he swings (assets/weapons/, from the LPC
+## generator): a front layer over him and a back layer behind him. Rows: up,
+## left, down, right; one column per frame of swing_anim, in play order.
+@export var overlay_fg: Texture2D
+@export var overlay_bg: Texture2D
+## Cell size of those layers (px). LPC weapon cells are bigger than the 64 px
+## body frame (128 or 192) and share its center.
+@export var overlay_frame := 128

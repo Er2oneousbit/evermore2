@@ -110,6 +110,10 @@ var _step_left := 0.0
 var _attacking := false
 ## A weapon put on mid-swing, equipped when the swing ends.
 var _pending_weapon: WeaponData
+## The weapon in his hand while he swings: behind him and in front of him
+## (WeaponData.overlay_*). HdView mirrors both (meta "hd_layers").
+var _weapon_back: Sprite2D
+var _weapon_front: Sprite2D
 var _swing_mult := 1.0
 var _swing_level := 1
 var _swing_landed := false
@@ -127,6 +131,7 @@ func _ready() -> void:
 	add_to_group("hd_actor")
 	_flashlight.enabled = light_on
 	EventBus.time_of_day_changed.connect(_on_time_of_day_changed)
+	_build_weapon_layers()
 	equip(weapon)
 	_apply_equipment("kid")
 	EventBus.equipment_changed.connect(_apply_equipment)
@@ -139,6 +144,34 @@ func _ready() -> void:
 	follower = Follower.new(self, $CollisionShape2D, blocking_mask)
 	brain = PartnerBrain.new(self)
 	Party.register(self)
+
+
+## Two layers around his body sprite: the back one drawn before it, the front
+## one after. Same center as the 64 px body frame (LPC weapon cells share it).
+func _build_weapon_layers() -> void:
+	_weapon_back = Sprite2D.new()
+	_weapon_back.name = "WeaponBack"
+	_weapon_front = Sprite2D.new()
+	_weapon_front.name = "WeaponFront"
+	for layer in [_weapon_back, _weapon_front]:
+		layer.offset = _sprite.offset
+		layer.visible = false
+		add_child(layer)
+	move_child(_weapon_back, _sprite.get_index())
+	move_child(_weapon_front, _sprite.get_index() + 1)
+	set_meta("hd_layers", {"WeaponBack": -0.004, "WeaponFront": 0.004})
+	# The body animates in its own _process, after his physics: follow its
+	# frame changes directly, or the weapon trails the body by one frame.
+	_sprite.frame_changed.connect(_update_weapon_layers)
+
+
+## Show the weapon in his hand on the swing's current frame.
+func _update_weapon_layers() -> void:
+	var show := _attacking and _sprite.current == weapon.swing_anim and weapon.overlay_fg != null
+	for layer in [_weapon_back, _weapon_front]:
+		layer.visible = show and layer.texture != null
+		if layer.visible:
+			layer.frame_coords = Vector2i(clampi(_sprite.frame_index(), 0, layer.hframes - 1), int(_sprite.dir))
 
 
 ## What he wears (Equipment): the weapon, and armor from every piece. A
@@ -165,6 +198,16 @@ func equip(w: WeaponData) -> void:
 	var built := charge.value if charge else 1.0
 	charge = ChargeMeter.new(w.max_level, w.seconds_per_level)
 	charge.value = minf(built, float(w.max_level))
+	for pair in [[_weapon_back, w.overlay_bg], [_weapon_front, w.overlay_fg]]:
+		var layer: Sprite2D = pair[0]
+		var tex: Texture2D = pair[1]
+		if layer == null:
+			continue
+		layer.texture = tex
+		if tex:
+			layer.hframes = maxi(1, tex.get_width() / w.overlay_frame)
+			layer.vframes = 4
+		layer.visible = false
 	if run:
 		run.charge = charge  # same legs, new weapon
 	else:
@@ -282,6 +325,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		if not _swing_landed and _sprite.frame_index() >= weapon.hit_frame:
 			_land_swing()
+		_update_weapon_layers()
 		return
 
 	if input_dir != Vector2.ZERO:
@@ -295,6 +339,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_update_animation()
 	_footsteps(delta)
+	_update_weapon_layers()
 
 	# Flashlight sits slightly ahead of the kid, at chest height.
 	_flashlight.position = facing * light_offset + Vector2(0, LIGHT_HEIGHT)
