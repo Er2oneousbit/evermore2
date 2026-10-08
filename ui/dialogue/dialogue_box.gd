@@ -226,12 +226,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var confirm := event.is_action_pressed("interact") or event.is_action_pressed("attack")
 	if is_showing_choices():
-		if event.is_action_pressed("move_up"):
+		if event.is_action_pressed("move_up") or event.is_action_pressed("ui_up"):
 			Audio.play("ui_move")
 			_selected = wrapi(_selected - 1, 0, _options.size())
 			_refresh_choices()
 			get_viewport().set_input_as_handled()
-		elif event.is_action_pressed("move_down"):
+		elif event.is_action_pressed("move_down") or event.is_action_pressed("ui_down"):
 			Audio.play("ui_move")
 			_selected = wrapi(_selected + 1, 0, _options.size())
 			_refresh_choices()

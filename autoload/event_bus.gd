@@ -67,6 +67,23 @@ signal dog_sniffed(targets: Array)
 @warning_ignore("unused_signal")
 signal equipment_changed(who: String)
 
+## An item was used on a party member (Usables).
+@warning_ignore("unused_signal")
+signal item_used(item: ItemData, target: Node)
+
+## The kid cast a formula; leveled_up = it reached a new level with this cast.
+@warning_ignore("unused_signal")
+signal formula_cast(formula: FormulaData, target: Node, leveled_up: bool)
+
+## A short message for the player (a quick slot that couldn't fire...). The
+## HUD shows it at the top of the screen.
+@warning_ignore("unused_signal")
+signal notice(text: String)
+
+## Something was put in (or moved out of) a quick slot.
+@warning_ignore("unused_signal")
+signal quick_slots_changed()
+
 ## A story/progress flag was set via GameState.set_flag().
 @warning_ignore("unused_signal")
 signal flag_changed(flag: String, value: Variant)

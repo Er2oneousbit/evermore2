@@ -233,6 +233,7 @@ func _test_driving_the_dog() -> void:
 	await _frames(3)
 	_check(Interaction.current_target() == null, "driving the dog: no digging before he's smelled the spot")
 	_sniffed = []
+	var carrots_before := GameState.item_count("wild_carrot")  # the demo kit has some
 	_tap("sniff")
 	await _frames(3)
 	var trails := Fx.scent_trails().size()
@@ -256,7 +257,7 @@ func _test_driving_the_dog() -> void:
 		_place(dog, pickup.global_position)
 		await _frames(3)
 		_check(not is_instance_valid(pickup), "the dog you drive grabs it")
-	_check(GameState.item_count("wild_carrot") == 2, "two carrots in the bag (%d)" % GameState.item_count("wild_carrot"))
+	_check(GameState.item_count("wild_carrot") == carrots_before + 2, "two more carrots in the bag (%d, was %d)" % [GameState.item_count("wild_carrot"), carrots_before])
 	await _wait(Nose.TRAIL_SECONDS)
 	_check(Fx.scent_trails().is_empty(), "the trails fade after a while")
 	Party.switch_control()

@@ -44,4 +44,6 @@ const ENEMIES_BY_CHAR := {"r": "rat"}
 const MUSIC := "arena"
 ## A kit of demo gear to try in the ring menu (I / gamepad Y).
 const START_ITEMS := {"rusty_sword": 1, "bike_helmet": 1, "hoodie": 1, "hiking_boots": 1,
-		"garden_gloves": 1, "studded_collar": 1}
+		"garden_gloves": 1, "studded_collar": 1, "apple": 3, "soda": 1, "wild_carrot": 3}
+## The first formula, to try in the Alchemy ring.
+const START_FORMULAS := ["heal"]

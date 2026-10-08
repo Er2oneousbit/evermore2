@@ -154,8 +154,8 @@ func _test_menu() -> void:
 	Input.action_release("move_right")
 	await _frames(2)
 	var n: int = Equipment.SLOTS["kid"].size()
-	var at: int = posmod(RingMenu._sel["kid"], n)
-	_check(RingMenu._sel["kid"] >= n, "held, it keeps spinning, all the way around (%d steps)" % RingMenu._sel["kid"])
+	var at: int = posmod(RingMenu._sel_now(), n)
+	_check(RingMenu._sel_now() >= n, "held, it keeps spinning, all the way around (%d steps)" % RingMenu._sel_now())
 	# Find the head slot again from wherever it stopped.
 	var head_i: int = Equipment.SLOTS["kid"].find("head")
 	RingMenu.turn(posmod(head_i - at, n))

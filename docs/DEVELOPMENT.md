@@ -225,6 +225,17 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   directions are polled (a stick sends a stream of motion events). New rings
   go in `RINGS` and show as tabs.
 
+## Items, alchemy and quick slots
+
+* A usable item: `use_effect = "heal"` and `use_power` on its ItemData.
+* A formula: `data/formulas/<id>.tres` (`FormulaData`: costs, effect, power,
+  power_per_level, icon). The kid learns it with `Usables.learn(id)`; demo
+  maps can teach some with `START_FORMULAS`.
+* `Usables` (`systems/items/usables.gd`) is the one place that uses items,
+  casts and fires quick slots; each returns "" or why it didn't work.
+* Quick slots: `GameState.quick_slots` ("item:<id>" / "formula:<id>"),
+  `quick_1`..`quick_4` actions (1-4, D-pad). The gamepad D-pad doesn't move.
+
 ## Hidden items and the dog's nose
 
 * Hide items in a map with `HIDDEN_ITEMS` (see the header of

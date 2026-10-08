@@ -95,6 +95,8 @@ const DEFAULTS := {
 	## Demo maps: items handed to the party the first time the map loads in a
 	## run (item id -> count), e.g. a kit of gear to try in the ring menu.
 	"START_ITEMS": {},
+	## Demo maps: formulas the kid knows from the start (ids).
+	"START_FORMULAS": [],
 	## The .dlg file NPCs and triggers in this realm talk from.
 	"DIALOGUE": "",
 	## names.json key of the realm's display name (log line, debug overlay).
@@ -406,6 +408,9 @@ func _add_trigger(spec: Dictionary, cell: Vector2i) -> void:
 ## START_ITEMS, once per run (a flag remembers).
 func _grant_start_items() -> void:
 	var items: Dictionary = cfg("START_ITEMS")
+	for id: String in cfg("START_FORMULAS"):
+		if FormulaData.find(id):
+			Usables.learn(id)
 	if items.is_empty():
 		return
 	var flag := realm_id() + ".start_items"

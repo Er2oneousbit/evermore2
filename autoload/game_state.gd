@@ -40,6 +40,13 @@ var inventory: Dictionary = {"stick": 1}
 ## See Equipment (systems/items/equipment.gd) for the rules.
 var equipped: Dictionary = {"kid": {"weapon": "stick"}, "dog": {}}
 
+## Alchemy formulas the kid knows: id -> {"level": n, "xp": casts toward the
+## next level}. See Usables.
+var formulas: Dictionary = {}
+
+## The four quick slots: "item:<id>", "formula:<id>" or "" (empty).
+var quick_slots: Array[String] = ["", "", "", ""]
+
 var _flags: Dictionary = {}
 
 
@@ -63,8 +70,9 @@ func get_flag(flag: String, default: Variant = false) -> Variant:
 	return _flags.get(flag, default)
 
 
+## Add (or, with a negative count, take away) items. Never below zero.
 func add_item(item_id: String, count := 1) -> void:
-	inventory[item_id] = int(inventory.get(item_id, 0)) + count
+	inventory[item_id] = maxi(0, int(inventory.get(item_id, 0)) + count)
 
 
 func item_count(item_id: String) -> int:
