@@ -59,8 +59,10 @@ Every control except pause can be rebound: Esc > Settings > Controls.
 Settings also has graphics (quality presets, each effect, brightness),
 display (window mode, V-Sync, frame cap), volume and gameplay options.
 
-Running: you walk unless you hold Run. Running drains the green bar above
-the charge bar; run it dry and you're winded (orange) until it refills.
+Running: you walk unless you hold Run. Running costs your attack: the
+charge meter drains instead of filling. Run it to 0% and you're winded
+(the bar blinks orange) until it refills halfway. The dog runs on a
+quarter of the cost.
 
 Attacking: you never hold a button. After a swing the charge meter under
 the kid's health refills by itself; wait longer and it climbs to x2 and

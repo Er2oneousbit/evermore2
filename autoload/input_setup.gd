@@ -35,7 +35,7 @@ const BINDINGS := {
 	# Interaction.try_interact() first (talking wins).
 	"interact":        {"keys": [KEY_E, KEY_ENTER, KEY_KP_ENTER], "buttons": [JOY_BUTTON_A]},
 	"attack":          {"keys": [KEY_J, KEY_SPACE], "buttons": [JOY_BUTTON_A]},
-	# Hold to run (or toggle, in Settings); running uses stamina.
+	# Hold to run (or toggle, in Settings); running drains the attack charge.
 	"run":             {"keys": [KEY_SHIFT],        "buttons": [JOY_BUTTON_LEFT_SHOULDER]},
 	"toggle_light":    {"keys": [KEY_F],            "buttons": [JOY_BUTTON_Y]},
 	# --- The duo (Party) --------------------------------------------------------

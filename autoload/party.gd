@@ -115,9 +115,9 @@ func _apply_roles() -> void:
 	for m in members():
 		var is_leader := m == leader
 		m.controlled = is_leader
-		var st: Stamina = m.get("stamina")
-		if st:
-			st.drop_toggle()
+		var r: Running = m.get("run")
+		if r:
+			r.drop_toggle()
 		var f: Follower = m.get("follower")
 		if f == null:
 			continue
