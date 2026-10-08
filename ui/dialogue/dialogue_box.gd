@@ -107,7 +107,12 @@ func show_choices(options: PackedStringArray) -> void:
 	_arrow.visible = false
 	_options = options
 	_selected = 0
+	# Detach the old labels now: queue_free alone leaves them in the list
+	# until the frame ends, and a menu that follows another (the prologue
+	# does this) counted old + new labels and read past the options: "Out of
+	# bounds get index '2' (on base: 'PackedStringArray')" (owner, 2026-10-08).
 	for c in _choices_list.get_children():
+		_choices_list.remove_child(c)
 		c.queue_free()
 	for i in options.size():
 		var l := Label.new()
