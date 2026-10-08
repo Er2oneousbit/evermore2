@@ -189,6 +189,8 @@ func attack() -> bool:
 	_swing_landed = false
 	_attacking = true
 	velocity = facing * lunge_speed
+	# Snarl and snap: timed so the teeth close on the hit frame.
+	Audio.play_at("dog_bite", global_position)
 	_sprite.speed_scale = weapon.swing_speed
 	_sprite.play(weapon.swing_anim, facing, true)
 	return true
@@ -229,7 +231,6 @@ func _on_animation_finished(anim: StringName) -> void:
 
 func _land_bite() -> void:
 	_swing_landed = true
-	Audio.play_at("dog_bite", global_position)
 	Fx.slash(global_position, facing, weapon.reach, weapon.arc_deg, _swing_level)
 	Combat.strike(get_tree(), global_position + Vector2(0, -6), facing, weapon.reach,
 			weapon.arc_deg, "player", _make_hit, _swing_level)

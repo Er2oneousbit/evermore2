@@ -45,7 +45,9 @@ const SOUNDS := {
 	"dog_bark":   {"files": ["dog_bark_1", "dog_bark_2", "dog_bark_3", "dog_bark_4"], "db": -9.0, "pitch": 0.05},
 	"dog_yelp":   {"files": ["dog_yelp"], "db": -8.0, "pitch": 0.05},
 	"dog_whine":  {"files": ["dog_whine"], "db": -12.0, "pitch": 0.03},
-	"dog_bite":   {"files": ["dog_bite_1", "dog_bite_2"], "db": -3.0, "pitch": 0.08},
+	# A snarl and a snap of teeth (layered by the pipeline); played as the bite
+	# starts, the snap lands on the hit frame.
+	"dog_bite":   {"files": ["dog_bite_1", "dog_bite_2", "dog_bite_3"], "db": -4.0, "pitch": 0.06},
 	"rat_squeak": {"files": ["rat_squeak"], "db": -13.0, "pitch": 0.08},
 	"rat_pain":   {"files": ["rat_pain"], "db": -12.0, "pitch": 0.1},
 	"rat_death":  {"files": ["rat_death"], "db": -11.0, "pitch": 0.06},

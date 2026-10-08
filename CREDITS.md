@@ -126,7 +126,7 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
   ([OpenGameArt](https://opengameart.org/users/subspaceaudio)).
   "A Place I Call Home" (dinner), "Childhood Friends" (the dare),
   "Grasslands" (the test yard), "Preparing For Battle" (the combat arena)
-* **RPG Sound Pack** by artisticdude: swings, bites, menu sounds
+* **RPG Sound Pack** by artisticdude: swings, the rat's bite, menu sounds
   ([OpenGameArt](https://opengameart.org/content/rpg-sound-pack))
 * **50 RPG sound effects** by Kenney (www.kenney.nl): the stick's crack, cloth
   ([OpenGameArt](https://opengameart.org/content/50-rpg-sound-effects))
@@ -135,6 +135,11 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
   [Squeaky Rat](https://opengameart.org/content/squeaky-rat))
 * **Dog sounds** by pauliuw: barks, yelp, whine
   ([OpenGameArt](https://opengameart.org/content/dog-sounds))
+* The dog's bite, layered from **Dog Snarl Grunt Grumble** and **Dog Grunt** by
+  qubodup (the snarl) and **Tiny vicious creature** by Darsycho (the snap)
+  ([snarl](https://opengameart.org/content/dog-snarl-grunt-grumble),
+  [grunt](https://opengameart.org/content/dog-grunt),
+  [snap](https://opengameart.org/content/tiny-vicious-creature))
 * **Fantozzi's Footsteps** by Fantozzi (submitted by qubodup): grass and stone
   steps ([OpenGameArt](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone))
 * **Birds and Wind - Ambient** by Spring Spring: the daytime ambience

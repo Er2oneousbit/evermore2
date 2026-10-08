@@ -10,8 +10,6 @@ RPG Sound Pack
   swing_1.ogg  <-  RPG Sound Pack/battle/swing.wav
   swing_2.ogg  <-  RPG Sound Pack/battle/swing2.wav
   swing_3.ogg  <-  RPG Sound Pack/battle/swing3.wav
-  dog_bite_1.ogg  <-  RPG Sound Pack/NPC/beetle/bite-small.wav
-  dog_bite_2.ogg  <-  RPG Sound Pack/NPC/beetle/bite-small3.wav
   rat_bite.ogg  <-  RPG Sound Pack/NPC/beetle/bite-small2.wav
   ui_move.ogg  <-  RPG Sound Pack/interface/interface1.wav
   ui_confirm.ogg  <-  RPG Sound Pack/interface/interface6.wav
@@ -145,6 +143,27 @@ Voice Clip Pack - Male Adventurer RPG
   voice/adventurer_yes_2.ogg  <-  RPG Male Adventurer/yes1.wav
   voice/adventurer_no_1.ogg  <-  RPG Male Adventurer/no0.wav
   voice/adventurer_no_2.ogg  <-  RPG Male Adventurer/no1.wav
+
+Dog Snarl Grunt Grumble
+  by Iwan 'qubodup' Gabovitch
+  license: CC0
+  https://opengameart.org/content/dog-snarl-grunt-grumble
+  dog_bite_1.ogg  <-  dog/dog-snarl.flac (one layer)
+  dog_bite_2.ogg  <-  dog/dog-growl.flac (one layer)
+
+Tiny vicious creature
+  by Darsycho
+  license: CC0
+  https://opengameart.org/content/tiny-vicious-creature
+  dog_bite_1.ogg  <-  tiny-vicious-creature_0.ogg (one layer)
+  dog_bite_2.ogg  <-  tiny-vicious-creature_0.ogg (one layer)
+  dog_bite_3.ogg  <-  tiny-vicious-creature_0.ogg (one layer)
+
+Dog Grunt
+  by Iwan 'qubodup' Gabovitch
+  license: CC0
+  https://opengameart.org/content/dog-grunt
+  dog_bite_3.ogg  <-  dog-frieda-grunt-96khz-01.flac (one layer)
 
 Birds and Wind - Ambient
   by Spring Spring
