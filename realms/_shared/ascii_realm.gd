@@ -92,6 +92,9 @@ const DEFAULTS := {
 	"ENEMIES_BY_CHAR": {},
 	## [{"cell": Vector2i, "kind": "buried"/"tucked"/"secret", "item": id, "count": n}]
 	"HIDDEN_ITEMS": [],
+	## Demo maps: items handed to the party the first time the map loads in a
+	## run (item id -> count), e.g. a kit of gear to try in the ring menu.
+	"START_ITEMS": {},
 	## The .dlg file NPCs and triggers in this realm talk from.
 	"DIALOGUE": "",
 	## names.json key of the realm's display name (log line, debug overlay).
@@ -126,6 +129,7 @@ func _ready() -> void:
 	_build_fences()
 	_build_cells()
 	_build_hidden()
+	_grant_start_items()
 	_dress_pond()
 	_build_apron()
 	_set_camera_limits()
@@ -170,8 +174,13 @@ func hidden_counts() -> Vector2i:
 
 ## The found flag of the hidden item at a cell.
 func hidden_key(cell: Vector2i) -> String:
+	return "%s.hidden.%d_%d" % [realm_id(), cell.x, cell.y]
+
+
+## The prefix of this realm's flags: its name key, or the node name.
+func realm_id() -> String:
 	var realm: String = cfg("REALM_NAME_KEY")
-	return "%s.hidden.%d_%d" % [realm if not realm.is_empty() else String(name), cell.x, cell.y]
+	return realm if not realm.is_empty() else String(name)
 
 
 func map_rect() -> Rect2:
@@ -392,6 +401,20 @@ func _add_trigger(spec: Dictionary, cell: Vector2i) -> void:
 	t.size = Vector2(TILE, TILE)
 	add_child(t)
 	_counts["triggers"] += 1
+
+
+## START_ITEMS, once per run (a flag remembers).
+func _grant_start_items() -> void:
+	var items: Dictionary = cfg("START_ITEMS")
+	if items.is_empty():
+		return
+	var flag := realm_id() + ".start_items"
+	if GameState.get_flag(flag):
+		return
+	GameState.set_flag(flag, true)
+	for id: String in items:
+		if ItemData.find(id):
+			GameState.add_item(id, items[id])
 
 
 ## Hidden items not found yet: a HiddenItem (buried, tucked) or a pickup

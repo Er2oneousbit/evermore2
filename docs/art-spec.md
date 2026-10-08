@@ -67,7 +67,7 @@ comparison. Nothing in gameplay code knows which view is on.
 
 | Knob | What it does |
 |---|---|
-| `sun_color/energy/elev/yaw` | The key light. The sun sits in front (camera side), so shadows fall back, up the screen (owner, 2026-10-08). Golden hour = a lower warm sun (30°), longer shadows |
+| `sun_color/energy/elev/yaw` | The key light. The sun sits in front (camera side), so shadows fall straight back, north (owner, 2026-10-08). Shadows stay light (`shadow_opacity` ~0.5) and short (sun 68° by day, 42° at golden hour): they must never hide a character |
 | `ambient` | Fill light. Keep it **cooler** than the sun: warm light + cool shadow is what reads as "golden hour" |
 | `fog_density/albedo` | Volumetric fog: light shafts through the trees. A little goes a long way (0.0025-0.008) |
 | `exposure/saturation/contrast` | Final grade |

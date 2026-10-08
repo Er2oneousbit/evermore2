@@ -290,8 +290,8 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
     if it's under a bush, keeps pointing until you come and search it.
   - The AI never wakes sleeping enemies and never fights more than 240 px from
     you (past that it drops the fight and catches up).
-  - R / gamepad RB cycles the partner's stance for now; the ring menu takes it
-    over later. The HUD shows it next to his HP.
+  - R / gamepad RB cycles the partner's stance for now; the ring menu's Party
+    ring takes it over later. The HUD shows it next to his HP.
 - **Stay put and splitting up:**
   - *Stay put* toggles the partner (Q / gamepad X): playing the kid it tells
     the dog, playing the dog it tells the kid. A staying partner holds his
@@ -331,6 +331,12 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
   mastery allows. Attack whenever you like: a quick tap gives a weaker swing,
   waiting gives the bigger one. The meter shows on the HUD by the kid.
   (The original filled to 100% by itself but needed the button held for levels 2 and 3.)
+- **The ring menu** (I / gamepad Y): a ring of slots around whoever you
+  drive, friendlier than the original (owner): every ring is a tab you can
+  see, turning is quick (hold to spin), changes happen without a confirm, the
+  other one's gear is one button away, and quick slots (with the Items and
+  Alchemy rings) let you use things without opening it. Equipment is the
+  first ring.
 - **Armor:** each piece adds defense, and some add one small perk (resist
   cold, faster charge, quieter footsteps for the dog's sneaking...). Pieces come
   from shops, chests, hidden caches and bosses. The dog's collar works the same

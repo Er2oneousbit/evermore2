@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/items/equipment_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "bike_helmet"
+display_name = "Bike helmet"
+description = "Scuffed, a size too big, still does its job."
+kind = "item"
+icon_cell = Vector2i(1, 1)
+wearer = "kid"
+slot = "head"
+defense = 8.0
+perk = ""

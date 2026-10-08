@@ -76,5 +76,8 @@ const HIDDEN_ITEMS := [
 	{"cell": Vector2i(36, 10), "kind": "tucked", "item": "torn_map"},
 	{"cell": Vector2i(30, 14), "kind": "buried", "item": "wild_carrot", "count": 2},
 ]
+## A kit of demo gear to try in the ring menu (I / gamepad Y).
+const START_ITEMS := {"rusty_sword": 1, "bike_helmet": 1, "hoodie": 1, "hiking_boots": 1,
+		"garden_gloves": 1, "studded_collar": 1}
 ## Kept as named constants because tests read them.
 const APRON_TILES := 14

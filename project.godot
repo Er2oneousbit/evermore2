@@ -32,6 +32,7 @@ Difficulty="*res://autoload/difficulty.gd"
 Fx="*res://autoload/fx.gd"
 Party="*res://autoload/party.gd"
 PauseMenu="*res://ui/menus/pause_menu.gd"
+RingMenu="*res://ui/menus/ring_menu.gd"
 
 [display]
 

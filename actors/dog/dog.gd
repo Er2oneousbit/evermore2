@@ -157,6 +157,8 @@ func _ready() -> void:
 	charge = ChargeMeter.new(weapon.max_level, weapon.seconds_per_level)
 	run = Running.new(charge, run_charge_drain)
 	health.died.connect(_on_died)
+	_apply_equipment("dog")
+	EventBus.equipment_changed.connect(_apply_equipment)
 	_sprite.animation_finished.connect(_on_animation_finished)
 	_resolve_target()
 	Party.register(self)
@@ -240,6 +242,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("attack") and attack():
 		get_viewport().set_input_as_handled()
+
+
+## What he wears (Equipment): armor from his collar. His bite is his own.
+func _apply_equipment(who: String) -> void:
+	if who == "dog":
+		health.armor = Equipment.defense("dog")
 
 
 ## Bite now, with whatever charge has built up. False if he can't.

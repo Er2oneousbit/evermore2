@@ -205,6 +205,20 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
 * In a test that measures one member's attack, freeze the other
   (`set_physics_process(false)`): the AI partner on Offensive joins any fight.
 
+## Equipment and the ring menu
+
+* A new piece of gear: a `data/items/<id>.tres` with script
+  `systems/items/equipment_data.gd` (`EquipmentData`: `wearer` kid/dog,
+  `slot`, `defense`, `weapon` for weapons, `perk`). It must be owned
+  (`GameState.inventory`) to be worn. Slots per wearer: `Equipment.SLOTS`.
+* Put things on in code with `Equipment.equip(who, slot, piece)`; the Kid and
+  Dog re-apply on `EventBus.equipment_changed`. What's worn:
+  `GameState.equipped`.
+* Demo maps can hand out gear with `START_ITEMS` (once per run).
+* `RingMenu` (autoload, `ui/menus/ring_menu.gd`) pauses the tree; its
+  directions are polled (a stick sends a stream of motion events). New rings
+  go in `RINGS` and show as tabs.
+
 ## Hidden items and the dog's nose
 
 * Hide items in a map with `HIDDEN_ITEMS` (see the header of

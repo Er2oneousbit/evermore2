@@ -32,9 +32,13 @@ var difficulty := "normal"
 var kid_stance := "offensive"
 var dog_stance := "offensive"
 
-## What the party carries: item id (data/items/<id>.tres) -> count. The ring
-## menu shows it later.
-var inventory: Dictionary = {}
+## What the party carries: item id (data/items/<id>.tres) -> count. Every
+## adventure starts with a stick.
+var inventory: Dictionary = {"stick": 1}
+
+## What each of the duo wears: "kid"/"dog" -> slot -> item id ("" = nothing).
+## See Equipment (systems/items/equipment.gd) for the rules.
+var equipped: Dictionary = {"kid": {"weapon": "stick"}, "dog": {}}
 
 var _flags: Dictionary = {}
 

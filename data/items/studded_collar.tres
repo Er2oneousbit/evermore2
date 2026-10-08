@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/items/equipment_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "studded_collar"
+display_name = "Studded collar"
+description = "Leather and brass studs. Very good boy armor."
+kind = "item"
+icon_cell = Vector2i(10, 6)
+wearer = "dog"
+slot = "collar"
+defense = 15.0
+perk = "Wider sniff range (later)"

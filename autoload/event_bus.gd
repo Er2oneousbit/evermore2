@@ -63,6 +63,10 @@ signal item_found(item: ItemData, count: int, key: String)
 @warning_ignore("unused_signal")
 signal dog_sniffed(targets: Array)
 
+## Someone's equipment changed ("kid" or "dog"). See Equipment.
+@warning_ignore("unused_signal")
+signal equipment_changed(who: String)
+
 ## A story/progress flag was set via GameState.set_flag().
 @warning_ignore("unused_signal")
 signal flag_changed(flag: String, value: Variant)

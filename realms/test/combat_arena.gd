@@ -42,3 +42,6 @@ const PROPS_BY_CHAR := {
 }
 const ENEMIES_BY_CHAR := {"r": "rat"}
 const MUSIC := "arena"
+## A kit of demo gear to try in the ring menu (I / gamepad Y).
+const START_ITEMS := {"rusty_sword": 1, "bike_helmet": 1, "hoodie": 1, "hiking_boots": 1,
+		"garden_gloves": 1, "studded_collar": 1}
