@@ -70,6 +70,17 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Fixed: a crash when one choice menu follows another
+
+* "Out of bounds get index '2' (on base: 'PackedStringArray')" (owner): when
+  a choice menu followed another in the same frame (the prologue does), the
+  old menu's labels were only queued for deletion, so the list counted old
+  and new labels and read past the new options. The editor's debugger stops
+  on that error, so the game seemed to crash. Old labels are detached at once
+* Test: `smoke_dialogue` 4c (a menu right after a menu lists only its own
+  options; moving through it stays inside them). Without the fix it fails
+  with the exact same error
+
 ## Fixed: the camera lets the kid walk off the bottom of the screen
 
 * Walking south in HD-2D, the camera stopped following about 2.7 m before

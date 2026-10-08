@@ -19,6 +19,9 @@
 #           portrait sets the minimum height, long text turns into pages that
 #           each fit inside the box, no word is lost across pages, and a press
 #           turns the page before the conversation moves on
+#        4c. A choice menu right after another one (the prologue does this):
+#           the list holds only the new options and moving through them never
+#           reads past the end (it crashed: "Out of bounds get index '2'")
 #        5. The same in the HD-2D view (where the 2D World is hidden): Maya
 #           is still talkable and drawn in 3D
 #
@@ -87,6 +90,7 @@ func _run() -> void:
 	_test_loop_guard()
 	_test_game_scripts()
 	await _test_box_sizing()
+	await _test_menu_after_menu()
 	await _test_npc_talk()
 	await _test_hd_talk()
 	if _failures.is_empty():
@@ -263,6 +267,26 @@ func _test_npc_talk() -> void:
 	Input.action_release("move_left")
 	_check(kid.global_position.distance_to(before) > 5.0, "kid should walk again after the dialogue")
 	scene.queue_free()
+	await _frames(2)
+
+
+func _test_menu_after_menu() -> void:
+	var box: DialogueBox = Dialogue.get_box()
+	box.show_line("Dad", "Pick one.", null)
+	box.show_choices(PackedStringArray(["Why?", "Okay."]))
+	await _frames(1)
+	# The next menu comes before the old labels are freed (end of frame).
+	box.show_choices(PackedStringArray(["Fine.", "No."]))
+	var list: Node = box._choices_list
+	_check(list.get_child_count() == 2, "a menu after a menu lists only its own options (%d labels)" % list.get_child_count())
+	for i in 3:
+		var down := InputEventAction.new()
+		down.action = "move_down"
+		down.pressed = true
+		box._unhandled_input(down)
+	await _frames(2)
+	_check(box._selected >= 0 and box._selected < 2, "moving through it stays inside the options (%d)" % box._selected)
+	box.hide_box()
 	await _frames(2)
 
 
