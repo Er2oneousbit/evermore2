@@ -194,7 +194,13 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   (stances, `systems/party/partner_brain.gd`). The Follower reads its tuning
   from the member's exports (`follow_distance`, `walk_speed`, ...).
 * Keys: Tab / gamepad Back switches, Q / X is Stay put, R / RB cycles the
-  partner's stance, C / B sniffs (driving the dog).
+  partner's stance, C / B sniffs (driving the dog), Shift / LB runs.
+* Running: `Stamina` (`systems/party/stamina.gd`) on the kid and the dog,
+  ticked only while driven (`stamina.tick(delta, stamina.wants_run(moving,
+  delta), moving)` returns whether he runs this frame). Tune with each actor's
+  `move_speed` (walk), `run_speed`, `stamina_seconds`,
+  `stamina_refill_seconds`. Tests that drive the kid somewhere now move at
+  the walk speed unless they hold `run`.
 * In a test that measures one member's attack, freeze the other
   (`set_physics_process(false)`): the AI partner on Offensive joins any fight.
 

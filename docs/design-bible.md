@@ -321,6 +321,10 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
   - Every realm says how many it has and how many you've found (no silent missables):
     a line when you find one ("2/5 here") and the count in the pause menu.
   - A found item hops out toward whoever you're driving; walk over it to take it.
+- **Running:** you walk by default; hold Run (or toggle it, in Settings) to
+  run. Running drains a stamina meter, like the original; run it dry and
+  you're winded (walking) until it refills partway. Each of the duo has his
+  own; the AI partner doesn't use it, so he always keeps up.
 - **Auto charge:** after a swing the charge meter refills on its own, about a
   second to 100% (level 1), then keeps climbing to level 2 and 3 if the weapon's
   mastery allows. Attack whenever you like: a quick tap gives a weaker swing,

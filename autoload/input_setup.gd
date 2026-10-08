@@ -35,6 +35,8 @@ const BINDINGS := {
 	# Interaction.try_interact() first (talking wins).
 	"interact":        {"keys": [KEY_E, KEY_ENTER, KEY_KP_ENTER], "buttons": [JOY_BUTTON_A]},
 	"attack":          {"keys": [KEY_J, KEY_SPACE], "buttons": [JOY_BUTTON_A]},
+	# Hold to run (or toggle, in Settings); running uses stamina.
+	"run":             {"keys": [KEY_SHIFT],        "buttons": [JOY_BUTTON_LEFT_SHOULDER]},
 	"toggle_light":    {"keys": [KEY_F],            "buttons": [JOY_BUTTON_Y]},
 	# --- The duo (Party) --------------------------------------------------------
 	"switch_control":  {"keys": [KEY_TAB],          "buttons": [JOY_BUTTON_BACK]},
@@ -59,6 +61,7 @@ const REBINDABLE := [
 	["move_down", "Move down"],
 	["move_left", "Move left"],
 	["move_right", "Move right"],
+	["run", "Run"],
 	["attack", "Attack"],
 	["interact", "Talk / interact"],
 	["toggle_light", "Flashlight"],

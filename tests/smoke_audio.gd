@@ -172,8 +172,9 @@ func _test_footsteps() -> void:
 	var dog: Dog = arena.get_node("World/Dog")
 	_clear_enemies()
 	_heard.clear()
+	# Long enough for a walking kid (not running) to get well past the dog.
 	Input.action_press("move_right")
-	await _wait(1.0)
+	await _wait(1.6)
 	Input.action_release("move_right")
 	_check(_heard.count("step_grass") >= 3, "walking on grass makes steps (%d)" % _heard.count("step_grass"))
 	await _wait(0.8)
