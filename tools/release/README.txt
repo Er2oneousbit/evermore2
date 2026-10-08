@@ -49,6 +49,7 @@ Switch kid / dog      Tab                 Back (View)
 Partner: Stay put     Q                   X
   (press again to call him back)
 Partner's stance      R                   RB
+Sniff (the dog)       C                   B
 Time of day           F2
 Debug overlay         F3
 Classic 2D view       F6
@@ -67,7 +68,13 @@ The duo: you drive one, the AI plays the other by his stance.
   The kid:  Offensive (goes after enemies near you) or Defensive (stays
             close, swings only at what comes within reach, at full power)
   The dog:  Offensive (bites enemies near you) or Search (keeps out of
-            fights, sniffs around, bites back if something's after him)
+            fights, sniffs out hidden items, bites back if something's
+            after him)
+
+Hidden items: the test yard hides five. The dog on Search finds buried
+ones and digs them up; drive him and press Sniff to see scent trails, then
+Talk / interact on the spot to dig. Look for a glint on bushes and rocks:
+the kid can search those. Esc shows how many you've found.
 Stay put leaves the partner where he is, even through a switch: leave the
 kid on one side, switch to the dog, explore. An arrow at the screen edge
 points to him when he's out of view (red while he's being hit).

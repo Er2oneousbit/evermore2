@@ -19,6 +19,10 @@ The story, the realms and the real content come later.
   two can split up), and set how the AI plays the one you aren't driving: the
   kid Offensive or Defensive, the dog Offensive or Search. The dog bites. An
   arrow points to him when he's out of view
+* **Hidden items and the dog's nose** (in the test yard): items buried,
+  tucked under bushes and rocks, or lying in nooks. The dog on Search finds
+  them by himself, points, barks and digs; drive him and sniff to see scent
+  trails. A count of how many you've found is in the pause menu
 * **Normal and Hard**: the Hard launcher makes the rats tougher
 * **Sound and music**: swings, hits, the rat's warning squeak before it
   bites (listen for it), the dog's barks and bites, footsteps that change on

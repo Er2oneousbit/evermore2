@@ -4,7 +4,9 @@
 # WHAT:  Bottom-left: the kid. Bottom-right: the dog. Each shows HP and his
 #        charge bar; "> " marks the one you drive, and the partner shows his
 #        stance (and "Stay" on Stay put). An arrow points at the partner when
-#        he's off-screen. Text only for now; real bars and the ring menu later.
+#        he's off-screen. Finding a hidden item shows a line at the top
+#        ("Found Old key  2/5 here"). Text only for now; real bars and the
+#        ring menu later.
 # WHY NOW: proves the ultrawide layout rule early. Everything here anchors to
 #        the SafeFrame, so on 32:9 it sits in the middle 16:9 area.
 #
@@ -21,6 +23,10 @@ var _prompt: Label
 var _charge_bar: ChargeBar
 var _dog_charge_bar: ChargeBar
 var _partner_arrow: PartnerArrow
+## "Found Old key  2/5 here", for TOAST_SECONDS (game time).
+var _toast: Label
+var _toast_left := 0.0
+const TOAST_SECONDS := 2.8
 var _kid: Node2D
 var _dog: Node2D
 
@@ -40,7 +46,9 @@ func _ready() -> void:
 	_partner_arrow.name = "PartnerArrow"
 	$SafeFrame.add_child(_partner_arrow)
 	_build_prompt()
+	_build_toast()
 	_refresh_status()
+	EventBus.item_found.connect(_on_item_found)
 	EventBus.interaction_target_changed.connect(_on_target_changed)
 	EventBus.dialogue_started.connect(_on_dialogue_started)
 	EventBus.dialogue_ended.connect(_on_dialogue_ended)
@@ -95,7 +103,10 @@ func _build_charge_bar(bar_name: String, right_side: bool) -> ChargeBar:
 	return bar
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _toast_left > 0.0:
+		_toast_left -= delta
+		_toast.visible = _toast_left > 0.0
 	for pair in [[_charge_bar, _kid, _kid_status], [_dog_charge_bar, _dog, _dog_status]]:
 		var bar: ChargeBar = pair[0]
 		var m: Node2D = pair[1]
@@ -104,6 +115,40 @@ func _process(_delta: float) -> void:
 			bar.visible = (pair[2] as Label).visible
 		elif bar:
 			bar.visible = false
+
+
+func _build_toast() -> void:
+	_toast = Label.new()
+	_toast.name = "FoundToast"
+	_toast.label_settings = _kid_status.label_settings
+	_toast.add_theme_stylebox_override("normal", _kid_status.get_theme_stylebox("normal"))
+	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast.anchor_left = 0.5
+	_toast.anchor_right = 0.5
+	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_toast.offset_top = 8
+	_toast.offset_bottom = 20
+	_toast.visible = false
+	$SafeFrame.add_child(_toast)
+
+
+func _on_item_found(item: ItemData, count: int, _key: String) -> void:
+	var text := "Found %s" % (item.display_name if item else "something")
+	if count > 1:
+		text += " x%d" % count
+	var realm := get_tree().get_first_node_in_group("ascii_realm") as AsciiRealm
+	if realm:
+		var c := realm.hidden_counts()
+		if c.y > 0:
+			text += "   %d/%d here" % [c.x, c.y]
+	_toast.text = text
+	_toast.visible = true
+	_toast_left = TOAST_SECONDS
+
+
+## The find line's text while it shows ("" otherwise). Tests read it.
+func toast_text() -> String:
+	return _toast.text if _toast.visible else ""
 
 
 func _build_prompt() -> void:
@@ -142,8 +187,14 @@ func _on_target_changed(target: Node) -> void:
 	if target == null or Dialogue.is_active() or not target.has_method("interact_label"):
 		_prompt.visible = false
 		return
-	_prompt.text = "[E] %s" % target.interact_label()
+	_prompt.text = "[%s] %s" % [_key_name("interact"), target.interact_label()]
 	_prompt.visible = true
+
+
+## The first key bound to an action (rebindable), for prompts.
+func _key_name(action: String) -> String:
+	var keys: Array = InputSetup.bindings_of(action)["keys"]
+	return InputSetup.key_label(keys[0]) if not keys.is_empty() else "?"
 
 
 ## The frame HUD pieces anchor to (tests read this).

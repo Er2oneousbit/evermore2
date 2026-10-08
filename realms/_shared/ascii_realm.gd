@@ -24,6 +24,14 @@
 #   any key of TRIGGERS_BY_CHAR    walking onto it starts a conversation
 #   any key of ENEMIES_BY_CHAR     an enemy (data/enemies/<id>.tres) waits there
 #
+# HIDDEN ITEMS sit on top of the layout (a bush cell can hide something), so
+#   they're a list, not characters:
+#     const HIDDEN_ITEMS := [{"cell": Vector2i(9, 6), "kind": "buried", "item": "old_key"}, ...]
+#   kind: "buried" (open ground; the dog digs it up), "tucked" (a prop cell:
+#   under that bush or rock), "secret" (lying in a nook). "count" defaults to
+#   1. Found ones never come back (GameState flag "<realm>.hidden.<x>_<y>"),
+#   and hidden_counts() gives found / total for the HUD and pause menu.
+#
 # SCENE: the realm's .tscn needs Ground, Water (TileMapLayers), Solids
 #        (StaticBody2D), Occluders (Node2D), World (y_sort) with World/Fences,
 #        World/Kid and World/Dog, plus Atmosphere and HUD.
@@ -82,6 +90,8 @@ const DEFAULTS := {
 	"TRIGGERS_BY_CHAR": {},
 	## char -> enemy id (data/enemies/<id>.tres)
 	"ENEMIES_BY_CHAR": {},
+	## [{"cell": Vector2i, "kind": "buried"/"tucked"/"secret", "item": id, "count": n}]
+	"HIDDEN_ITEMS": [],
 	## The .dlg file NPCs and triggers in this realm talk from.
 	"DIALOGUE": "",
 	## names.json key of the realm's display name (log line, debug overlay).
@@ -101,7 +111,7 @@ var layout: Array = []
 var _cfg: Dictionary = {}
 var _tiler: WangAutotiler
 var _prop_cache: Dictionary = {}
-var _counts := {"props": 0, "decals": 0, "solids": 0, "npcs": 0, "triggers": 0, "enemies": 0}
+var _counts := {"props": 0, "decals": 0, "solids": 0, "npcs": 0, "triggers": 0, "enemies": 0, "hidden": 0}
 
 
 func _ready() -> void:
@@ -115,6 +125,7 @@ func _ready() -> void:
 	_build_terrain()
 	_build_fences()
 	_build_cells()
+	_build_hidden()
 	_dress_pond()
 	_build_apron()
 	_set_camera_limits()
@@ -123,9 +134,9 @@ func _ready() -> void:
 		GameState.current_realm = key
 	Audio.play_music(cfg("MUSIC"), 1.5)
 	Audio.set_ambience(cfg("AMBIENCE"))
-	Debug.log_info("%s loaded (%dx%d tiles, %d props, %d decals, %d NPCs, %d enemies, %d solid shapes). Run with -- --help for options."
+	Debug.log_info("%s loaded (%dx%d tiles, %d props, %d decals, %d NPCs, %d enemies, %d hidden items, %d solid shapes). Run with -- --help for options."
 			% [Names.text(key) if not key.is_empty() else name, layout[0].length(), layout.size(),
-			_counts["props"], _counts["decals"], _counts["npcs"], _counts["enemies"], _counts["solids"]])
+			_counts["props"], _counts["decals"], _counts["npcs"], _counts["enemies"], _counts["hidden"], _counts["solids"]])
 
 
 ## A setting: the realm's constant if it declared one, else the default.
@@ -145,6 +156,22 @@ static func surface_at(tree: SceneTree, world_pos: Vector2) -> String:
 		return "grass"
 	var terrain: String = realm.cfg("TERRAIN_BY_CHAR").get(realm.layout[cell.y][cell.x], "Grass")
 	return "grass" if terrain == "Grass" else "stone"
+
+
+## Hidden items in this realm: x = found so far, y = how many there are.
+func hidden_counts() -> Vector2i:
+	var items: Array = cfg("HIDDEN_ITEMS")
+	var found := 0
+	for spec: Dictionary in items:
+		if GameState.get_flag(hidden_key(spec["cell"])):
+			found += 1
+	return Vector2i(found, items.size())
+
+
+## The found flag of the hidden item at a cell.
+func hidden_key(cell: Vector2i) -> String:
+	var realm: String = cfg("REALM_NAME_KEY")
+	return "%s.hidden.%d_%d" % [realm if not realm.is_empty() else String(name), cell.x, cell.y]
 
 
 func map_rect() -> Rect2:
@@ -201,6 +228,7 @@ func _validate_layout() -> bool:
 		if joined.count(spawn) != 1:
 			Debug.log_error("LAYOUT needs exactly one %s, found %d" % [spawn, joined.count(spawn)])
 			ok = false
+	ok = _validate_hidden() and ok
 	if not cfg("NPCS_BY_CHAR").is_empty() or not cfg("TRIGGERS_BY_CHAR").is_empty():
 		if String(cfg("DIALOGUE")).is_empty():
 			Debug.log_error("%s has NPCs or triggers but no DIALOGUE file" % name)
@@ -364,6 +392,75 @@ func _add_trigger(spec: Dictionary, cell: Vector2i) -> void:
 	t.size = Vector2(TILE, TILE)
 	add_child(t)
 	_counts["triggers"] += 1
+
+
+## Hidden items not found yet: a HiddenItem (buried, tucked) or a pickup
+## lying in plain sight (secret).
+func _build_hidden() -> void:
+	var big: String = cfg("BIG_PROP_CHARS")
+	for spec: Dictionary in cfg("HIDDEN_ITEMS"):
+		var cell: Vector2i = spec["cell"]
+		var key := hidden_key(cell)
+		if GameState.get_flag(key):
+			continue
+		var item := ItemData.find(spec["item"])
+		if item == null:
+			continue
+		var at := Vector2(cell.x * TILE + TILE * 0.5, cell.y * TILE + TILE - 4)
+		var kind: String = spec["kind"]
+		var ch: String = layout[cell.y][cell.x]
+		if kind == "tucked" and not big.contains(ch):
+			at += _jitter(_hash(cell.x, cell.y))  # right where the prop stands
+		elif kind != "tucked":
+			at.y -= 8  # mid-cell: feet stand there, not on the edge below
+		var n: int = spec.get("count", 1)
+		if kind == "secret":
+			_world.add_child(ItemPickup.create(item, n, key, at))
+		else:
+			_world.add_child(HiddenItem.create(item, n, kind, key, at))
+		_counts["hidden"] += 1
+
+
+## Hidden items must sit where they make sense: tucked ones on a prop (the
+## bush or rock they're under), the others on open, walkable ground.
+func _validate_hidden() -> bool:
+	var ok := true
+	var props: Dictionary = cfg("PROPS_BY_CHAR")
+	var blocked: String = cfg("SOLID_CHARS") + "".join(cfg("FENCES").keys()) + "".join(props.keys()) 			+ "".join(cfg("NPCS_BY_CHAR").keys())
+	var seen := {}
+	for spec in cfg("HIDDEN_ITEMS"):
+		if not (spec is Dictionary and spec.get("cell") is Vector2i and spec.get("item") is String):
+			Debug.log_error("HIDDEN_ITEMS: needs a Vector2i cell and an item id: %s" % [spec])
+			ok = false
+			continue
+		var cell: Vector2i = spec["cell"]
+		var kind: String = spec.get("kind", "")
+		# A typo here would count toward the total but never spawn: a 5/5 you
+		# could never reach.
+		if not ResourceLoader.exists("res://data/items/%s.tres" % spec["item"]):
+			Debug.log_error("HIDDEN_ITEMS %s: no item data/items/%s.tres" % [cell, spec["item"]])
+			ok = false
+		if cell.y < 0 or cell.y >= layout.size() or cell.x < 0 or cell.x >= layout[0].length():
+			Debug.log_error("HIDDEN_ITEMS %s: outside the map" % cell)
+			ok = false
+			continue
+		if seen.has(cell):
+			Debug.log_error("HIDDEN_ITEMS %s: two items on one cell" % cell)
+			ok = false
+		seen[cell] = true
+		var ch: String = layout[cell.y][cell.x]
+		if kind == "tucked":
+			if not props.has(ch):
+				Debug.log_error("HIDDEN_ITEMS %s: tucked needs a prop (bush, rock) there, found '%s'" % [cell, ch])
+				ok = false
+		elif kind == "buried" or kind == "secret":
+			if blocked.contains(ch):
+				Debug.log_error("HIDDEN_ITEMS %s: %s needs open ground, found '%s'" % [cell, kind, ch])
+				ok = false
+		else:
+			Debug.log_error("HIDDEN_ITEMS %s: kind must be buried, tucked or secret, not '%s'" % [cell, kind])
+			ok = false
+	return ok
 
 
 ## Lily pads on open water, reeds along the water's edge. Automatic, so

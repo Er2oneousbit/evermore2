@@ -194,9 +194,27 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   (stances, `systems/party/partner_brain.gd`). The Follower reads its tuning
   from the member's exports (`follow_distance`, `walk_speed`, ...).
 * Keys: Tab / gamepad Back switches, Q / X is Stay put, R / RB cycles the
-  partner's stance.
+  partner's stance, C / B sniffs (driving the dog).
 * In a test that measures one member's attack, freeze the other
   (`set_physics_process(false)`): the AI partner on Offensive joins any fight.
+
+## Hidden items and the dog's nose
+
+* Hide items in a map with `HIDDEN_ITEMS` (see the header of
+  `realms/_shared/ascii_realm.gd`): `{"cell": Vector2i(9, 3), "kind":
+  "buried", "item": "old_key"}`. Kinds: `buried` (open ground; the dog digs),
+  `tucked` (on a prop cell: under that bush or rock), `secret` (lying in a
+  nook). The map refuses to load with a clear error if one sits somewhere it
+  can't (a buried item on a fence, a tucked one with no prop).
+* New items: a `data/items/<id>.tres` (`ItemData`: name, description, `item`
+  or `ingredient`, `icon_cell` on `assets/items/lpc_items.png`, a 16x16 grid).
+* `HiddenItem` (buried, tucked) and `ItemPickup` (on the ground; only
+  `Party.leader` grabs it) live in `systems/items/`, with `Nose` (the dog's
+  Search-stance finding and the sniff button). Found flags:
+  `realm.hidden_key(cell)`; counts: `realm.hidden_counts()`.
+* Interactables can say who may use them: `func can_interact(who) -> bool`.
+  Without it, only the kid (talking is his).
+* Effects for tells: `Fx.glint`, `Fx.scent_puff`, `Fx.dirt`, `Fx.scent_trail`.
 
 ## Settings and the pause menu
 

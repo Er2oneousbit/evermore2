@@ -53,6 +53,16 @@ signal partner_stay_changed(staying: bool)
 @warning_ignore("unused_signal")
 signal stance_changed(member: Node2D, stance: String)
 
+## A hidden item was found and picked up. `key` is its found flag; the realm
+## counts found/total (AsciiRealm.hidden_counts).
+@warning_ignore("unused_signal")
+signal item_found(item: ItemData, count: int, key: String)
+
+## The dog sniffed (you drive him): `targets` are what his scent trails lead
+## to (hidden items, NPCs).
+@warning_ignore("unused_signal")
+signal dog_sniffed(targets: Array)
+
 ## A story/progress flag was set via GameState.set_flag().
 @warning_ignore("unused_signal")
 signal flag_changed(flag: String, value: Variant)

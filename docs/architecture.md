@@ -232,6 +232,22 @@ Kid / Dog each frame:
                   else -> Follower.steer()  (the breadcrumb follow below)
 ```
 
+### Hidden items and the nose
+
+```
+AsciiRealm HIDDEN_ITEMS -> HiddenItem (buried / tucked) or ItemPickup (secret),
+                           skipped if its found flag is set
+Dog, AI on Search, nothing after him:
+   Nose.think: item near him AND near the leader? GO -> POINT (bark)
+               -> buried: Dog.dig -> HiddenItem.reveal
+               -> tucked: pointed = true, HOLD until the kid comes
+Dog, driven: sniff -> Nose.sniff -> Fx.scent_trail x3, buried ones sniffed
+             interact on a sniffed spot -> Dog.dig
+HiddenItem.reveal -> ItemPickup.pop (hops toward Party.leader)
+ItemPickup: Party.leader touches it -> GameState inventory + flag,
+            EventBus.item_found -> HUD "Found X  n/m here"
+```
+
 ## 4. Follow AI (how it works)
 
 `systems/party/follower.gd`, used by whichever member the AI plays (the dog
@@ -274,6 +290,7 @@ it and confirming the test fails:
 | `tests/smoke_party.tscn` | no | Switching (camera glide, following), Stay put through a switch and call-back, knockout hand-off, every stance, the dog's bite, the HUD marker and partner arrow, talking belongs to the kid, the HD-2D camera follows the leader |
 | `tests/smoke_settings.tscn` | no | Settings values and presets, save/load round trip, every graphics switch reaching HdView, gameplay options, rebinding, pause and settings menus driven by key presses |
 | `tests/smoke_audio.tscn` | no | Every sound and music file loads, per-frame limit, every gameplay hook makes its sound (swing, hits, rat, dog, footsteps by surface, whistle, switch), music per map and crossfades, menu ticks and the text blip |
+| `tests/smoke_items.tscn` | no | Hidden items: placement and the count, the dog finding and digging on Search, the leash and Offensive leaving items alone, tucked search and pointing, sniff trails then dig while driving the dog, only the driven one picks up, found items stay found, the pause menu line, HD-2D mirroring and the hop |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |

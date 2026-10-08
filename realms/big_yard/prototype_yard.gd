@@ -68,5 +68,13 @@ const PROPS_BY_CHAR := {
 	"w": ["wildflowers_00", "wildflowers_01", "wildflowers_04", "wildflowers_05", "wildflowers_06",
 			"wildflowers_08", "wildflowers_12", "wildflowers_13", "wildflowers_16", "wildflowers_17"],
 }
+## Hidden items (the dog sniffs them out). Demo items for now.
+const HIDDEN_ITEMS := [
+	{"cell": Vector2i(9, 3), "kind": "buried", "item": "old_key"},
+	{"cell": Vector2i(16, 8), "kind": "tucked", "item": "shiny_stone"},
+	{"cell": Vector2i(10, 11), "kind": "secret", "item": "coin_pouch"},
+	{"cell": Vector2i(36, 10), "kind": "tucked", "item": "torn_map"},
+	{"cell": Vector2i(30, 14), "kind": "buried", "item": "wild_carrot", "count": 2},
+]
 ## Kept as named constants because tests read them.
 const APRON_TILES := 14
