@@ -70,6 +70,28 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: a weapon in his hand when he swings
+
+* The kid used to swing empty-handed (owner: "there should be an actual stick
+  in his hand"). Now the weapon is drawn with the swing: a layer behind him
+  and one in front, on the swing's frame and facing, in 2D and HD-2D
+* The stick is the LPC **club** (bluecarrot16), a backhand: the body's slash
+  played in reverse, which is how the generator lines up that art. The rusty
+  sword is the LPC **arming sword** in bronze (ElizaWy), a forward slash
+* Weapons carry their art (`WeaponData.overlay_fg`, `overlay_bg`,
+  `overlay_frame`); a new weapon brings its own. The art pipeline fetches the
+  layers from the generator's repo, pinned to one commit
+  (`tools/art/build_art.py --only weapons`), and writes the credits
+* HdView mirrors extra layers an actor lists in its `hd_layers` meta, and
+  swaps their texture when it changes
+* Found while testing: the weapon trailed the body by one frame (the body
+  animates after the kid's physics step); it now follows the body's
+  `frame_changed`
+* Tests: `smoke_ring` section 8 (art in the layers, behind and in front,
+  hidden until the swing, following the swing frame by frame and the facing,
+  put away after, a new weapon's art and frame size, HD-2D mirroring and the
+  swap). Each was proven by breaking it (6 sabotages). All 13 runs pass
+
 ## Fixed: a crash when one choice menu follows another
 
 * "Out of bounds get index '2' (on base: 'PackedStringArray')" (owner): when

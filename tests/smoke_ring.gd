@@ -19,6 +19,9 @@
 #        7. Swapping weapons doesn't refill the charge; a weapon changed
 #           mid-swing waits for the swing to end; an old save that kept
 #           gamepad Y on the flashlight gives it up to the ring menu
+#        8. The weapon in his hand: hidden until he swings, then on the
+#           swing's frame and facing, front and back layers; a new weapon
+#           brings its own art; HD-2D mirrors both layers and the swap
 #
 # RUN:   godot --headless --path . --fixed-fps 60 res://tests/smoke_ring.tscn
 #        Exit code 0 = PASS, 1 = FAIL.
@@ -46,6 +49,7 @@ func _run() -> void:
 	await _test_dog_driven()
 	await _test_hd()
 	await _test_review_fixes()
+	await _test_weapon_in_hand()
 	if _failures.is_empty():
 		print("[TEST] PASS  smoke_ring")
 		get_tree().quit(0)
@@ -281,6 +285,67 @@ func _test_review_fixes() -> void:
 	_check(InputSetup.bindings_of("toggle_light")["keys"] == [KEY_L], "and keeps its own key (L)")
 	Settings._controls.erase("toggle_light")
 	InputSetup.set_bindings("toggle_light", {"keys": [KEY_F], "buttons": [JOY_BUTTON_LEFT_STICK]})
+
+
+func _test_weapon_in_hand() -> void:
+	var scene: Node = load(ARENA_HD).instantiate()
+	add_child(scene)
+	await _frames(12)
+	_clear_enemies()
+	var hd: HdView = scene.get_node("HdView")
+	var kid: Kid = scene.get_node("Yard/World/Kid")
+	var front: Sprite2D = kid.get_node("WeaponFront")
+	var back: Sprite2D = kid.get_node("WeaponBack")
+	var body: LpcSprite = kid.get_node("Sprite")
+	var stick := ItemData.find("stick") as EquipmentData
+	var sword := ItemData.find("rusty_sword") as EquipmentData
+	_check(front.texture == stick.weapon.overlay_fg and back.texture == stick.weapon.overlay_bg, "the stick's art is in his hand layers")
+	_check(back.get_index() < body.get_index() and front.get_index() > body.get_index(), "one layer behind his body, one in front")
+	_check(not front.visible and not back.visible, "no weapon showing while he walks around")
+	var f3 := _layer3d(hd, kid, "WeaponFront")
+	var b3 := _layer3d(hd, kid, "WeaponBack")
+	_check(f3 != null and b3 != null, "HD-2D mirrors both weapon layers")
+	kid.facing = Vector2.LEFT
+	kid.charge.value = 1.0
+	kid.attack()
+	var seen := false
+	var columns := {}
+	for i in 40:
+		await get_tree().physics_frame
+		if front.visible:
+			seen = true
+			columns[front.frame_coords.x] = true
+			_check(front.frame_coords == Vector2i(body.frame_index(), int(body.dir)),
+					"the weapon frame follows the swing (%s vs frame %d, dir %d)" % [front.frame_coords, body.frame_index(), body.dir])
+			if body.frame_index() >= 3:
+				break
+	_check(seen and back.visible, "swinging shows the weapon in his hand")
+	_check(columns.size() >= 3, "through the frames of the swing (%d seen)" % columns.size())
+	await _frames(2)
+	if f3:
+		_check(f3.visible and f3.frame_coords == front.frame_coords, "and in HD-2D too")
+	for i in 60:
+		await get_tree().physics_frame
+		if not kid.is_attacking():
+			break
+	await get_tree().physics_frame
+	_check(not front.visible, "it's put away when the swing ends")
+	Equipment.equip("kid", "weapon", sword)
+	_check(front.texture == sword.weapon.overlay_fg and front.hframes == sword.weapon.overlay_fg.get_width() / sword.weapon.overlay_frame,
+			"a new weapon brings its own art and frame size")
+	await _frames(2)
+	if f3:
+		_check(f3.texture == sword.weapon.overlay_fg and f3.hframes == front.hframes, "HD-2D swaps it too")
+	Equipment.equip("kid", "weapon", stick)
+	scene.queue_free()
+	await _frames(2)
+
+
+func _layer3d(hd: HdView, actor: Node, layer: String) -> Sprite3D:
+	for a: Array in hd._actors:
+		if a[0] == actor and a[3] == layer:
+			return a[1]
+	return null
 
 
 # -----------------------------------------------------------------------------

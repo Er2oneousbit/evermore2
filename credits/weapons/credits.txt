@@ -1,0 +1,17 @@
+Weapons in hand (assets/weapons/)
+=================================
+
+From the Universal LPC Spritesheet Character Generator
+(https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator).
+
+stick_fg.png, stick_bg.png: Club (LPC More Weapons) by bluecarrot16
+   License: OGA-BY 3.0+ / GPL 3.0 / CC-BY 4.0
+   https://opengameart.org/content/lpc-more-weapons
+   Files: spritesheets/weapon/blunt/club/club.png, spritesheets/weapon/blunt/club/background/club.png
+
+rusty_sword_fg.png, rusty_sword_bg.png: Arming sword (LPC) by ElizaWy; walk and down by JaidynReiman
+   License: OGA-BY 3.0
+   https://github.com/ElizaWy/LPC
+   Files: spritesheets/weapon/sword/arming/attack_slash/fg/bronze.png, spritesheets/weapon/sword/arming/attack_slash/bg/bronze.png
+
+Modifications by this project: none (copied as-is).

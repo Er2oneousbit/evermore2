@@ -43,6 +43,8 @@ const ANIMS := {
 	&"run":        {"row": 38, "frames": [0, 1, 2, 3, 4, 5, 6, 7], "fps": 12.0, "loop": true},
 	&"combat_idle": {"row": 42, "frames": [0, 0, 1], "fps": 3.0, "loop": true},
 	&"slash":      {"row": 12, "frames": [0, 1, 2, 3, 4, 5], "fps": 14.0, "loop": false},
+	# The slash played backwards: a backhand. The LPC club is drawn for it.
+	&"slash_reverse": {"row": 12, "frames": [5, 4, 3, 2, 1, 0], "fps": 14.0, "loop": false},
 	&"backslash":  {"row": 46, "frames": [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12], "fps": 20.0, "loop": false},
 	&"halfslash":  {"row": 50, "frames": [0, 1, 2, 3, 4, 5], "fps": 14.0, "loop": false},
 	&"thrust":     {"row": 4,  "frames": [0, 1, 2, 3, 4, 5, 6, 7], "fps": 14.0, "loop": false},

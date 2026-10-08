@@ -297,7 +297,7 @@ func _process(delta: float) -> void:
 		var actor := a[0] as Node2D
 		# The actor's OWN visibility: in HD mode the whole 2D World is hidden on
 		# purpose, so is_visible_in_tree() would hide every actor here too.
-		var s2 := actor.get_node("Sprite") as Sprite2D
+		var s2 := actor.get_node(a[3]) as Sprite2D
 		s3.visible = actor.visible and s2.visible
 		_sync_actor(s3, s2, actor.global_position, a[2])
 	_follow_camera(delta)
@@ -585,18 +585,27 @@ func mirror_new_actors() -> void:
 
 func _add_actor(actor: Node2D, depth_bias: float) -> Sprite3D:
 	var s3 := _make_actor_sprite(actor.get_node("Sprite") as Sprite2D, actor.name)
-	_actors.append([actor, s3, depth_bias])
+	_actors.append([actor, s3, depth_bias, "Sprite"])
 	_mirrored[actor.get_instance_id()] = s3
-	# Drop the 3D sprite when its actor leaves for good.
-	actor.tree_exiting.connect(func() -> void: _forget_actor(actor, s3), CONNECT_ONE_SHOT)
+	# Extra layers drawn with the body (the kid's weapon while he swings):
+	# meta "hd_layers" = {child Sprite2D name: depth bias next to the body}.
+	var layers: Dictionary = actor.get_meta("hd_layers", {})
+	for layer_name: String in layers:
+		var l2 := actor.get_node_or_null(layer_name) as Sprite2D
+		if l2:
+			var l3 := _make_actor_sprite(l2, actor.name + layer_name)
+			_actors.append([actor, l3, depth_bias + float(layers[layer_name]), layer_name])
+	# Drop the 3D sprites when their actor leaves for good.
+	actor.tree_exiting.connect(func() -> void: _forget_actor(actor), CONNECT_ONE_SHOT)
 	return s3
 
 
-func _forget_actor(actor: Node2D, s3: Sprite3D) -> void:
+func _forget_actor(actor: Node2D) -> void:
 	_mirrored.erase(actor.get_instance_id())
-	_actors = _actors.filter(func(a: Array) -> bool: return a[1] != s3)
-	if is_instance_valid(s3):
-		s3.queue_free()
+	for a: Array in _actors:
+		if a[0] == actor and is_instance_valid(a[1]):
+			(a[1] as Sprite3D).queue_free()
+	_actors = _actors.filter(func(a: Array) -> bool: return a[0] != actor)
 
 
 func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:
@@ -645,6 +654,11 @@ func _actor_material(tex: Texture2D) -> ShaderMaterial:
 
 
 func _sync_actor(s3: Sprite3D, s2: Sprite2D, pos: Vector2, depth_bias: float) -> void:
+	if s3.texture != s2.texture:  # a new weapon in hand
+		s3.texture = s2.texture
+		s3.hframes = s2.hframes
+		s3.vframes = s2.vframes
+		s3.material_override = _actor_material(s2.texture)
 	s3.position = to3(pos) + Vector3(0.0, 0.0, depth_bias)
 	s3.frame_coords = s2.frame_coords
 	s3.offset = Vector2(s2.offset.x, -s2.offset.y)  # hops (item pickups)

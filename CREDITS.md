@@ -158,7 +158,19 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
 * Made by this project (generated in `tools/audio/build_audio.py`): the text
   blip, the kid's whistle, the switch chime
 
-## Item icons: `assets/items/lpc_items.png` (not used yet)
+## Weapons in hand: `assets/weapons/`
+
+From the [Universal LPC Spritesheet Character Generator](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator):
+
+* **Club** (the stick) by bluecarrot16, from *LPC More Weapons*
+  ([OpenGameArt](https://opengameart.org/content/lpc-more-weapons)).
+  License: **OGA-BY 3.0+ / GPL 3.0 / CC-BY 4.0**. Unmodified.
+* **Arming sword** (the rusty sword, bronze variant) by ElizaWy (walk and down
+  by JaidynReiman) ([LPC Revised](https://github.com/ElizaWy/LPC)).
+  License: **OGA-BY 3.0**. Unmodified.
+* Details: `credits/weapons/credits.txt`.
+
+## Item icons: `assets/items/lpc_items.png` (ring menu, hidden items)
 
 * **[LPC] Items and game effects** by Reemax, with Sharm, ETTiNGRiNDER, wulax,
   Nila122, daneeklu, JaidynReiman, pennomi, laetissima, makrohn and Jetrel

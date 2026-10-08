@@ -12,7 +12,8 @@ WHAT:  Takes the ORIGINAL art packs (downloaded from OpenGameArt, cached in
          assets/characters/dog/dog_lpc*.png               the dog (recolored)
          assets/textures/hd/*.png                         3D fence wood (HD-2D view)
          assets/characters/enemies/*/                     enemy sheets (the rat)
-         assets/items/lpc_items.png                       32x32 item icons (not used yet)
+         assets/items/lpc_items.png                       32x32 item icons
+         assets/weapons/*_fg.png, *_bg.png                weapons in hand while swinging
          credits/<pack>/...                               license + credit files
 
        The outputs are committed to git, so nobody NEEDS to run this to play.
@@ -27,7 +28,7 @@ USAGE:
   python3 tools/art/build_art.py --offline  build from the cache only
   python3 tools/art/build_art.py --list     list packs, licenses, cache status
   python3 tools/art/build_art.py --only props,dog   rebuild some steps only
-  Steps: tileset, props, hd, dog, enemies, items, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
+  Steps: tileset, props, hd, dog, enemies, items, weapons, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
 
 Written with help from Claude (Anthropic) via Claude Code.
 Made with love from your friendly hacker - er2oneousbit
@@ -48,6 +49,7 @@ except ImportError:
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CACHE = os.path.join(ROOT, "tools", "art", ".cache")
 VERBOSE = False
+OFFLINE = False
 
 # -----------------------------------------------------------------------------
 # Source packs. Each is downloaded once into tools/art/.cache/<key>/.
@@ -77,6 +79,26 @@ PACKS = {
         "page": "https://opengameart.org/content/lpc-bears-deer-lions-and-more",
         "license": "CC-BY 4.0",
     },
+}
+
+## Weapons in hand: layers from the Universal LPC Spritesheet Character
+## Generator's repo (single PNGs, not a zip pack), pinned to one commit so a
+## rebuild gets the same pixels. Each weapon: a front layer (over the kid)
+## and a back layer (behind him), one row per direction (up, left, down,
+## right), one column per frame of the swing. `frame` is the cell size.
+LPC_GEN = ("https://raw.githubusercontent.com/LiberatedPixelCup/"
+           "Universal-LPC-Spritesheet-Character-Generator/58ce1aa479e4df32845a73a5d0afc221c3a893c2/spritesheets/")
+WEAPON_ART = {
+    # The stick: the club, a backhand swing (the body's slash played in
+    # reverse, which is how the generator lines this art up).
+    "stick": {"fg": "weapon/blunt/club/club.png", "bg": "weapon/blunt/club/background/club.png", "frame": 192,
+              "title": "Club (LPC More Weapons)", "authors": "bluecarrot16",
+              "license": "OGA-BY 3.0+ / GPL 3.0 / CC-BY 4.0", "page": "https://opengameart.org/content/lpc-more-weapons"},
+    # The rusty sword: the arming sword in bronze (it reads as rust), a forward slash.
+    "rusty_sword": {"fg": "weapon/sword/arming/attack_slash/fg/bronze.png",
+                    "bg": "weapon/sword/arming/attack_slash/bg/bronze.png", "frame": 128,
+                    "title": "Arming sword (LPC)", "authors": "ElizaWy; walk and down by JaidynReiman",
+                    "license": "OGA-BY 3.0", "page": "https://github.com/ElizaWy/LPC"},
 }
 
 OBJ = ("four_season", "Terrain Objects")  # shorthand for the props folder
@@ -335,6 +357,26 @@ def build_items():
     shutil.copyfile(src(("items", "ItemsAndEffects"), "items1.png"), out_path("assets", "items", "lpc_items.png"))
 
 
+def build_weapons():
+    """Weapons in the kid's hand while he swings (WeaponData.overlay_*)."""
+    log("Weapons: in-hand swing layers from the LPC generator")
+    cache = os.path.join(CACHE, "lpc_generator")
+    for name, w in WEAPON_ART.items():
+        for layer in ("fg", "bg"):
+            cached = os.path.join(cache, w[layer])
+            if not os.path.isfile(cached):
+                if OFFLINE:
+                    sys.exit(f"ERROR: {w[layer]} not cached and --offline was given.")
+                os.makedirs(os.path.dirname(cached), exist_ok=True)
+                with urllib.request.urlopen(LPC_GEN + w[layer], timeout=120) as r, open(cached, "wb") as f:
+                    shutil.copyfileobj(r, f)
+            img = Image.open(cached).convert("RGBA")
+            if img.width % w["frame"] or img.height != w["frame"] * 4:
+                sys.exit(f"ERROR: {w[layer]} is {img.size}, expected 4 rows of {w['frame']} px frames")
+            img.save(out_path("assets", "weapons", f"{name}_{layer}.png"))
+            vlog(f"{name}_{layer}.png  ({img.width // w['frame']} frames x 4 directions)")
+
+
 def build_dog():
     """Golden shiba -> brown brindle shelter mutt (see docs/design-bible.md #7)."""
     log("Dog: recoloring the shiba into a brown brindle mutt")
@@ -403,6 +445,15 @@ def build_credits():
             "Collaborators listed on the page: Sharm, ETTiNGRiNDER, wulax, Nila122, daneeklu, JaidynReiman,\n"
             "pennomi, laetissima, makrohn and Jetrel. Per-item artists: credits_from_pack.txt (from the pack).\n"
             "Modifications by this project: none (copied as items1.png -> lpc_items.png).\n")
+    with open(out_path("credits", "weapons", "credits.txt"), "w", newline="\n") as f:
+        f.write("Weapons in hand (assets/weapons/)\n=================================\n\n"
+                "From the Universal LPC Spritesheet Character Generator\n"
+                "(https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator).\n\n")
+        for name, w in WEAPON_ART.items():
+            f.write(f"{name}_fg.png, {name}_bg.png: {w['title']} by {w['authors']}\n"
+                    f"   License: {w['license']}\n   {w['page']}\n"
+                    f"   Files: spritesheets/{w['fg']}, spritesheets/{w['bg']}\n\n")
+        f.write("Modifications by this project: none (copied as-is).\n")
     with open(out_path("credits", "enemies", "credits.txt"), "w", newline="\n") as f:
         f.write(
             "Enemy sprites\n"
@@ -413,11 +464,11 @@ def build_credits():
 
 
 STEPS = {"tileset": build_tileset, "props": build_props, "hd": build_hd_textures, "dog": build_dog,
-         "enemies": build_enemies, "items": build_items, "credits": build_credits}
+         "enemies": build_enemies, "items": build_items, "weapons": build_weapons, "credits": build_credits}
 
 
 def main():
-    global VERBOSE
+    global VERBOSE, OFFLINE
     ap = argparse.ArgumentParser(description="Rebuild the game's third-party art from the original packs.",
                                  epilog="Example: python3 tools/art/build_art.py --only props --verbose")
     ap.add_argument("--offline", action="store_true", help="never download; use tools/art/.cache only")
@@ -426,6 +477,7 @@ def main():
     ap.add_argument("--verbose", action="store_true", help="print every prop as it is written")
     args = ap.parse_args()
     VERBOSE = args.verbose
+    OFFLINE = args.offline
 
     if args.list:
         for key, p in PACKS.items():
