@@ -86,6 +86,7 @@ runs, without the light shafts, reflections and blur.
 | Switch between the kid and the dog | Tab | Back / View |
 | Partner: Stay put / come back | Q | X |
 | Partner's stance (Offensive, Defensive / Search) | R | RB |
+| Sniff (driving the dog) | C | B |
 | Time of day (prototype) | F2 | |
 | Classic 2D view (prototype) | F6 | |
 

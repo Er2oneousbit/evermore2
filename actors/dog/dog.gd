@@ -11,6 +11,11 @@
 #                      the trail, the shortcuts and the anti-stutter rules).
 #        Stay put (Q / gamepad X, via Party) makes him hold his spot.
 #
+# HIS NOSE (systems/items/nose.gd): on Search stance he finds hidden items by
+#   himself (points, barks, digs). Driven, sniff (C / gamepad B) shows scent
+#   trails, and interact (E / gamepad A) digs up a buried spot he's smelled.
+#   What he digs up hops out toward whoever you're driving, who grabs it.
+#
 # THE BITE: like the kid's swing, it runs on WeaponData (data/weapons/
 #   dog_bite.tres) and an auto-filling ChargeMeter. He lunges forward and the
 #   bite lands on the animation's hit frame, in a short arc in front of him.
@@ -77,6 +82,12 @@ const State = Follower.State
 ## if the paws look like they slide, lower it if they moonwalk.
 @export var walk_anim_speed := 70.0
 
+## How long a dig takes (s), and how often it kicks up dirt.
+const DIG_SECONDS := 1.4
+const DIRT_EVERY := 0.22
+## The sniff button holds him still this long (nose down).
+const SNIFF_SECONDS := 0.9
+
 ## True while the player drives him (Party sets it).
 var controlled := false
 ## Knocked out: lies down until Party revives him.
@@ -86,6 +97,7 @@ var facing := Vector2.RIGHT
 var charge := ChargeMeter.new()
 var follower: Follower
 var brain: PartnerBrain
+var nose: Nose
 
 ## Follow state (Follower), kept here for the overlay and tests.
 var state: State:
@@ -105,6 +117,11 @@ var _idle_time := 0.0
 ## Ground covered between paw sounds (px), and what's left until the next.
 const PAW_PX := 20.0
 var _paw_left := 0.0
+## Digging: the spot, time left, time to the next clod of dirt.
+var _dig_find: HiddenItem
+var _dig_left := 0.0
+var _dirt_left := 0.0
+var _sniff_left := 0.0
 
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _on_screen: VisibleOnScreenNotifier2D = $OnScreen
@@ -128,6 +145,7 @@ func _ready() -> void:
 		EventBus.dog_state_changed.emit(s)
 		Debug.log_verbose("Dog state -> %s" % s))
 	brain = PartnerBrain.new(self)
+	nose = Nose.new(self)
 	charge = ChargeMeter.new(weapon.max_level, weapon.seconds_per_level)
 	health.died.connect(_on_died)
 	_sprite.animation_finished.connect(_on_animation_finished)
@@ -146,6 +164,15 @@ func _physics_process(delta: float) -> void:
 		return
 	charge.tick(delta)
 
+	if _dig_left > 0.0 or _sniff_left > 0.0:
+		if _dig_left > 0.0:
+			_dig_step(delta)
+		else:
+			_sniff_left -= delta
+		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
+		move_and_slide()
+		return
+
 	if _attacking:
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * 0.25 * delta)
 		move_and_slide()
@@ -158,7 +185,19 @@ func _physics_process(delta: float) -> void:
 		if not Dialogue.is_active():
 			want = Input.get_vector("move_left", "move_right", "move_up", "move_down") * move_speed
 	elif is_instance_valid(follower.target):
-		want = brain.think(delta, Party.stance_of(self), Party.is_staying(self), _on_screen.is_on_screen())
+		var stance := Party.stance_of(self)
+		var staying := Party.is_staying(self)
+		want = brain.think(delta, stance, staying, _on_screen.is_on_screen())
+		# Nothing's after him on Search: his nose may have found something.
+		# Not mid-conversation: nothing gets dug up while people talk.
+		if brain.target == null and stance == "search" and not staying and not Dialogue.is_active():
+			var sniffing: Variant = nose.think(delta, follower.target)
+			if sniffing != null:
+				want = sniffing
+		else:
+			nose.cancel()
+	if controlled:
+		nose.cancel()
 	if want != Vector2.ZERO and not _attacking:
 		facing = want.normalized()
 	if not _attacking:  # think() may have just started a bite
@@ -175,13 +214,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not controlled or Dialogue.is_active():
 		return
+	# Interact and attack share gamepad A: digging wins on a smelled spot.
+	if event.is_action_pressed("interact") and Interaction.try_interact():
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("sniff") and sniff():
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("attack") and attack():
 		get_viewport().set_input_as_handled()
 
 
 ## Bite now, with whatever charge has built up. False if he can't.
 func attack() -> bool:
-	if _attacking or downed or Dialogue.is_active():
+	if _attacking or downed or is_digging() or Dialogue.is_active():
 		return false
 	var spent := charge.spend()
 	_swing_mult = spent[0]
@@ -219,6 +265,10 @@ func revive(fraction := 0.3) -> void:
 func _on_died() -> void:
 	downed = true
 	_attacking = false
+	_dig_left = 0.0
+	_dig_find = null
+	_sniff_left = 0.0
+	nose.cancel()
 	_sprite.speed_scale = 1.0
 	# Head down on the ground: the last frame of the sniff row, held.
 	_sprite.play(&"sniff", facing, true)
@@ -254,6 +304,63 @@ func _paws(delta: float) -> void:
 	if _paw_left <= 0.0:
 		_paw_left += PAW_PX
 		Audio.play_at("paw_" + AsciiRealm.surface_at(get_tree(), global_position), global_position)
+
+
+## Dig up a buried hidden item (he's next to it). False if he's busy.
+func dig(spot: HiddenItem) -> bool:
+	if downed or _attacking or is_digging() or not is_instance_valid(spot):
+		return false
+	_dig_find = spot
+	_dig_left = DIG_SECONDS
+	_dirt_left = 0.0
+	_sniff_left = 0.0
+	spot.sniffed = true
+	var to := spot.global_position - global_position
+	if to.length() > 0.5:
+		facing = to.normalized()
+	Audio.play_at("dig", spot.global_position)
+	_sprite.speed_scale = 1.0
+	_sprite.play(&"dig", facing)
+	return true
+
+
+func is_digging() -> bool:
+	return _dig_left > 0.0
+
+
+func _dig_step(delta: float) -> void:
+	_dig_left -= delta
+	_dirt_left -= delta
+	if _dirt_left <= 0.0 and is_instance_valid(_dig_find):
+		_dirt_left = DIRT_EVERY
+		Fx.dirt(_dig_find.global_position)
+	if _dig_left > 0.0:
+		return
+	_dig_left = 0.0
+	if is_instance_valid(_dig_find):
+		_dig_find.reveal(_pop_toward(_dig_find.global_position))
+	_dig_find = null
+
+
+## Where a dug-up item hops: toward whoever you drive. If that's him, to the
+## far side of the hole, so you see it land and walk over it.
+func _pop_toward(hole: Vector2) -> Vector2:
+	var leader := Party.leader
+	if is_instance_valid(leader) and leader != self:
+		return leader.global_position
+	var away := (hole - global_position).normalized() if hole.distance_to(global_position) > 1.0 else facing
+	return hole + away * 30.0
+
+
+## Driven: nose down for a moment, then scent trails to what he smells.
+func sniff() -> bool:
+	if downed or _attacking or is_digging() or _sniff_left > 0.0:
+		return false
+	_sniff_left = SNIFF_SECONDS
+	_sprite.speed_scale = 1.0
+	_sprite.play(&"sniff", facing, true)
+	nose.sniff()
+	return true
 
 
 ## A bark (answering Stay put, being called back...).
@@ -300,6 +407,9 @@ func _update_animation(delta: float) -> void:
 	var speed := velocity.length()
 	if speed < 8.0:
 		_sprite.speed_scale = 1.0
+		if nose.busy():
+			_sprite.play(&"idle", facing)  # pointing at his find
+			return
 		if not controlled and Party.stance_of(self) == "search":
 			_idle_time += delta
 			if _idle_time >= SNIFF_AFTER:

@@ -19,6 +19,7 @@ var _list: VBoxContainer
 var _settings: SettingsMenu
 var _resume: Button
 var _settings_button: Button
+var _found: Label
 var _opening := false  # no focus tick for the focus that opening sets
 
 
@@ -57,6 +58,7 @@ func open() -> void:
 		_build()
 	_root.visible = true
 	_list.visible = true
+	_refresh_found()
 	get_tree().paused = true
 	Audio.play("ui_open")
 	_opening = true
@@ -124,11 +126,28 @@ func _build() -> void:
 	title.add_theme_font_size_override("font_size", MenuTheme.TITLE_SIZE)
 	title.add_theme_color_override("font_color", MenuTheme.BORDER)
 	_list.add_child(title)
+	_found = Label.new()
+	_found.name = "HiddenFound"
+	_found.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_list.add_child(_found)
 	_resume = _button("Resume", close)
 	_settings_button = _button("Settings", func() -> void: open_settings())
 	_button("Quit to desktop", func() -> void: get_tree().quit())
 	# The panel and list share visibility with the settings screen's swap.
 	_list.visibility_changed.connect(func() -> void: panel.visible = _list.visible)
+
+
+## "Hidden items: 2 / 5" for the realm you're in (no silent missables).
+func _refresh_found() -> void:
+	var realm := get_tree().get_first_node_in_group("ascii_realm") as AsciiRealm
+	var c := realm.hidden_counts() if realm else Vector2i.ZERO
+	_found.visible = c.y > 0
+	_found.text = "Hidden items: %d / %d" % [c.x, c.y]
+
+
+## The hidden-items line as shown ("" when hidden). Tests read it.
+func found_text() -> String:
+	return _found.text if _found and _found.visible else ""
 
 
 func _button(text: String, action: Callable) -> Button:

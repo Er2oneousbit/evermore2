@@ -32,6 +32,10 @@ var difficulty := "normal"
 var kid_stance := "offensive"
 var dog_stance := "offensive"
 
+## What the party carries: item id (data/items/<id>.tres) -> count. The ring
+## menu shows it later.
+var inventory: Dictionary = {}
+
 var _flags: Dictionary = {}
 
 
@@ -53,3 +57,11 @@ func set_flag(flag: String, value: Variant = true) -> void:
 
 func get_flag(flag: String, default: Variant = false) -> Variant:
 	return _flags.get(flag, default)
+
+
+func add_item(item_id: String, count := 1) -> void:
+	inventory[item_id] = int(inventory.get(item_id, 0)) + count
+
+
+func item_count(item_id: String) -> int:
+	return int(inventory.get(item_id, 0))

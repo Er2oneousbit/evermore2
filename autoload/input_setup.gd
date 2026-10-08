@@ -40,6 +40,8 @@ const BINDINGS := {
 	"switch_control":  {"keys": [KEY_TAB],          "buttons": [JOY_BUTTON_BACK]},
 	"partner_stay":    {"keys": [KEY_Q],            "buttons": [JOY_BUTTON_X]},
 	"partner_stance":  {"keys": [KEY_R],            "buttons": [JOY_BUTTON_RIGHT_SHOULDER]},
+	# The dog's nose: scent trails while you drive him.
+	"sniff":           {"keys": [KEY_C],            "buttons": [JOY_BUTTON_B]},
 	# --- Menus (fixed, so a player can always get back to the settings) -------
 	"pause":           {"keys": [KEY_ESCAPE],       "buttons": [JOY_BUTTON_START]},
 	# --- Debug (prototype only; gate behind a setting before release) ---------
@@ -63,12 +65,13 @@ const REBINDABLE := [
 	["switch_control", "Switch kid / dog"],
 	["partner_stay", "Partner: Stay put"],
 	["partner_stance", "Partner's stance"],
+	["sniff", "Dog: sniff"],
 ]
 ## How many keyboard keys and gamepad buttons each action can have.
 const MAX_KEYS := 2
 const MAX_BUTTONS := 1
-## Actions that may share a binding on purpose (gamepad A talks or attacks:
-## the kid decides, talking wins).
+## Actions that may share a binding on purpose (gamepad A talks/digs or
+## attacks: the kid or dog decides, interacting wins).
 const SHARED_OK := [["interact", "attack"]]
 
 const BUTTON_NAMES := {

@@ -6,6 +6,11 @@
 #          Fx.slash(world_pos, dir, reach, arc_deg, level)    a swing trail
 #          Fx.hit_stop(0.06)                                  a tiny freeze on impact
 #          Fx.shake(3.0, 0.12)                                camera shake
+#        and the world's little tells (hidden items, the dog's nose):
+#          Fx.glint(world_pos, height_px, color)              a sparkle
+#          Fx.scent_puff(world_pos, color)                    a wisp rising
+#          Fx.dirt(world_pos)                                 dirt kicked up
+#          Fx.scent_trail(from_node, to, color, seconds)      flowing wisps
 #
 # BOTH VIEWS: effects live on a screen layer (CanvasLayer 5: above the color
 #        grade, below the HUD) and re-project their world position every frame,
@@ -92,6 +97,56 @@ func slash(world_pos: Vector2, dir: Vector2, reach: float, arc_deg: float, level
 	live_effects -= 1
 
 
+## A quick four-point sparkle (a hidden item's tell).
+func glint(world_pos: Vector2, height_px: float, color: Color) -> void:
+	var g := _Glint.new()
+	g.world_pos = world_pos
+	g.height = height_px
+	g.color = color
+	_add_world_fx(g)
+
+
+## A wisp of scent rising off the ground (a spot the dog has smelled).
+func scent_puff(world_pos: Vector2, color: Color) -> void:
+	var p := _Puff.new()
+	p.world_pos = world_pos + Vector2(randf_range(-4, 4), 0)
+	p.color = color
+	_add_world_fx(p)
+
+
+## Clods of dirt flying up (the dog digging).
+func dirt(world_pos: Vector2) -> void:
+	var d := _Dirt.new()
+	d.world_pos = world_pos
+	for i in 6:
+		d.bits.append(Vector3(randf_range(-40, 40), randf_range(-70, -35), randf_range(1.0, 2.0)))
+	_add_world_fx(d)
+
+
+## Wisps flowing from `from` (a node: they follow it) to `to` (a node or a
+## Vector2), for `seconds`: the dog's scent trails. Returns the effect.
+func scent_trail(from: Node2D, to: Variant, color: Color, seconds: float) -> Node2D:
+	var t := _Trail.new()
+	t.from = from
+	t.to = to
+	t.color = color
+	t.life = seconds
+	_add_world_fx(t)
+	return t
+
+
+## The scent trails showing now (tests read them).
+func scent_trails() -> Array:
+	return _layer.get_children().filter(func(n: Node) -> bool: return n is _Trail and not n.is_queued_for_deletion())
+
+
+## World effects stop while the game is paused (Fx itself always runs, for
+## the hit-stop).
+func _add_world_fx(n: Node2D) -> void:
+	n.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_layer.add_child(n)
+
+
 ## Freeze the game for a moment on impact (it sells the hit). Overlapping
 ## calls extend the freeze rather than stacking it.
 func hit_stop(seconds: float) -> void:
@@ -156,3 +211,105 @@ class _Slash extends Node2D:
 			var c := color
 			c.a = a
 			draw_arc(center, r - i * 2.0, start, start + sweep, 18, c, width - i * 0.5, true)
+
+
+## Base for the small world effects below: ages, redraws, frees itself.
+class _WorldFx extends Node2D:
+	var world_pos := Vector2.ZERO
+	var color := Color.WHITE
+	var life := 0.5
+	var age := 0.0
+
+	func _process(delta: float) -> void:
+		age += delta
+		if age >= life:
+			queue_free()
+			return
+		queue_redraw()
+
+
+class _Glint extends _WorldFx:
+	var height := 8.0
+
+	func _init() -> void:
+		life = 0.45
+
+	func _draw() -> void:
+		var c := Fx.world_to_screen(world_pos, height)
+		var k := age / life
+		var r := 5.0 * sin(k * PI)  # grows, then shrinks away
+		var col := color
+		col.a = 0.95
+		draw_line(c - Vector2(r, 0), c + Vector2(r, 0), col, 1.0)
+		draw_line(c - Vector2(0, r * 1.4), c + Vector2(0, r * 1.4), col, 1.0)
+		draw_circle(c, maxf(r * 0.3, 0.6), Color(1, 1, 1, 0.9))
+
+
+class _Puff extends _WorldFx:
+	func _init() -> void:
+		life = 1.1
+
+	func _draw() -> void:
+		var k := age / life
+		var c := Fx.world_to_screen(world_pos, 2.0 + 16.0 * k) + Vector2(sin(k * 7.0) * 2.0, 0)
+		var col := color
+		col.a = 0.7 * sin(k * PI)
+		draw_circle(c, 1.5 + k * 2.0, col)
+
+
+class _Dirt extends _WorldFx:
+	## x, y velocity (px/s, screen), size.
+	var bits: Array[Vector3] = []
+
+	func _init() -> void:
+		life = 0.45
+
+	func _draw() -> void:
+		var c := Fx.world_to_screen(world_pos, 2.0)
+		var col := Color(0.42, 0.29, 0.17, 1.0 - age / life)
+		for b in bits:
+			var p := c + Vector2(b.x, b.y) * age + Vector2(0, 260.0 * age * age)
+			draw_rect(Rect2(p, Vector2(b.z, b.z)), col)
+
+
+## Wisps drift along the line from the dog to what he smells, wobbling side
+## to side, brightest in the middle, fading in and out with the trail's life.
+class _Trail extends _WorldFx:
+	const SPACING := 16.0  # world px between wisps
+	const SPEED := 0.35  # how fast they flow toward the target (trail lengths/s)
+	var from: Node2D
+	var to: Variant  # Node2D or Vector2
+
+	## typeof, not `is`: `is` on a freed object is an error.
+	func target_pos() -> Vector2:
+		if typeof(to) == TYPE_OBJECT:
+			return (to as Node2D).global_position if is_instance_valid(to) else world_pos
+		return to
+
+	func _process(delta: float) -> void:
+		if is_instance_valid(from):
+			world_pos = from.global_position
+		if typeof(to) == TYPE_OBJECT and not is_instance_valid(to):
+			queue_free()  # found and picked up meanwhile
+			return
+		super(delta)
+
+	func _draw() -> void:
+		var a := world_pos
+		var b := target_pos()
+		var length := a.distance_to(b)
+		if length < 8.0:
+			return
+		var side := (b - a).orthogonal().normalized()
+		var n := clampi(int(length / SPACING), 3, 24)
+		var fade := minf(1.0, minf(age / 0.4, (life - age) / 0.8))
+		for i in n:
+			var u := fposmod(float(i) / n + age * SPEED, 1.0)
+			var wobble := sin(u * 12.0 + age * 3.0 + i) * 5.0
+			var p := Fx.world_to_screen(a.lerp(b, u) + side * wobble, 6.0)
+			var k := fade * sin(u * PI)
+			# A soft halo, the colored wisp, a bright core: reads on grass,
+			# where a plain dot looked like one more flower.
+			draw_circle(p, 5.0, Color(color, 0.22 * k))
+			draw_circle(p, 3.0, Color(color, 0.85 * k))
+			draw_circle(p, 1.3, Color(1, 1, 1, 0.8 * k))

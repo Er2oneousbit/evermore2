@@ -59,8 +59,10 @@ const SOFT_SHADOW := preload("res://assets/fx/soft_shadow.tres")
 const WOOD_RAIL := preload("res://assets/textures/hd/wood_rail.png")
 const WOOD_POST := preload("res://assets/textures/hd/wood_post.png")
 
-## Mood per time of day. Angles in degrees; sun_yaw ~210 = light from the
-## top-left of the screen, shadows falling toward the bottom-right.
+## Mood per time of day. Angles in degrees. sun_yaw 0 = light from the
+## camera's side, shadows falling straight up the screen; ~335 = shadows up
+## and a little to the right. The sun stays in front (owner, 2026-10-08):
+## shadows fall back, behind things, and faces are lit.
 ## Tuning lesson: tint the SUN warm and keep the AMBIENT cool, keep fog thin.
 ## Warm sun + warm fog + warm ambient turns everything into orange soup.
 ## Readability lesson (golden hour, 2026-10-07): a low sun into thick fog
@@ -68,7 +70,7 @@ const WOOD_POST := preload("res://assets/textures/hd/wood_post.png")
 ## sprites. Keep the sun above ~30 degrees, fog near the day value, shadows lifted.
 const PRESETS := {
 	"day": {
-		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "sun_elev": 55.0, "sun_yaw": 205.0,
+		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "sun_elev": 55.0, "sun_yaw": 335.0,
 		"ambient": Color(0.62, 0.7, 0.88), "ambient_energy": 0.75,
 		"sky_top": Color(0.32, 0.55, 0.92), "sky_horizon": Color(0.78, 0.87, 0.96),
 		"fog_density": 0.0025, "fog_albedo": Color(0.92, 0.95, 1.0),
@@ -77,7 +79,7 @@ const PRESETS := {
 		"water_glow": 0.3, "phone_glow": 0.0, "actor_lift": 0.08,
 	},
 	"golden": {
-		"sun_color": Color(1.0, 0.76, 0.52), "sun_energy": 1.75, "sun_elev": 30.0, "sun_yaw": 215.0,
+		"sun_color": Color(1.0, 0.76, 0.52), "sun_energy": 1.75, "sun_elev": 30.0, "sun_yaw": 325.0,
 		"ambient": Color(0.56, 0.56, 0.78), "ambient_energy": 0.82,
 		"sky_top": Color(0.34, 0.4, 0.76), "sky_horizon": Color(1.0, 0.66, 0.42),
 		"fog_density": 0.003, "fog_albedo": Color(1.0, 0.86, 0.7),
@@ -86,7 +88,7 @@ const PRESETS := {
 		"water_glow": 0.24, "phone_glow": 0.0, "actor_lift": 0.12,
 	},
 	"night": {
-		"sun_color": Color(0.58, 0.68, 1.0), "sun_energy": 0.28, "sun_elev": 52.0, "sun_yaw": 160.0,
+		"sun_color": Color(0.58, 0.68, 1.0), "sun_energy": 0.28, "sun_elev": 52.0, "sun_yaw": 20.0,
 		"ambient": Color(0.18, 0.22, 0.42), "ambient_energy": 0.7,
 		"sky_top": Color(0.02, 0.03, 0.09), "sky_horizon": Color(0.06, 0.09, 0.18),
 		"fog_density": 0.008, "fog_albedo": Color(0.5, 0.6, 0.95),
@@ -567,6 +569,13 @@ func _add_new_actors() -> void:
 			_add_actor(n, NPC_DEPTH_BIAS)
 
 
+## Mirror new actors now instead of at the next scan (an item popping out of
+## the ground would miss the start of its hop).
+func mirror_new_actors() -> void:
+	if enabled:
+		_add_new_actors()
+
+
 func _add_actor(actor: Node2D, depth_bias: float) -> Sprite3D:
 	var s3 := _make_actor_sprite(actor.get_node("Sprite") as Sprite2D, actor.name)
 	_actors.append([actor, s3, depth_bias])
@@ -631,6 +640,7 @@ func _actor_material(tex: Texture2D) -> ShaderMaterial:
 func _sync_actor(s3: Sprite3D, s2: Sprite2D, pos: Vector2, depth_bias: float) -> void:
 	s3.position = to3(pos) + Vector3(0.0, 0.0, depth_bias)
 	s3.frame_coords = s2.frame_coords
+	s3.offset = Vector2(s2.offset.x, -s2.offset.y)  # hops (item pickups)
 	s3.flip_h = s2.flip_h
 	s3.modulate = s2.modulate  # hit flashes, attack telegraphs
 

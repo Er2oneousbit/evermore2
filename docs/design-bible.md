@@ -285,9 +285,9 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
     reach, waiting for a full charge (fewer, bigger hits).
   - *Dog, Offensive:* bites awake enemies near you.
   - *Dog, Search:* stays out of fights, nose down (he sniffs when he stands
-    still). He only bites back at something that's after him. Finding hidden
-    items comes with the hidden items milestone: near one he'll stop, point and
-    bark, then dig it up.
+    still). He only bites back at something that's after him. Near a hidden
+    item (and near you) he goes over, points and barks, then digs it up, or,
+    if it's under a bush, keeps pointing until you come and search it.
   - The AI never wakes sleeping enemies and never fights more than 240 px from
     you (past that it drops the fight and catches up).
   - R / gamepad RB cycles the partner's stance for now; the ring menu takes it
@@ -309,15 +309,18 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
     a pressure plate while the other crosses; the kid waits while the dog sniffs
     a way through a dark maze; a door stays open only while someone stands on
     the switch.
-- **Sniffing:** besides Search stance, a sniff button (when you control the dog)
-  shows scent trails as colored wisps: one color for items, one for
-  ingredients, one for people. The trail leads to the nearest few within range.
+- **Sniffing:** besides Search stance, a sniff button (C / gamepad B, when you
+  control the dog) shows scent trails as colored wisps: gold for items, green
+  for ingredients, blue for people. They lead to the nearest three within
+  range. A buried spot he's smelled can be dug up (interact).
 - **Hidden items, three kinds:**
   - *Buried:* only the dog finds them (sniff, then dig).
   - *Tucked:* under a bush or rock; the kid can search it (interact) if he
     notices the tell (a glint, a disturbed patch of ground), or the dog points it out.
   - *Secret:* behind breakable things or in nooks off the path; found by looking.
-  - Every realm says how many it has and how many you've found (no silent missables).
+  - Every realm says how many it has and how many you've found (no silent missables):
+    a line when you find one ("2/5 here") and the count in the pause menu.
+  - A found item hops out toward whoever you're driving; walk over it to take it.
 - **Auto charge:** after a swing the charge meter refills on its own, about a
   second to 100% (level 1), then keeps climbing to level 2 and 3 if the weapon's
   mastery allows. Attack whenever you like: a quick tap gives a weaker swing,

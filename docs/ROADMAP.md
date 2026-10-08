@@ -23,16 +23,13 @@ Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
-1. **Hidden items and the dog's nose**: buried, tucked and secret items; the
-   dog's Search stance points and digs; sniff mode shows scent trails; a found
-   counter per area.
-2. **Ring menu, equipment and the first alchemy formula**: data-driven `.tres`
+1. **Ring menu, equipment and the first alchemy formula**: data-driven `.tres`
    resources; armor slots (kid: head, body, legs, boots, hands, arms; dog: collar).
-3. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
+2. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
    kitchen, lab), the torn clipping, Carltron waking, the flash. Needs interior
    tiles and HD-2D height (stairs, a basement). Dinner deserves a real kitchen
    instead of a black screen.
-4. **The first realm** (once the realms are designed): painted in the editor,
+3. **The first realm** (once the realms are designed): painted in the editor,
    finding the dog, the first boss, sniff mode.
 
 Alongside: the dog's look (notched floppy ear, one ear up, the orange shelter
@@ -50,6 +47,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-08 | **The sun sits in front** (camera side): shadows fall back, up the screen, and faces are lit. It was behind, throwing shadows toward the camera |
 | 2026-10-07 | **Voices: one or two words, real voice actors** ("Hey!" when you talk to someone, short reactions). AI text-to-speech was tried and rejected (all of it sounded bad, the kids worst). Full voice acting is off the table for now; **babble** (per-character blips while text types) is the backup plan. The kid stays silent |
 | 2026-10-07 | **Sound and music from free CC0 packs** (OpenGameArt), through a rebuildable pipeline like the art |
 | 2026-10-07 | **A settings menu like a normal game**: rebindable controls, graphics, display, audio and gameplay options, saved between sessions |
@@ -66,6 +64,53 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: hidden items and the dog's nose
+
+* **Three kinds of hidden item**, placed per map in `HIDDEN_ITEMS` (a list,
+  not layout characters, because a bush cell can hide something):
+  * *Buried*: only the dog finds it. Nothing shows until he's smelled it
+  * *Tucked*: under a bush or rock. A glint now and then is the tell; the kid
+    searches it (interact: "Search")
+  * *Secret*: an item lying in a nook off the path, found by looking
+* **The dog on Search stance finds them by himself**: when nothing's after him
+  and an item is near him and the kid, he trots over, stops, points and barks,
+  then digs a buried one up (dirt flies) or keeps pointing at the bush until
+  the kid comes over. Same leash as fighting: never far from the kid, and an
+  item he can't reach (a fence in the way) is skipped for a while
+* **Driving the dog**: sniff (C / gamepad B) puts his nose down and shows
+  scent trails, colored wisps flowing from him to the nearest three things he
+  can smell: items gold, ingredients green, people blue. A buried spot he's
+  smelled puffs scent and can be dug up with interact (E / A)
+* **Picking up**: a found item hops out toward whoever you're driving and
+  lands on the ground; walk over it to take it. The AI partner never grabs
+  it, so the dog can't snatch what he dug up before you've seen it
+* **The count**: finding one says "Found Old key  2/5 here" at the top of the
+  screen, and the pause menu shows "Hidden items: 2 / 5" for the map you're
+  in. Found items never come back (a GameState flag per item)
+* Items are data (`data/items/<id>.tres`: name, description, item or
+  ingredient, icon on the LPC item sheet) and go into `GameState.inventory`.
+  The test yard has five demo items (an old key, a coin pouch, a shiny stone,
+  a torn map, wild carrots); the real ones come with the realms
+* Interaction now serves whoever you drive: things can say who may use them
+  (`can_interact`). NPCs stay the kid's. The prompt shows the actual bound key
+* Not yet: secret items behind breakable things (nothing breaks yet); scent
+  trails run in a straight line, even through a fence; no sniff or bush-rustle
+  sounds; nothing to do with ingredients until alchemy; no inventory screen
+  until the ring menu; found flags last until you quit (no saves yet)
+* Tests: `smoke_items` (placement and the count, buried hidden from the kid,
+  the AI dig from walk-over to pickup, Offensive and the leash leave items
+  alone, tucked search and pointing, sniff trails then dig while driving the
+  dog, the secret item, found items stay found, the pause menu line, HD-2D
+  mirroring and the hop, a stance change mid-dig, a conversation, mistakes in
+  HIDDEN_ITEMS). Each was proven by breaking it: AI search off, any member
+  grabbing, no sniff gate, no offset sync, no instant 3D mirror, found items
+  respawning, no leash, the nose stuck after a dig, digging or picking up
+  mid-conversation, an unknown item id. All 12 runs pass
+* Review fixes before merging: a dig cut short by a stance change left his
+  nose stuck (he stopped watching the kid); the dog could dig, and the kid
+  pick up, in the middle of a conversation; a mistyped item id counted toward
+  the total but never spawned (a 5/5 you could never reach)
 
 ## Done: voices (one or two words)
 
