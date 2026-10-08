@@ -80,6 +80,8 @@ const SCHEMA := [
 	{"key": "screen_shake", "tab": "gameplay", "label": "Screen shake", "type": "range", "default": 1.0,
 		"min": 0.0, "max": 1.0, "step": 0.25},
 	{"key": "damage_numbers", "tab": "gameplay", "label": "Damage numbers", "type": "bool", "default": true},
+	{"key": "run_mode", "tab": "gameplay", "label": "Run button", "type": "choice", "default": "hold",
+		"options": [["hold", "Hold to run"], ["toggle", "Press to toggle"]]},
 ]
 
 ## What each quality preset switches on. Picking one sets these; changing any

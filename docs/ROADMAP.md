@@ -47,6 +47,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-08 | **Walk by default, hold Run to run, with a stamina meter** (owner: "like the original"). Running drains it; run it dry and you're winded until it refills. The AI partner doesn't use stamina |
 | 2026-10-08 | **The sun sits in front** (camera side): shadows fall back, up the screen, and faces are lit. It was behind, throwing shadows toward the camera |
 | 2026-10-07 | **Voices: one or two words, real voice actors** ("Hey!" when you talk to someone, short reactions). AI text-to-speech was tried and rejected (all of it sounded bad, the kids worst). Full voice acting is off the table for now; **babble** (per-character blips while text types) is the backup plan. The kid stays silent |
 | 2026-10-07 | **Sound and music from free CC0 packs** (OpenGameArt), through a rebuildable pipeline like the art |
@@ -64,6 +65,32 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: running and stamina
+
+* **Walk by default; hold Run to run** (Shift / gamepad LB, rebindable; or
+  press-to-toggle in Settings > Gameplay > Run button). The kid walks at 85
+  px/s and runs at 140; the dog walks at 95 and runs at 160. A partly tilted
+  stick still walks slower
+* **Stamina**: running drains a meter (about 4 s for the kid, 5 s for the
+  dog); after a short breath it refills (2.5 s from empty). Run it dry and
+  he's **winded**: he walks even holding Run until it's back to 35%
+* The HUD shows a thin green bar above the charge bar of whoever you drive,
+  only while it isn't full; winded, it turns orange and blinks
+* Each has his own meter, and a switch doesn't refill it. The AI partner uses
+  none: he has to keep up with you (the kid follows a running dog fine)
+* The meter keeps refilling while the dog bites, digs or sniffs
+* Toggle mode is forgiving: a toggled run ends after you stand still a
+  quarter second (a keyboard turn-around passes through a frame with no key
+  held), a swing doesn't cancel it, and pressing Run while standing readies
+  it for your next move (found in review)
+* Tests: `smoke_party` section 9 (walk pace and cycle, run pace and cycle,
+  drain, winded walk, recovery, the bar showing and hiding, toggle mode and
+  its turn-around, swing and arming cases, the dog's own meter, the AI using
+  none and keeping up, no refill on a switch). Each was proven by breaking it
+  (10 sabotages). `smoke_audio`'s footstep walk
+  is longer now that the kid walks: at 85 px/s he didn't get past the dog. All
+  12 runs pass
 
 ## Done: hidden items and the dog's nose
 

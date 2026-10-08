@@ -79,7 +79,8 @@ runs, without the light shafts, reflections and blur.
 | Action | Keyboard | Gamepad |
 |---|---|---|
 | Pause menu and **settings** | Esc | Start |
-| Move (full tilt runs, partial walks) | WASD / Arrow keys | Left stick / D-pad |
+| Move | WASD / Arrow keys | Left stick / D-pad |
+| Run (hold; uses stamina) | Shift | LB |
 | Phone flashlight | F | Y |
 | Attack (waiting charges it up) | J / Space | A |
 | Talk / interact | E / Enter | A |
@@ -93,7 +94,8 @@ runs, without the light shafts, reflections and blur.
 Every control except the pause button can be rebound in **Settings →
 Controls**. Settings also has graphics (quality presets, each effect,
 brightness, HD-2D or classic 2D), display (window mode, V-Sync, frame cap),
-audio volumes and gameplay options (text speed, screen shake, damage numbers).
+audio volumes and gameplay options (text speed, screen shake, damage numbers,
+hold or toggle to run).
 
 ## Found a bug?
 

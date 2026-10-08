@@ -16,6 +16,11 @@
 #        7. Talking belongs to the kid: nothing is in reach while driving the
 #           dog, and a conversation hands control back to him
 #        8. HD-2D: the 3D camera follows whoever you drive
+#        9. Running: walk by default, hold Run to run (faster, the run cycle,
+#           drains stamina); run dry and he's winded (walks even holding Run)
+#           until it refills; the HUD bar shows while it isn't full; the
+#           toggle setting; the dog runs too, on his own meter; the AI partner
+#           uses none and keeps up; a switch doesn't refill it
 #
 # RUN:   godot --headless --path . --fixed-fps 60 res://tests/smoke_party.tscn
 #        Exit code 0 = PASS, 1 = FAIL.
@@ -46,6 +51,7 @@ func _run() -> void:
 	await _test_hud()
 	await _test_talking()
 	await _test_hd()
+	await _test_running()
 	GameState.kid_stance = "offensive"
 	GameState.dog_stance = "offensive"
 	if _failures.is_empty():
@@ -313,6 +319,119 @@ func _test_hd() -> void:
 	var to_kid := absf(t.x - HdView.to3(kid.global_position).x)
 	_check(to_dog < to_kid, "the HD-2D camera follows the dog after a switch (%.2f m from him, %.2f m from the kid)" % [to_dog, to_kid])
 	scene.queue_free()
+	await _frames(2)
+
+
+func _test_running() -> void:
+	var arena := await _load(ARENA)
+	var kid: Kid = arena.get_node("World/Kid")
+	var dog: Dog = arena.get_node("World/Dog")
+	var hud := arena.get_node("HUD")
+	var bars: Array = hud.stamina_bars()
+	_clear_enemies()
+	dog.set_physics_process(false)  # only the kid's pace is measured first
+	var sprite: DirectionalSprite = kid.get_node("Sprite")
+
+	# Walking: the default.
+	kid.global_position = Vector2(60, 200)
+	Input.action_press("move_right")
+	await _wait(0.4)
+	var x0 := kid.global_position.x
+	await _wait(1.0)
+	var walked := kid.global_position.x - x0
+	_check(absf(walked - kid.move_speed) < 8.0, "he walks by default (%.0f px/s, walk speed %.0f)" % [walked, kid.move_speed])
+	_check(sprite.current == &"walk", "with the walk cycle (%s)" % sprite.current)
+	_check(kid.stamina.value == 1.0 and not bars[0].visible, "walking uses no stamina; the bar stays hidden")
+
+	# Running: hold Run.
+	Input.action_press("run")
+	await _wait(0.3)
+	x0 = kid.global_position.x
+	await _wait(1.0)
+	var ran := kid.global_position.x - x0
+	_check(absf(ran - kid.run_speed) < 8.0, "holding Run runs (%.0f px/s, run speed %.0f)" % [ran, kid.run_speed])
+	_check(sprite.current == &"run", "with the run cycle (%s)" % sprite.current)
+	_check(kid.stamina.value < 0.75 and kid.stamina.value > 0.6, "running drains stamina (%.2f after 1.3 s)" % kid.stamina.value)
+	_check(bars[0].visible and not bars[1].visible, "the kid's stamina bar shows (not the dog's)")
+
+	# Run it dry: winded, back to a walk even holding Run.
+	for i in ceili(kid.stamina_seconds * 60.0):
+		await _frames(1)
+		if kid.stamina.winded:
+			break
+	_check(kid.stamina.winded, "running it dry winds him")
+	# Velocity, not distance: by now he's near the arena's far fence.
+	await _wait(0.3)
+	_check(absf(kid.velocity.length() - kid.move_speed) < 4.0 and not kid.running,
+			"winded, he walks even holding Run (%.0f px/s)" % kid.velocity.length())
+	Input.action_release("run")
+	Input.action_release("move_right")
+	await _wait(Stamina.REST_DELAY + kid.stamina_refill_seconds * Stamina.RECOVER_AT + 0.2)
+	_check(not kid.stamina.winded, "resting gets his breath back")
+	await _wait(kid.stamina_refill_seconds)
+	_check(kid.stamina.value == 1.0 and not bars[0].visible, "the meter refills and the bar hides")
+
+	# Toggle mode: press once, run without holding.
+	Settings.set_value("run_mode", "toggle")
+	Input.action_press("move_right")
+	_tap("run")
+	await _wait(0.5)
+	_check(kid.running, "toggle: one press of Run and he runs")
+	# Turning around on a keyboard: a frame or two with no key held.
+	Input.action_release("move_right")
+	await _frames(2)
+	Input.action_press("move_left")
+	await _wait(0.2)
+	_check(kid.running, "toggle: a quick turn-around keeps the run")
+	kid.attack()
+	await _wait(0.6)
+	_check(kid.running, "toggle: a swing doesn't cancel it")
+	Input.action_release("move_left")
+	await _wait(Stamina.TOGGLE_STILL + 0.15)
+	Input.action_press("move_left")
+	await _wait(0.3)
+	_check(not kid.running, "toggle: standing still a moment ends the run")
+	Input.action_release("move_left")
+	await _wait(0.2)
+	_tap("run")
+	await _wait(0.4)
+	Input.action_press("move_left")
+	await _wait(0.2)
+	_check(kid.running, "toggle: pressed while standing, it's ready for the next move")
+	Input.action_release("move_left")
+	await _wait(0.5)
+	Settings.set_value("run_mode", "hold")
+
+	# The dog runs too, on his own meter; the AI kid keeps up and uses none.
+	dog.set_physics_process(true)
+	await _wait(kid.stamina_refill_seconds + 1.0)
+	var kid_meter := kid.stamina.value
+	_tap("switch_control")
+	await _frames(2)
+	Input.action_press("move_left")
+	Input.action_press("run")
+	await _wait(0.3)
+	x0 = dog.global_position.x
+	await _wait(1.0)
+	var dog_ran := x0 - dog.global_position.x
+	_check(absf(dog_ran - dog.run_speed) < 10.0, "the dog runs when you drive him (%.0f px/s, run speed %.0f)" % [dog_ran, dog.run_speed])
+	_check(dog.stamina.value < 1.0 and bars[1].visible and not bars[0].visible, "on his own meter, shown on his side")
+	_check(kid.stamina.value >= kid_meter, "the AI kid uses no stamina")
+	await _wait(1.0)
+	Input.action_release("run")
+	Input.action_release("move_left")
+	await _wait(1.5)
+	var gap := kid.global_position.distance_to(dog.global_position)
+	_check(gap < 80.0, "and keeps up with a running dog (gap %.0f px)" % gap)
+	var dog_meter := dog.stamina.value
+	_tap("switch_control")
+	await _frames(2)
+	_tap("switch_control")
+	await _frames(2)
+	_check(dog.stamina.value <= dog_meter + 0.05, "switching away and back doesn't refill his meter")
+	_tap("switch_control")
+	await _frames(2)
+	arena.queue_free()
 	await _frames(2)
 
 

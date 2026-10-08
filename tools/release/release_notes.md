@@ -19,6 +19,8 @@ The story, the realms and the real content come later.
   two can split up), and set how the AI plays the one you aren't driving: the
   kid Offensive or Defensive, the dog Offensive or Search. The dog bites. An
   arrow points to him when he's out of view
+* **Walking and running**: hold Run to run; it drains a stamina meter, and
+  running it dry leaves you winded for a moment
 * **Hidden items and the dog's nose** (in the test yard): items buried,
   tucked under bushes and rocks, or lying in nooks. The dog on Search finds
   them by himself, points, barks and digs; drive him and sniff to see scent
@@ -30,7 +32,8 @@ The story, the realms and the real content come later.
   day and crickets at night that follow the time of day
 * **A pause menu with settings** (Esc / Start): rebind every key and button,
   graphics quality presets and each effect on its own, brightness, window
-  mode, V-Sync, frame cap, volumes, text speed, screen shake, damage numbers
+  mode, V-Sync, frame cap, volumes, text speed, screen shake, damage numbers,
+  hold or toggle to run
 
 ## Downloads
 

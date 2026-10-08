@@ -8,8 +8,10 @@
 # ART:   $Sprite is an LpcSprite showing assets/characters/kid/kid_lpc.png,
 #        built with the Universal LPC generator (tools/lpc/README.md explains
 #        how to rebuild it with a different outfit).
-#        Full stick tilt = run cycle, partial tilt = walk cycle. Animation
-#        speed follows movement speed so the feet don't "skate".
+#        He walks; hold Run (Shift / gamepad LB) to run, which drains his
+#        stamina (systems/party/stamina.gd). A partly tilted stick walks
+#        slower. Walk or run cycle by speed; animation speed follows movement
+#        speed so the feet don't "skate".
 #
 # COMBAT: attack (J / Space / gamepad A) swings the equipped WeaponData. The
 #        charge meter fills by itself (ChargeMeter): a swing uses whatever level
@@ -34,20 +36,22 @@ class_name Kid
 extends CharacterBody2D
 
 # --- Tuning (pixels are base-resolution pixels: 640x360 screen, 32 px tiles) --
-## Top running speed in px/sec. 120 = 3.75 tiles/sec, crosses the screen in ~5 s.
-@export var move_speed := 120.0
+## Walking speed when you drive him (px/s).
+@export var move_speed := 85.0
+## Running speed (holding Run, while his stamina lasts). 140 = 4.4 tiles/s.
+@export var run_speed := 140.0
+## Seconds of running on a full stamina meter, and seconds to refill it.
+@export var stamina_seconds := 4.0
+@export var stamina_refill_seconds := 2.5
 ## How fast the kid reaches top speed. Higher = snappier.
 @export var acceleration := 1500.0
 ## How fast the kid stops when input is released. Higher = less sliding.
 @export var friction := 2000.0
-## Below this fraction of move_speed the kid walks instead of running
-## (analog sticks; keyboards are always full speed).
-@export_range(0.0, 1.0) var walk_threshold := 0.6
 ## Movement speed (px/s) that matches the run cycle at 1x playback. Tweak this
 ## if the feet look like they slide (raise it) or moonwalk (lower it).
 @export var run_anim_speed := 95.0
 ## Same for the walk cycle.
-@export var walk_anim_speed := 48.0
+@export var walk_anim_speed := 64.0
 ## How far in front of the kid the flashlight's center sits.
 @export var light_offset := 30.0
 ## The equipped weapon (data/weapons/*.tres).
@@ -91,6 +95,10 @@ var light_on := true
 var controlled := true
 ## The auto-filling attack charge (HUD reads it).
 var charge := ChargeMeter.new()
+## Running (HUD reads it). Only used while you drive him.
+var stamina: Stamina
+## True while he's running this frame.
+var running := false
 var downed := false
 ## Following and fighting while the player drives the dog.
 var follower: Follower
@@ -126,6 +134,7 @@ func _ready() -> void:
 	_on_screen.rect = Rect2(-16, -48, 32, 50)
 	add_child(_on_screen)
 	follower = Follower.new(self, $CollisionShape2D, blocking_mask)
+	stamina = Stamina.new(stamina_seconds, stamina_refill_seconds)
 	brain = PartnerBrain.new(self)
 	Party.register(self)
 
@@ -170,6 +179,7 @@ func on_hit(info: HitInfo, _dealt: int) -> void:
 func revive(fraction := 0.3) -> void:
 	downed = false
 	health.revive(fraction)
+	stamina.reset()
 	_sprite.play(&"idle", facing, true)
 
 
@@ -216,18 +226,28 @@ func _physics_process(delta: float) -> void:
 	charge.tick(delta)
 	_stagger = maxf(0.0, _stagger - delta)
 	var input_dir := Vector2.ZERO
+	# Where he wants to go, in px/s.
+	var want := Vector2.ZERO
 	# Stand still while talking (the stick moves the dialogue choices instead)
 	# and while staggered.
 	var can_act := not Dialogue.is_active() and _stagger <= 0.0
 	if can_act and controlled:
 		input_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	elif can_act and not _attacking and is_instance_valid(follower.target):
-		# The AI plays him: its wanted velocity, as if it were stick input.
-		var want := brain.think(delta, Party.stance_of(self), Party.is_staying(self), _on_screen.is_on_screen())
-		input_dir = want / move_speed
+		# A swing pauses the run without cancelling a toggled one.
+		var want_run := stamina.wants_run(input_dir != Vector2.ZERO, delta)
+		var moving := input_dir != Vector2.ZERO and not _attacking
+		running = stamina.tick(delta, want_run, moving)
+		want = input_dir * (run_speed if running else move_speed)
+	else:
+		running = false
+		stamina.tick(delta, false, false)
+		if can_act and not _attacking and is_instance_valid(follower.target):
+			# The AI plays him: its wanted velocity (no stamina: he keeps up).
+			want = brain.think(delta, Party.stance_of(self), Party.is_staying(self), _on_screen.is_on_screen())
+			input_dir = want / move_speed
 	if _attacking:
 		# Mostly planted during a swing; the blow lands on the weapon's frame.
-		velocity = velocity.move_toward(input_dir * move_speed * swing_move_factor, friction * delta)
+		velocity = velocity.move_toward(want * swing_move_factor, friction * delta)
 		move_and_slide()
 		if not _swing_landed and _sprite.frame_index() >= weapon.hit_frame:
 			_land_swing()
@@ -235,14 +255,14 @@ func _physics_process(delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		facing = input_dir.normalized()
-		velocity = velocity.move_toward(input_dir * move_speed, acceleration * delta)
+		velocity = velocity.move_toward(want, acceleration * delta)
 	elif not controlled:
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 
 	move_and_slide()
-	_update_animation(input_dir)
+	_update_animation()
 	_footsteps(delta)
 
 	# Flashlight sits slightly ahead of the kid, at chest height.
@@ -281,14 +301,15 @@ func _footsteps(delta: float) -> void:
 		Audio.play_at("step_" + AsciiRealm.surface_at(get_tree(), global_position), global_position)
 
 
-## Picks idle / walk / run from the actual speed, and keeps playback speed in
-## step with movement so feet plant on the ground instead of sliding.
-func _update_animation(input_dir: Vector2) -> void:
+## Picks idle / walk / run from the actual speed (anything past a walk is the
+## run cycle: running, or the AI hurrying to keep up), and keeps playback
+## speed in step with movement so feet plant instead of sliding.
+func _update_animation() -> void:
 	var speed := velocity.length()
 	if speed < 6.0:
 		_sprite.speed_scale = 1.0
 		_sprite.play(&"idle", facing)
-	elif input_dir.length() < walk_threshold and speed < move_speed * walk_threshold:
+	elif speed <= move_speed * 1.1:
 		_sprite.speed_scale = speed / walk_anim_speed
 		_sprite.play(&"walk", facing)
 	else:
