@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/items/item_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "apple"
+display_name = "Apple"
+description = "Crisp and sweet. Heals a little."
+kind = "item"
+icon_cell = Vector2i(8, 5)
+use_effect = "heal"
+use_power = 12

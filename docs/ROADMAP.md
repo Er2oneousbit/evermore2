@@ -23,18 +23,15 @@ Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
-1. **More rings**: Items (use healing items, see key items), Alchemy (the
-   first formula), Party (stances, Stay put; takes over from R), with **quick
-   slots** to use an item or formula without opening the menu (the owner's
-   other pain point with the original). Equipment perks that do something.
-2. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
+1. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
    kitchen, lab), the torn clipping, Carltron waking, the flash. Needs interior
    tiles and HD-2D height (stairs, a basement). Dinner deserves a real kitchen
    instead of a black screen.
-3. **The first realm** (once the realms are designed): painted in the editor,
+2. **The first realm** (once the realms are designed): painted in the editor,
    finding the dog, the first boss, sniff mode.
 
-Alongside: the dog's look (notched floppy ear, one ear up, the orange shelter
+Alongside: equipment perks that do something, more formulas (with the realms'
+ingredients and alchemists), the dog's look (notched floppy ear, one ear up, the orange shelter
 tag), and a real HUD in place of the placeholder text.
 
 ## Later
@@ -49,6 +46,8 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
+| 2026-10-08 | **Alchemy: ingredients per cast, formulas level with use** (owner). Each cast uses up its ingredients and earns the formula experience; enough casts level it up and it gets stronger. Only the kid casts |
+| 2026-10-08 | **Quick slots on the D-pad** (owner): four slots, D-pad on the gamepad, 1-4 on the keyboard; the gamepad moves with the left stick only |
 | 2026-10-08 | **Ring menu, friendlier than the original** (owner: it "could be putsy"). The pain points: hunting across rings and opening it for everything. So every ring is a visible tab, and quick slots come with the Items and Alchemy rings. One menu for both: a button flips to the other's gear. First version: Equipment only |
 | 2026-10-08 | **Shadows point north and stay light** (owner: "They make things hard to see"). Straight up the screen, about half strength, a higher sun (shorter shadows), cloud shadows faint. Contact shadows under characters stay |
 | 2026-10-08 | **Walk by default, hold Run to run, and running costs the attack charge** (owner: "Original running took charge away from the attack"). At 0% you're winded (walking) until it refills partway. The dog pays a quarter as much ("Zoomies"). The AI partner pays nothing. (A separate stamina meter was tried first, the same day) |
@@ -69,6 +68,48 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: the Items, Alchemy and Party rings, and quick slots
+
+* The ring menu has all four rings as tabs (Equipment, Items, Alchemy,
+  Party); Z / X or LB / RB go to the previous / next one
+* **Items**: everything the party carries that isn't gear, usable things
+  first, then ingredients, then key items. Confirm (E / A) uses one on
+  whoever is shown; an apple isn't wasted at full health. New: apples (heal
+  12) and soda (heal 30)
+* **Alchemy** (owner: ingredients per cast, levels with use): the kid's
+  formulas, what each costs and what you have, its level and casts to the
+  next. Confirm casts it on whoever is shown (the kid can heal the dog). The
+  first formula: **Heal** (1 wild carrot; 14 HP at level 1, +4 a level;
+  levels at 3, 5, 8... casts). A knocked-out kid can't cast
+* **Party**: both stances and Stay put; up / down change them (R / RB still
+  cycle the partner's stance as a shortcut)
+* **Quick slots** (owner: on the D-pad): select an item or formula and press
+  1-4 / a D-pad direction to put it in a slot; outside the menu the same key
+  uses it on whoever you drive. An entry lives in one slot. The HUD shows
+  the four slots top left (icon, count, faded when out); a slot that can't
+  fire says why ("Not enough wild carrot", "Slot 2 is empty")
+* The gamepad moves with the left stick; the D-pad is the quick slots. Old
+  saved controls with the D-pad on movement give it up. Dialogue choices
+  also take the menu keys (the D-pad's up / down)
+* The demo maps now also hand out apples, a soda and wild carrots, and the
+  kid knows Heal there
+* Not yet: more formulas (they wait on the realms' ingredients and
+  alchemists), a casting animation, sounds for healing (the pickup sound for
+  now)
+* Tests: `smoke_rings` (tabs, the Items order and use, full health, key
+  items, Heal on the dog, its cost, experience and level 2 healing more, no
+  ingredients, a knocked-out kid, the Party ring, quick slots: assigning,
+  moving, firing on the kid and the dog, an empty slot's notice on the HUD,
+  nothing mid-conversation, the D-pad and old saves, dialogue keys). Each was
+  proven by breaking it (13 sabotages). `smoke_items` counts carrots on top
+  of the demo kit's. All 14 runs pass
+* Review fixes before merging: using up the last of something could jump
+  the selection past the next entry; a rebound confirm or quick-slot key
+  could switch rings instead; notices covered the "Found ..." line (they
+  have their own line now); the heal number showed the formula's power, not
+  the HP restored; item and formula lookups are cached (the ring and the
+  quick bar ask every frame); quick-slot hints show the bound keys
 
 ## Done: a weapon in his hand when he swings
 

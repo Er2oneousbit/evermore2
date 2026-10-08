@@ -290,8 +290,8 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
     if it's under a bush, keeps pointing until you come and search it.
   - The AI never wakes sleeping enemies and never fights more than 240 px from
     you (past that it drops the fight and catches up).
-  - R / gamepad RB cycles the partner's stance for now; the ring menu's Party
-    ring takes it over later. The HUD shows it next to his HP.
+  - The ring menu's Party ring sets both stances (and Stay put); R / gamepad RB
+    cycles the partner's stance as a shortcut. The HUD shows it next to his HP. The HUD shows it next to his HP.
 - **Stay put and splitting up:**
   - *Stay put* toggles the partner (Q / gamepad X): playing the kid it tells
     the dog, playing the dog it tells the kid. A staying partner holds his
@@ -336,7 +336,11 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
   see, turning is quick (hold to spin), changes happen without a confirm, the
   other one's gear is one button away, and quick slots (with the Items and
   Alchemy rings) let you use things without opening it. Equipment is the
-  first ring.
+  first ring; Items, Alchemy and Party followed. Quick slots (D-pad / 1-4,
+  owner) hold an item or formula each.
+- **Alchemy:** each cast uses up its ingredients; formulas get stronger with
+  use (owner, 2026-10-08). Only the kid casts. The first formula is Heal (one
+  wild carrot); the rest come with the realms' ingredients and alchemists.
 - **Armor:** each piece adds defense, and some add one small perk (resist
   cold, faster charge, quieter footsteps for the dog's sneaking...). Pieces come
   from shops, chests, hidden caches and bosses. The dog's collar works the same

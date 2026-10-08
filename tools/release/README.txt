@@ -41,11 +41,12 @@ CONTROLS
 --------
                       Keyboard            Gamepad
 Pause menu/settings   Esc                 Start
-Move                  WASD / arrows       Left stick / D-pad
+Move                  WASD / arrows       Left stick
 Run (hold)            Shift               LB
 Attack                J / Space           A
 Talk / interact       E / Enter           A
 Ring menu             I                   Y
+Quick slots           1 2 3 4             D-pad
 Phone flashlight      F                   L3 (click left stick)
 Switch kid / dog      Tab                 Back (View)
 Partner: Stay put     Q                   X
@@ -78,9 +79,12 @@ The duo: you drive one, the AI plays the other by his stance.
             fights, sniffs out hidden items, bites back if something's
             after him)
 
-The ring menu (I / Y) pauses and shows the gear of whoever you drive:
-left/right picks a slot, up/down changes what's in it, Tab shows the other
-one's gear. The test yard and the arena give you a kit of gear to try.
+The ring menu (I / Y) pauses and shows four rings (Z/X or LB/RB to switch):
+Equipment (up/down changes a slot), Items and Alchemy (E / A uses or casts
+on whoever is shown), Party (stances, Stay put). Tab shows the other one.
+Select an item or formula and press 1-4 / the D-pad to put it in a quick
+slot; outside the menu the same key uses it. The test yard and the arena
+give you gear, apples, a soda, wild carrots and the Heal formula to try.
 
 Hidden items: the test yard hides five. The dog on Search finds buried
 ones and digs them up; drive him and press Sniff to see scent trails, then

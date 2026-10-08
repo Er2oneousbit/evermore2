@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FormulaData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/items/formula_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "heal"
+display_name = "Heal"
+description = "A warm green glow that closes cuts and bruises."
+costs = {"wild_carrot": 1}
+effect = "heal"
+power = 14
+power_per_level = 4
+icon_cell = Vector2i(12, 5)

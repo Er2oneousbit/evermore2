@@ -79,9 +79,11 @@ runs, without the light shafts, reflections and blur.
 | Action | Keyboard | Gamepad |
 |---|---|---|
 | Pause menu and **settings** | Esc | Start |
-| Move | WASD / Arrow keys | Left stick / D-pad |
+| Move | WASD / Arrow keys | Left stick |
 | Run (hold; drains the attack charge) | Shift | LB |
-| Ring menu (equipment) | I | Y |
+| Ring menu (equipment, items, alchemy, party) | I | Y |
+| Quick slots (use what's in them) | 1 2 3 4 | D-pad |
+| In the ring menu: other rings, use, put in a quick slot | Z / X, E, 1-4 | LB / RB, A, D-pad |
 | Phone flashlight | F | L3 (click the left stick) |
 | Attack (waiting charges it up) | J / Space | A |
 | Talk / interact | E / Enter | A |

@@ -26,10 +26,11 @@ const STICK_DEADZONE := 0.25
 
 const BINDINGS := {
 	# --- Movement -------------------------------------------------------------
-	"move_left":  {"keys": [KEY_A, KEY_LEFT],  "buttons": [JOY_BUTTON_DPAD_LEFT],  "axes": [[JOY_AXIS_LEFT_X, -1.0]]},
-	"move_right": {"keys": [KEY_D, KEY_RIGHT], "buttons": [JOY_BUTTON_DPAD_RIGHT], "axes": [[JOY_AXIS_LEFT_X, 1.0]]},
-	"move_up":    {"keys": [KEY_W, KEY_UP],    "buttons": [JOY_BUTTON_DPAD_UP],    "axes": [[JOY_AXIS_LEFT_Y, -1.0]]},
-	"move_down":  {"keys": [KEY_S, KEY_DOWN],  "buttons": [JOY_BUTTON_DPAD_DOWN],  "axes": [[JOY_AXIS_LEFT_Y, 1.0]]},
+	# The gamepad moves with the left stick; the D-pad is the quick slots.
+	"move_left":  {"keys": [KEY_A, KEY_LEFT],  "axes": [[JOY_AXIS_LEFT_X, -1.0]]},
+	"move_right": {"keys": [KEY_D, KEY_RIGHT], "axes": [[JOY_AXIS_LEFT_X, 1.0]]},
+	"move_up":    {"keys": [KEY_W, KEY_UP],    "axes": [[JOY_AXIS_LEFT_Y, -1.0]]},
+	"move_down":  {"keys": [KEY_S, KEY_DOWN],  "axes": [[JOY_AXIS_LEFT_Y, 1.0]]},
 	# --- Actions --------------------------------------------------------------
 	# Interact and attack share gamepad A: the kid checks
 	# Interaction.try_interact() first (talking wins).
@@ -40,6 +41,14 @@ const BINDINGS := {
 	"toggle_light":    {"keys": [KEY_F],            "buttons": [JOY_BUTTON_LEFT_STICK]},
 	# The ring menu (equipment now; items and alchemy later). Pauses the game.
 	"ring_menu":       {"keys": [KEY_I],            "buttons": [JOY_BUTTON_Y]},
+	# Quick slots: use (or, in the ring menu, assign) without opening anything.
+	"quick_1":         {"keys": [KEY_1],            "buttons": [JOY_BUTTON_DPAD_UP]},
+	"quick_2":         {"keys": [KEY_2],            "buttons": [JOY_BUTTON_DPAD_RIGHT]},
+	"quick_3":         {"keys": [KEY_3],            "buttons": [JOY_BUTTON_DPAD_DOWN]},
+	"quick_4":         {"keys": [KEY_4],            "buttons": [JOY_BUTTON_DPAD_LEFT]},
+	# Inside the ring menu only: the previous / next ring (tab).
+	"ring_prev":       {"keys": [KEY_Z, KEY_PAGEUP],   "buttons": [JOY_BUTTON_LEFT_SHOULDER]},
+	"ring_next":       {"keys": [KEY_X, KEY_PAGEDOWN], "buttons": [JOY_BUTTON_RIGHT_SHOULDER]},
 	# --- The duo (Party) --------------------------------------------------------
 	"switch_control":  {"keys": [KEY_TAB],          "buttons": [JOY_BUTTON_BACK]},
 	"partner_stay":    {"keys": [KEY_Q],            "buttons": [JOY_BUTTON_X]},
@@ -67,6 +76,10 @@ const REBINDABLE := [
 	["attack", "Attack"],
 	["interact", "Talk / interact"],
 	["ring_menu", "Ring menu"],
+	["quick_1", "Quick slot 1"],
+	["quick_2", "Quick slot 2"],
+	["quick_3", "Quick slot 3"],
+	["quick_4", "Quick slot 4"],
 	["toggle_light", "Flashlight"],
 	["switch_control", "Switch kid / dog"],
 	["partner_stay", "Partner: Stay put"],

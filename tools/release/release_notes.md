@@ -19,9 +19,12 @@ The story, the realms and the real content come later.
   two can split up), and set how the AI plays the one you aren't driving: the
   kid Offensive or Defensive, the dog Offensive or Search. The dog bites. An
   arrow points to him when he's out of view
-* **The ring menu** (I / Y): equipment for the kid (weapon, head, body,
-  arms, hands, legs, boots) and the dog (collar), with a kit of demo gear.
-  Every ring is a tab you can see, and changes take effect right away
+* **The ring menu** (I / Y): Equipment (kid: weapon, head, body, arms,
+  hands, legs, boots; dog: collar), Items, Alchemy (Heal, which costs a wild
+  carrot and gets stronger the more you cast it) and Party (stances, Stay
+  put). Every ring is a tab you can see, and changes take effect right away
+* **Quick slots** (1-4 / D-pad): use an item or cast a formula without
+  opening the menu
 * **Walking and running**: hold Run to run. Like the original, running
   costs your attack charge; run it to 0% and you're winded for a moment
 * **Hidden items and the dog's nose** (in the test yard): items buried,
