@@ -195,12 +195,13 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   from the member's exports (`follow_distance`, `walk_speed`, ...).
 * Keys: Tab / gamepad Back switches, Q / X is Stay put, R / RB cycles the
   partner's stance, C / B sniffs (driving the dog), Shift / LB runs.
-* Running: `Stamina` (`systems/party/stamina.gd`) on the kid and the dog,
-  ticked only while driven (`stamina.tick(delta, stamina.wants_run(moving,
-  delta), moving)` returns whether he runs this frame). Tune with each actor's
-  `move_speed` (walk), `run_speed`, `stamina_seconds`,
-  `stamina_refill_seconds`. Tests that drive the kid somewhere now move at
-  the walk speed unless they hold `run`.
+* Running: `Running` (`systems/party/running.gd`) on the kid and the dog
+  spends their `ChargeMeter`. After the usual `charge.tick(delta)`,
+  `run.tick(delta, run.wants_run(moving, delta), moving)` returns whether he
+  runs this frame (and then takes back the refill and drains). Tune with each
+  actor's `move_speed` (walk), `run_speed`, `run_charge_drain` (levels per
+  second). Tests that drive the kid somewhere move at the walk speed unless
+  they hold `run`, and holding it empties his charge.
 * In a test that measures one member's attack, freeze the other
   (`set_physics_process(false)`): the AI partner on Offensive joins any fight.
 

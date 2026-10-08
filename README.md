@@ -80,7 +80,7 @@ runs, without the light shafts, reflections and blur.
 |---|---|---|
 | Pause menu and **settings** | Esc | Start |
 | Move | WASD / Arrow keys | Left stick / D-pad |
-| Run (hold; uses stamina) | Shift | LB |
+| Run (hold; drains the attack charge) | Shift | LB |
 | Phone flashlight | F | Y |
 | Attack (waiting charges it up) | J / Space | A |
 | Talk / interact | E / Enter | A |

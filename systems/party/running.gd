@@ -1,49 +1,48 @@
 # =============================================================================
-# stamina.gd  -  Running and the stamina meter (kid and dog, when driven)
+# running.gd  -  Running, paid for with the attack charge (kid and dog, driven)
 # -----------------------------------------------------------------------------
-# WHAT:  You walk by default; hold Run (Shift / gamepad LB) to run. Running
-#        drains the meter; let go and, after a short breath, it refills. Run
-#        it dry and he's winded: no running until it's back to RECOVER_AT.
+# WHAT:  You walk by default; hold Run (Shift / gamepad LB) to run. Like the
+#        original, running costs your attack: while you run the ChargeMeter
+#        doesn't refill, it drains (charge_drain levels per second). Run it to
+#        0% and he's winded: he walks, even holding Run, until the charge is
+#        back to RECOVER_AT. So you choose: get there fast, or arrive with a
+#        full swing ready. (The dog drains a quarter as fast: zoomies.)
 #        Settings "Run button" can make Run a toggle instead (press once to
 #        run, it switches off when you stand still a moment or get winded;
 #        pressed while standing, it's ready for your next move).
-#        The AI partner doesn't use stamina: he has to keep up with you.
+#        The AI partner doesn't run on this: he has to keep up with you.
 #
-#          var running := stamina.tick(delta, stamina.wants_run(moving, delta), moving)
+#          charge.tick(delta)    # as always, every frame
+#          var running := run.tick(delta, run.wants_run(moving, delta), moving)
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
 # =============================================================================
-class_name Stamina
+class_name Running
 extends RefCounted
 
-## Winded: running comes back once the meter refills to this much.
-const RECOVER_AT := 0.35
-## After running, the meter waits this long (s) before it starts to refill.
-const REST_DELAY := 0.6
+## Winded: running comes back once the charge refills to this (in levels).
+const RECOVER_AT := 0.5
 ## Toggle mode: standing still this long (s) ends a toggled run. Not one
 ## frame: turning around on a keyboard passes through a frame of no keys.
 const TOGGLE_STILL := 0.25
 
-## Seconds of running on a full meter.
-var run_seconds := 4.0
-## Seconds to refill from empty.
-var refill_seconds := 2.5
-## 0..1.
-var value := 1.0
-## Ran it dry: no running until it refills to RECOVER_AT.
+## The attack charge running spends.
+var charge: ChargeMeter
+## Charge drained per second of running, in levels (1.0 = a full 100%).
+var charge_drain := 0.5
+## Ran the charge dry: no running until it refills to RECOVER_AT.
 var winded := false
 
-var _rest := 0.0
 var _toggled := false
 var _still := 0.0
 ## Moved since Run was pressed: only then can standing still end the run.
 var _moved := false
 
 
-func _init(seconds_of_running := 4.0, seconds_to_refill := 2.5) -> void:
-	run_seconds = seconds_of_running
-	refill_seconds = seconds_to_refill
+func _init(meter: ChargeMeter, drain_per_second := 0.5) -> void:
+	charge = meter
+	charge_drain = drain_per_second
 
 
 ## Whether the player is asking to run right now (hold or toggle, per the
@@ -62,19 +61,16 @@ func wants_run(moving: bool, delta: float) -> bool:
 	return Input.is_action_pressed("run")
 
 
-## Advance the meter. Returns true if he actually runs this frame.
+## Call after this frame's charge.tick(). Returns true if he runs this frame:
+## then the charge takes back this frame's refill and drains on top.
 func tick(delta: float, want_run: bool, moving: bool) -> bool:
-	if want_run and moving and not winded and value > 0.0:
-		value = maxf(0.0, value - delta / run_seconds)
-		_rest = REST_DELAY
-		if value <= 0.0:
+	if want_run and moving and not winded and charge.value > 0.0:
+		charge.value = maxf(0.0, charge.value - delta / charge.seconds_per_level - delta * charge_drain)
+		if charge.value <= 0.0:
 			winded = true
 		return true
-	_rest -= delta
-	if _rest <= 0.0:
-		value = minf(1.0, value + delta / refill_seconds)
-		if winded and value >= RECOVER_AT:
-			winded = false
+	if winded and charge.value >= RECOVER_AT:
+		winded = false
 	return false
 
 
@@ -85,9 +81,7 @@ func drop_toggle() -> void:
 	_moved = false
 
 
-## Back to a full meter (a revive). Also drops a toggled run.
+## A revive: not winded any more, no toggled run.
 func reset() -> void:
-	value = 1.0
 	winded = false
-	_rest = 0.0
 	drop_toggle()

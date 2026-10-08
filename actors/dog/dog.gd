@@ -74,11 +74,11 @@ const State = Follower.State
 # --- Driven by the player ------------------------------------------------------
 ## Walking speed when the player drives him (a little quicker than the kid).
 @export var move_speed := 95.0
-## Running speed (holding Run, while his stamina lasts).
+## Running speed (holding Run, while his charge lasts).
 @export var run_speed := 160.0
-## Seconds of running on a full stamina meter (more than the kid), and to refill.
-@export var stamina_seconds := 5.0
-@export var stamina_refill_seconds := 2.5
+## Bite charge running costs, levels per second: a quarter of the kid's
+## (owner: "Zoomies am I right???"). 100% lasts 8 s of running.
+@export var run_charge_drain := 0.125
 ## His bite (data/weapons/*.tres).
 @export var weapon: WeaponData = preload("res://data/weapons/dog_bite.tres")
 ## Forward burst at the start of a bite (px/s).
@@ -100,8 +100,8 @@ var downed := false
 var facing := Vector2.RIGHT
 ## The auto-filling bite charge (HUD reads it).
 var charge := ChargeMeter.new()
-## Running (HUD reads it). Only used while you drive him.
-var stamina: Stamina
+## Running and its cost (HUD reads `winded`). Only used while you drive him.
+var run: Running
 var running := false
 var follower: Follower
 var brain: PartnerBrain
@@ -154,8 +154,8 @@ func _ready() -> void:
 		Debug.log_verbose("Dog state -> %s" % s))
 	brain = PartnerBrain.new(self)
 	nose = Nose.new(self)
-	stamina = Stamina.new(stamina_seconds, stamina_refill_seconds)
 	charge = ChargeMeter.new(weapon.max_level, weapon.seconds_per_level)
+	run = Running.new(charge, run_charge_drain)
 	health.died.connect(_on_died)
 	_sprite.animation_finished.connect(_on_animation_finished)
 	_resolve_target()
@@ -175,7 +175,7 @@ func _physics_process(delta: float) -> void:
 
 	if _dig_left > 0.0 or _sniff_left > 0.0 or _attacking:
 		running = false
-		stamina.tick(delta, false, false)  # busy: the meter refills meanwhile
+		run.tick(delta, false, false)  # busy: the charge refills meanwhile
 	if _dig_left > 0.0 or _sniff_left > 0.0:
 		if _dig_left > 0.0:
 			_dig_step(delta)
@@ -197,10 +197,10 @@ func _physics_process(delta: float) -> void:
 	if controlled and not Dialogue.is_active():
 		var stick := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 		var moving := stick != Vector2.ZERO
-		running = stamina.tick(delta, stamina.wants_run(moving, delta), moving)
+		running = run.tick(delta, run.wants_run(moving, delta), moving)
 		want = stick * (run_speed if running else move_speed)
 	else:
-		stamina.tick(delta, false, false)  # refills; the AI doesn't use it
+		run.tick(delta, false, false)  # the AI doesn't run on his charge
 	if not controlled and is_instance_valid(follower.target):
 		var stance := Party.stance_of(self)
 		var staying := Party.is_staying(self)
@@ -274,7 +274,7 @@ func on_hit(info: HitInfo, _dealt: int) -> void:
 func revive(fraction := 0.3) -> void:
 	downed = false
 	health.revive(fraction)
-	stamina.reset()
+	run.reset()
 	follower.clear_trail()
 	if follower.state != State.STAY:
 		follower.set_state(State.IDLE)

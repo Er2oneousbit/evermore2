@@ -22,8 +22,6 @@ extends CanvasLayer
 var _prompt: Label
 var _charge_bar: ChargeBar
 var _dog_charge_bar: ChargeBar
-var _stamina_bar: StaminaBar
-var _dog_stamina_bar: StaminaBar
 var _partner_arrow: PartnerArrow
 ## "Found Old key  2/5 here", for TOAST_SECONDS (game time).
 var _toast: Label
@@ -44,8 +42,6 @@ func _ready() -> void:
 			h.changed.connect(func(_hp: int, _max: int) -> void: _refresh_status())
 	_charge_bar = _build_charge_bar("ChargeBar", false)
 	_dog_charge_bar = _build_charge_bar("DogChargeBar", true)
-	_stamina_bar = _build_stamina_bar("StaminaBar", false)
-	_dog_stamina_bar = _build_stamina_bar("DogStaminaBar", true)
 	_partner_arrow = PartnerArrow.new()
 	_partner_arrow.name = "PartnerArrow"
 	$SafeFrame.add_child(_partner_arrow)
@@ -116,43 +112,10 @@ func _process(delta: float) -> void:
 		var m: Node2D = pair[1]
 		if bar and is_instance_valid(m) and m.get("charge") != null:
 			bar.meter = m.charge
+			bar.run = m.get("run")
 			bar.visible = (pair[2] as Label).visible
 		elif bar:
 			bar.visible = false
-	# Stamina: only for the one you drive, and only while it isn't full.
-	for pair in [[_stamina_bar, _kid, _kid_status], [_dog_stamina_bar, _dog, _dog_status]]:
-		var sbar: StaminaBar = pair[0]
-		var m: Node2D = pair[1]
-		var st: Stamina = m.get("stamina") if is_instance_valid(m) else null
-		sbar.stamina = st
-		var showing := (pair[2] as Label).visible and (st.value < 1.0 or st.winded) if st else false
-		sbar.visible = showing and m == Party.leader
-
-
-## Just above the charge bar, as wide as its bar part (the pips stick out).
-func _build_stamina_bar(bar_name: String, right_side: bool) -> StaminaBar:
-	var bar := StaminaBar.new()
-	bar.name = bar_name
-	bar.anchor_top = 1.0
-	bar.anchor_bottom = 1.0
-	if right_side:
-		bar.anchor_left = 1.0
-		bar.anchor_right = 1.0
-		bar.offset_left = -75
-		bar.offset_right = -26
-	else:
-		bar.offset_left = 5
-		bar.offset_right = 54
-	bar.offset_top = -25
-	bar.offset_bottom = -23
-	bar.visible = false
-	$SafeFrame.add_child(bar)
-	return bar
-
-
-## The stamina bars (tests read them): [kid's, dog's].
-func stamina_bars() -> Array[StaminaBar]:
-	return [_stamina_bar, _dog_stamina_bar]
 
 
 func _build_toast() -> void:

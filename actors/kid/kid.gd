@@ -9,8 +9,8 @@
 #        built with the Universal LPC generator (tools/lpc/README.md explains
 #        how to rebuild it with a different outfit).
 #        He walks; hold Run (Shift / gamepad LB) to run, which drains his
-#        stamina (systems/party/stamina.gd). A partly tilted stick walks
-#        slower. Walk or run cycle by speed; animation speed follows movement
+#        attack charge (systems/party/running.gd). A partly tilted stick
+#        walks slower. Walk or run cycle by speed; animation speed follows movement
 #        speed so the feet don't "skate".
 #
 # COMBAT: attack (J / Space / gamepad A) swings the equipped WeaponData. The
@@ -38,11 +38,10 @@ extends CharacterBody2D
 # --- Tuning (pixels are base-resolution pixels: 640x360 screen, 32 px tiles) --
 ## Walking speed when you drive him (px/s).
 @export var move_speed := 85.0
-## Running speed (holding Run, while his stamina lasts). 140 = 4.4 tiles/s.
+## Running speed (holding Run, while his charge lasts). 140 = 4.4 tiles/s.
 @export var run_speed := 140.0
-## Seconds of running on a full stamina meter, and seconds to refill it.
-@export var stamina_seconds := 4.0
-@export var stamina_refill_seconds := 2.5
+## Attack charge running costs, in levels per second (0.5 = 100% in 2 s).
+@export var run_charge_drain := 0.5
 ## How fast the kid reaches top speed. Higher = snappier.
 @export var acceleration := 1500.0
 ## How fast the kid stops when input is released. Higher = less sliding.
@@ -95,8 +94,8 @@ var light_on := true
 var controlled := true
 ## The auto-filling attack charge (HUD reads it).
 var charge := ChargeMeter.new()
-## Running (HUD reads it). Only used while you drive him.
-var stamina: Stamina
+## Running and its cost (HUD reads `winded`). Only used while you drive him.
+var run: Running
 ## True while he's running this frame.
 var running := false
 var downed := false
@@ -134,7 +133,6 @@ func _ready() -> void:
 	_on_screen.rect = Rect2(-16, -48, 32, 50)
 	add_child(_on_screen)
 	follower = Follower.new(self, $CollisionShape2D, blocking_mask)
-	stamina = Stamina.new(stamina_seconds, stamina_refill_seconds)
 	brain = PartnerBrain.new(self)
 	Party.register(self)
 
@@ -143,6 +141,10 @@ func _ready() -> void:
 func equip(w: WeaponData) -> void:
 	weapon = w
 	charge = ChargeMeter.new(w.max_level, w.seconds_per_level)
+	if run:
+		run.charge = charge  # same legs, new weapon
+	else:
+		run = Running.new(charge, run_charge_drain)
 
 
 ## Swing the weapon now, with whatever charge has built up. Returns false if
@@ -179,7 +181,7 @@ func on_hit(info: HitInfo, _dealt: int) -> void:
 func revive(fraction := 0.3) -> void:
 	downed = false
 	health.revive(fraction)
-	stamina.reset()
+	run.reset()
 	_sprite.play(&"idle", facing, true)
 
 
@@ -234,15 +236,16 @@ func _physics_process(delta: float) -> void:
 	if can_act and controlled:
 		input_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 		# A swing pauses the run without cancelling a toggled one.
-		var want_run := stamina.wants_run(input_dir != Vector2.ZERO, delta)
+		var want_run := run.wants_run(input_dir != Vector2.ZERO, delta)
 		var moving := input_dir != Vector2.ZERO and not _attacking
-		running = stamina.tick(delta, want_run, moving)
+		running = run.tick(delta, want_run, moving)
 		want = input_dir * (run_speed if running else move_speed)
 	else:
 		running = false
-		stamina.tick(delta, false, false)
+		run.tick(delta, false, false)
 		if can_act and not _attacking and is_instance_valid(follower.target):
-			# The AI plays him: its wanted velocity (no stamina: he keeps up).
+			# The AI plays him: its wanted velocity (running costs him nothing:
+			# he has to keep up).
 			want = brain.think(delta, Party.stance_of(self), Party.is_staying(self), _on_screen.is_on_screen())
 			input_dir = want / move_speed
 	if _attacking:

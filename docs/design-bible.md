@@ -322,9 +322,10 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
     a line when you find one ("2/5 here") and the count in the pause menu.
   - A found item hops out toward whoever you're driving; walk over it to take it.
 - **Running:** you walk by default; hold Run (or toggle it, in Settings) to
-  run. Running drains a stamina meter, like the original; run it dry and
-  you're winded (walking) until it refills partway. Each of the duo has his
-  own; the AI partner doesn't use it, so he always keeps up.
+  run. Like the original, running costs your attack: the charge meter drains
+  instead of filling (the kid loses 100% every 2 s). At 0% you're winded,
+  walking, until it's back to 50%. The dog pays a quarter as much (zoomies).
+  The AI partner pays nothing, so he always keeps up.
 - **Auto charge:** after a swing the charge meter refills on its own, about a
   second to 100% (level 1), then keeps climbing to level 2 and 3 if the weapon's
   mastery allows. Attack whenever you like: a quick tap gives a weaker swing,

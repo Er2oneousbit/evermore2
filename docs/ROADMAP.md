@@ -47,7 +47,7 @@ tag), and a real HUD in place of the placeholder text.
 
 | Date | Decision |
 |---|---|
-| 2026-10-08 | **Walk by default, hold Run to run, with a stamina meter** (owner: "like the original"). Running drains it; run it dry and you're winded until it refills. The AI partner doesn't use stamina |
+| 2026-10-08 | **Walk by default, hold Run to run, and running costs the attack charge** (owner: "Original running took charge away from the attack"). At 0% you're winded (walking) until it refills partway. The dog pays a quarter as much ("Zoomies"). The AI partner pays nothing. (A separate stamina meter was tried first, the same day) |
 | 2026-10-08 | **The sun sits in front** (camera side): shadows fall back, up the screen, and faces are lit. It was behind, throwing shadows toward the camera |
 | 2026-10-07 | **Voices: one or two words, real voice actors** ("Hey!" when you talk to someone, short reactions). AI text-to-speech was tried and rejected (all of it sounded bad, the kids worst). Full voice acting is off the table for now; **babble** (per-character blips while text types) is the backup plan. The kid stays silent |
 | 2026-10-07 | **Sound and music from free CC0 packs** (OpenGameArt), through a rebuildable pipeline like the art |
@@ -66,31 +66,38 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
-## Done: running and stamina
+## Done: running costs your attack charge
+
+* **Running drains the attack charge** (owner: "Original running took charge
+  away from the attack"). While you run, the charge meter doesn't fill, it
+  empties: the kid spends a full level (100%) every 2 s. Run it to 0% and
+  he's **winded**: he walks, even holding Run, until the charge is back to
+  50%. So it's a choice: get there fast, or arrive with a big swing ready
+* **The dog pays a quarter as much** (owner: "Zoomies am I right???"): a
+  full level lasts him 8 s of running
+* The separate stamina meter and its green bar are gone. Winded shows on the
+  charge bar itself: it turns orange and blinks
+* The AI partner never pays: he has to keep up with you
+* Tests: `smoke_party` section 9 rewritten (walking is free, running drains
+  at the set rate, 0% winds him into a walk, the charge bar shows it, the
+  breath comes back at 50% with a weak swing still, the toggle cases, the dog
+  at a quarter of the kid's rate, the AI kid spending nothing and keeping
+  up). Each was proven by breaking it (7 sabotages). All 12 runs pass
+
+## Done: running (walk by default)
 
 * **Walk by default; hold Run to run** (Shift / gamepad LB, rebindable; or
   press-to-toggle in Settings > Gameplay > Run button). The kid walks at 85
   px/s and runs at 140; the dog walks at 95 and runs at 160. A partly tilted
   stick still walks slower
-* **Stamina**: running drains a meter (about 4 s for the kid, 5 s for the
-  dog); after a short breath it refills (2.5 s from empty). Run it dry and
-  he's **winded**: he walks even holding Run until it's back to 35%
-* The HUD shows a thin green bar above the charge bar of whoever you drive,
-  only while it isn't full; winded, it turns orange and blinks
-* Each has his own meter, and a switch doesn't refill it. The AI partner uses
-  none: he has to keep up with you (the kid follows a running dog fine)
-* The meter keeps refilling while the dog bites, digs or sniffs
+* First built with its own stamina meter; replaced the same day by the
+  attack-charge cost above
 * Toggle mode is forgiving: a toggled run ends after you stand still a
   quarter second (a keyboard turn-around passes through a frame with no key
   held), a swing doesn't cancel it, and pressing Run while standing readies
   it for your next move (found in review)
-* Tests: `smoke_party` section 9 (walk pace and cycle, run pace and cycle,
-  drain, winded walk, recovery, the bar showing and hiding, toggle mode and
-  its turn-around, swing and arming cases, the dog's own meter, the AI using
-  none and keeping up, no refill on a switch). Each was proven by breaking it
-  (10 sabotages). `smoke_audio`'s footstep walk
-  is longer now that the kid walks: at 85 px/s he didn't get past the dog. All
-  12 runs pass
+* `smoke_audio`'s footstep walk is longer now that the kid walks: at 85 px/s
+  he didn't get past the dog
 
 ## Done: hidden items and the dog's nose
 

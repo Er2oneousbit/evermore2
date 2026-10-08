@@ -16,11 +16,11 @@
 #        7. Talking belongs to the kid: nothing is in reach while driving the
 #           dog, and a conversation hands control back to him
 #        8. HD-2D: the 3D camera follows whoever you drive
-#        9. Running: walk by default, hold Run to run (faster, the run cycle,
-#           drains stamina); run dry and he's winded (walks even holding Run)
-#           until it refills; the HUD bar shows while it isn't full; the
-#           toggle setting; the dog runs too, on his own meter; the AI partner
-#           uses none and keeps up; a switch doesn't refill it
+#        9. Running: walk by default (free), hold Run to run (faster, the run
+#           cycle) and it drains the attack charge instead of filling it; run
+#           it to 0% and he's winded (walks even holding Run, the charge bar
+#           blinks) until it refills partway; the toggle setting; the dog pays
+#           a quarter as much; the AI partner pays nothing and keeps up
 #
 # RUN:   godot --headless --path . --fixed-fps 60 res://tests/smoke_party.tscn
 #        Exit code 0 = PASS, 1 = FAIL.
@@ -326,14 +326,15 @@ func _test_running() -> void:
 	var arena := await _load(ARENA)
 	var kid: Kid = arena.get_node("World/Kid")
 	var dog: Dog = arena.get_node("World/Dog")
-	var hud := arena.get_node("HUD")
-	var bars: Array = hud.stamina_bars()
+	var bar: ChargeBar = arena.get_node("HUD/SafeFrame/ChargeBar")
 	_clear_enemies()
 	dog.set_physics_process(false)  # only the kid's pace is measured first
 	var sprite: DirectionalSprite = kid.get_node("Sprite")
+	var full := float(kid.charge.max_level)
 
-	# Walking: the default.
+	# Walking: the default, and it costs nothing.
 	kid.global_position = Vector2(60, 200)
+	await _wait(kid.weapon.seconds_per_level * full)  # charge all the way up
 	Input.action_press("move_right")
 	await _wait(0.4)
 	var x0 := kid.global_position.x
@@ -341,57 +342,58 @@ func _test_running() -> void:
 	var walked := kid.global_position.x - x0
 	_check(absf(walked - kid.move_speed) < 8.0, "he walks by default (%.0f px/s, walk speed %.0f)" % [walked, kid.move_speed])
 	_check(sprite.current == &"walk", "with the walk cycle (%s)" % sprite.current)
-	_check(kid.stamina.value == 1.0 and not bars[0].visible, "walking uses no stamina; the bar stays hidden")
+	_check(kid.charge.value == full, "walking leaves the attack charge alone (%.2f of %.0f)" % [kid.charge.value, full])
 
-	# Running: hold Run.
+	# Running: hold Run. It drains the charge instead of letting it fill.
 	Input.action_press("run")
 	await _wait(0.3)
 	x0 = kid.global_position.x
+	var c0 := kid.charge.value
 	await _wait(1.0)
 	var ran := kid.global_position.x - x0
+	var drained := c0 - kid.charge.value
 	_check(absf(ran - kid.run_speed) < 8.0, "holding Run runs (%.0f px/s, run speed %.0f)" % [ran, kid.run_speed])
 	_check(sprite.current == &"run", "with the run cycle (%s)" % sprite.current)
-	_check(kid.stamina.value < 0.75 and kid.stamina.value > 0.6, "running drains stamina (%.2f after 1.3 s)" % kid.stamina.value)
-	_check(bars[0].visible and not bars[1].visible, "the kid's stamina bar shows (not the dog's)")
+	_check(absf(drained - kid.run_charge_drain) < 0.05, "running drains the attack charge (%.2f levels in 1 s, drain %.2f)" % [drained, kid.run_charge_drain])
 
 	# Run it dry: winded, back to a walk even holding Run.
-	for i in ceili(kid.stamina_seconds * 60.0):
+	for i in ceili((kid.charge.value / kid.run_charge_drain + 1.0) * 60.0):
 		await _frames(1)
-		if kid.stamina.winded:
+		if kid.run.winded:
 			break
-	_check(kid.stamina.winded, "running it dry winds him")
-	# Velocity, not distance: by now he's near the arena's far fence.
-	await _wait(0.3)
+	_check(kid.run.winded and kid.charge.value == 0.0, "running the charge to 0% winds him")
+	_check(bar.shows_winded(), "the charge bar shows it")
+	await _wait(0.1)
 	_check(absf(kid.velocity.length() - kid.move_speed) < 4.0 and not kid.running,
 			"winded, he walks even holding Run (%.0f px/s)" % kid.velocity.length())
 	Input.action_release("run")
 	Input.action_release("move_right")
-	await _wait(Stamina.REST_DELAY + kid.stamina_refill_seconds * Stamina.RECOVER_AT + 0.2)
-	_check(not kid.stamina.winded, "resting gets his breath back")
-	await _wait(kid.stamina_refill_seconds)
-	_check(kid.stamina.value == 1.0 and not bars[0].visible, "the meter refills and the bar hides")
+	await _wait(kid.weapon.seconds_per_level * Running.RECOVER_AT + 0.1)
+	_check(not kid.run.winded and not bar.shows_winded(), "he gets his breath back as the charge refills")
+	_check(kid.charge.level() < 1, "and his next swing is still a weak one (charge %.2f)" % kid.charge.value)
 
 	# Toggle mode: press once, run without holding.
+	await _wait(1.0)
 	Settings.set_value("run_mode", "toggle")
-	Input.action_press("move_right")
+	Input.action_press("move_left")
 	_tap("run")
-	await _wait(0.5)
+	await _wait(0.4)
 	_check(kid.running, "toggle: one press of Run and he runs")
 	# Turning around on a keyboard: a frame or two with no key held.
-	Input.action_release("move_right")
+	Input.action_release("move_left")
 	await _frames(2)
-	Input.action_press("move_left")
+	Input.action_press("move_right")
 	await _wait(0.2)
 	_check(kid.running, "toggle: a quick turn-around keeps the run")
 	kid.attack()
 	await _wait(0.6)
 	_check(kid.running, "toggle: a swing doesn't cancel it")
-	Input.action_release("move_left")
-	await _wait(Stamina.TOGGLE_STILL + 0.15)
-	Input.action_press("move_left")
+	Input.action_release("move_right")
+	await _wait(Running.TOGGLE_STILL + 0.15)
+	Input.action_press("move_right")
 	await _wait(0.3)
 	_check(not kid.running, "toggle: standing still a moment ends the run")
-	Input.action_release("move_left")
+	Input.action_release("move_right")
 	await _wait(0.2)
 	_tap("run")
 	await _wait(0.4)
@@ -402,33 +404,32 @@ func _test_running() -> void:
 	await _wait(0.5)
 	Settings.set_value("run_mode", "hold")
 
-	# The dog runs too, on his own meter; the AI kid keeps up and uses none.
+	# The dog: zoomies, a quarter of the kid's cost. The AI kid pays nothing.
 	dog.set_physics_process(true)
-	await _wait(kid.stamina_refill_seconds + 1.0)
-	var kid_meter := kid.stamina.value
+	kid.global_position = Vector2(700, 200)
+	dog.global_position = Vector2(740, 200)
 	_tap("switch_control")
 	await _frames(2)
+	await _wait(kid.weapon.seconds_per_level * full)
+	var kid_full := kid.charge.value
 	Input.action_press("move_left")
 	Input.action_press("run")
 	await _wait(0.3)
 	x0 = dog.global_position.x
+	c0 = dog.charge.value
 	await _wait(1.0)
 	var dog_ran := x0 - dog.global_position.x
+	var dog_drained := c0 - dog.charge.value
 	_check(absf(dog_ran - dog.run_speed) < 10.0, "the dog runs when you drive him (%.0f px/s, run speed %.0f)" % [dog_ran, dog.run_speed])
-	_check(dog.stamina.value < 1.0 and bars[1].visible and not bars[0].visible, "on his own meter, shown on his side")
-	_check(kid.stamina.value >= kid_meter, "the AI kid uses no stamina")
+	_check(absf(dog_drained - kid.run_charge_drain / 4.0) < 0.03,
+			"at a quarter of the kid's cost (%.3f levels/s vs the kid's %.2f)" % [dog_drained, kid.run_charge_drain])
 	await _wait(1.0)
 	Input.action_release("run")
 	Input.action_release("move_left")
+	_check(kid.charge.value >= kid_full, "the AI kid keeps up without spending his charge")
 	await _wait(1.5)
 	var gap := kid.global_position.distance_to(dog.global_position)
 	_check(gap < 80.0, "and keeps up with a running dog (gap %.0f px)" % gap)
-	var dog_meter := dog.stamina.value
-	_tap("switch_control")
-	await _frames(2)
-	_tap("switch_control")
-	await _frames(2)
-	_check(dog.stamina.value <= dog_meter + 0.05, "switching away and back doesn't refill his meter")
 	_tap("switch_control")
 	await _frames(2)
 	arena.queue_free()
