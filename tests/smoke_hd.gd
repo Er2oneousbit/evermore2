@@ -11,6 +11,9 @@
 #          4. F6 swaps HD-2D <-> classic 2D cleanly (visibility, 3D camera,
 #             ScreenScaler mode, 2D mood layers)
 #          5. time of day (Atmosphere) reaches the 3D lights
+#          6. the camera keeps the kid on screen, clear of the HUD, at the
+#             map's bottom and top rows, in both views and on a short map
+#             (the arena); at the bottom he once walked right off screen
 #        It can't judge how things LOOK: that's what the screenshot tour is for.
 #
 # RUN:   godot --headless --path . --fixed-fps 60 res://tests/smoke_hd.tscn
@@ -110,6 +113,26 @@ func _run() -> void:
 	var flies: GPUParticles3D = hd.get_node("Fireflies")
 	_check(flies.emitting, "fireflies should be on at night")
 
+	# --- 6. The kid stays on screen at the map's edges ---------------------------
+	atmo.set_time("day", 0.0)
+	await _check_edges(yard, kid, "yard, HD-2D")
+	_tap("debug_toggle_view")
+	await _frames(2)
+	await _check_edges(yard, kid, "yard, classic 2D")
+	_tap("debug_toggle_view")
+	await _frames(2)
+	scene.queue_free()
+	await _frames(2)
+	var arena: Node = load("res://realms/test/combat_arena_hd.tscn").instantiate()
+	add_child(arena)
+	await _frames(10)
+	for e in get_tree().get_nodes_in_group("enemy"):
+		e.queue_free()
+	var arena_kid: Kid = arena.get_node("Yard/World/Kid")
+	await _check_edges(arena.get_node("Yard"), arena_kid, "arena (short map), HD-2D")
+	arena.queue_free()
+	await _frames(2)
+
 	if _failures.is_empty():
 		print("[TEST] PASS  smoke_hd  (%d 3D props, %d fence posts)" % [got_props, posts])
 		get_tree().quit(0)
@@ -117,6 +140,22 @@ func _run() -> void:
 		for f in _failures:
 			printerr("[TEST] FAIL  ", f)
 		get_tree().quit(1)
+
+
+## Kid on the first and last walkable rows (inside the fence): his feet
+## must be above the HUD and his head below the top of the screen.
+func _check_edges(realm: AsciiRealm, kid: Kid, label: String) -> void:
+	var r := realm.map_rect()
+	var vis := get_viewport().get_visible_rect().size
+	for row in [1, r.size.y / AsciiRealm.TILE - 2]:
+		kid.global_position = Vector2(r.get_center().x, row * AsciiRealm.TILE + AsciiRealm.TILE - 4)
+		kid.velocity = Vector2.ZERO
+		await _wait(2.5)  # the camera eases over
+		var feet := Fx.world_to_screen(kid.global_position)
+		var head := Fx.world_to_screen(kid.global_position, 46.0)
+		_check(feet.y <= vis.y - HdView.HUD_CLEAR_PX and head.y >= 0.0,
+				"%s: the kid on row %d must be on screen above the HUD (feet at y=%.0f, head %.0f, screen %.0f tall)"
+				% [label, row, feet.y, head.y, vis.y])
 
 
 func _tap(action: String) -> void:
