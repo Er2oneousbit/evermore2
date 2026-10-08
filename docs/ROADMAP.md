@@ -70,6 +70,21 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Fixed: the camera lets the kid walk off the bottom of the screen
+
+* Walking south in HD-2D, the camera stopped following about 2.7 m before
+  the map's bottom edge, and the kid walked off screen (owner). The stop was
+  a flat estimate of how much ground shows below the camera's center; with
+  the camera tilted, the near ground fills more of the picture, so much less
+  shows below than above. The south stop is now measured from the camera's
+  real angle and lens, up to the top of the HUD. On the arena the camera now
+  follows north-south too (it was locked to the middle)
+* Measured: the kid on the last row of the yard went from y=404 (off a 360 px
+  screen) to y=283; the lot and the arena the same
+* Test: `smoke_hd` section 6 (the kid on the first and last rows, on screen
+  and clear of the HUD, in HD-2D, classic 2D and on the short arena). It
+  fails with the old estimate
+
 ## Done: the ring menu (Equipment) and equipment
 
 * **I / gamepad Y opens the ring menu** and pauses the game: a ring of gear

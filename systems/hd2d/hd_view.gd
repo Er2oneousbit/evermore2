@@ -148,6 +148,9 @@ const GRAPHICS_KEYS := ["shadows", "light_shafts", "reflections", "ambient_occlu
 ## Seconds until the next look for actors that arrived after load.
 var _scan_timer := 0.0
 const SCAN_SECONDS := 0.2
+## The HUD's height at the bottom of the screen (canvas px): the camera keeps
+## the map's south edge above it.
+const HUD_CLEAR_PX := 26.0
 var _ground: MeshInstance3D
 var _water: MeshInstance3D
 var _clouds: MeshInstance3D
@@ -712,6 +715,12 @@ func _follow_camera(delta: float) -> void:
 
 ## Keep the view over the map (the apron fills the rest on wide screens);
 ## center on an axis where the map is smaller than the view.
+## North-south it's perspective, not a flat window: the ground near the
+## camera (the bottom of the screen) fills more of the picture, so less of
+## it shows below the center than above. The bottom stop is measured from
+## the camera's real angle (_ground_offset), up to the HUD's top edge: the
+## old flat estimate stopped the camera ~2.7 m early and the kid walked off
+## the bottom of the screen (owner, 2026-10-08).
 func _clamp_to_map(p: Vector3) -> Vector3:
 	if _map_m.size == Vector2.ZERO:
 		return p
@@ -725,11 +734,22 @@ func _clamp_to_map(p: Vector3) -> Vector3:
 		out.x = clampf(p.x, _map_m.position.x + half_w, _map_m.end.x - half_w)
 	else:
 		out.x = _map_m.get_center().x
-	if _map_m.size.y > half_d * 2.0:
-		out.z = clampf(p.z, _map_m.position.y + half_d * 0.8, _map_m.end.y - half_d * 1.1)
-	else:
-		out.z = _map_m.get_center().y
+	# The map's south edge sits at the HUD's top edge at most; north, the
+	# apron trees may show past the fence (as before).
+	var south := _ground_offset(1.0 - 2.0 * HUD_CLEAR_PX / maxf(1.0, vis.y))
+	var z_max := _map_m.end.y - south
+	var z_min := _map_m.position.y + half_d * 0.8
+	# A short map fits: line its south edge up and let the top show apron.
+	out.z = clampf(p.z, z_min, z_max) if z_min <= z_max else z_max
 	return out
+
+
+## How far south of the camera's target (m) the ground is at a screen height
+## (-1 = top edge, 0 = center, 1 = bottom edge). Camera3D's fov is vertical.
+func _ground_offset(screen_v: float) -> float:
+	var pitch := deg_to_rad(camera_pitch_deg)
+	var down := pitch + atan(tan(deg_to_rad(camera_fov * 0.5)) * screen_v)  # below horizontal
+	return camera_distance * cos(pitch) - camera_distance * sin(pitch) / tan(down)
 
 
 func _place_camera() -> void:
