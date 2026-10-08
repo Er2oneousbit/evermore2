@@ -120,6 +120,18 @@ PACKS = {
         "url": OGA + "RPG%20Male%20Adventurer.zip",
         "page": "https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg",
     },
+    "dog_snarl": {
+        "title": "Dog Snarl Grunt Grumble", "author": "Iwan 'qubodup' Gabovitch", "license": "CC0",
+        "url": OGA + "dog_0.7z", "page": "https://opengameart.org/content/dog-snarl-grunt-grumble",
+    },
+    "dog_frieda": {
+        "title": "Dog Grunt", "author": "Iwan 'qubodup' Gabovitch", "license": "CC0",
+        "url": OGA + "dog-frieda-grunt-96khz-01.flac", "page": "https://opengameart.org/content/dog-grunt",
+    },
+    "vicious": {
+        "title": "Tiny vicious creature", "author": "Darsycho", "license": "CC0",
+        "url": OGA + "tiny-vicious-creature_0.ogg", "page": "https://opengameart.org/content/tiny-vicious-creature",
+    },
     "jrpg_exploration": {
         "title": "JRPG Music Pack #1 [Exploration]", "author": "Juhani Junkala (SubspaceAudio)", "license": "CC0",
         "url": OGA + "JRPG%20Music%20Pack%20%231%20%5BExploration%5D%20by%20Juhani%20Junkala.zip",
@@ -164,8 +176,6 @@ SFX = {
     "dog_bark_4": ("dog", "Dog/Dog 1.wav", [6.15, 6.38]),
     "dog_yelp": ("dog", "Dog/Sad Dog.wav", [0.1, 0.36]),
     "dog_whine": ("dog", "Dog/Sad Dog.wav", [0.88, 1.62]),
-    "dog_bite_1": ("rpg_sound_pack", "RPG Sound Pack/NPC/beetle/bite-small.wav", [0.0, 0.3]),
-    "dog_bite_2": ("rpg_sound_pack", "RPG Sound Pack/NPC/beetle/bite-small3.wav", [0.0, 0.4]),
     # The giant rat.
     "rat_squeak": ("squeaky_rat", "qubodupSqueakyRat/qubodupSqueakyRatAttack.flac", None),
     "rat_pain": ("squeaky_rat", "qubodupSqueakyRat/qubodupSqueakyRatPain.flac", None),
@@ -198,6 +208,27 @@ MUSIC = {
     "arena": ("jrpg_action", "Action3 - Preparing For Battle.ogg"),   # the combat arena
 }
 
+
+## Layered sounds: output name -> list of layers (pack, file, [start, end] or
+## None, when it starts in seconds, gain in dB). "click" as the pack adds a
+## generated teeth click instead of a file.
+## The dog's bite: a snarl, then the snap of teeth landing ~70 ms in, which is
+## when the bite animation's hit frame comes (frame 1 at 14 fps). When it
+## connects, the regular hit thump adds the weight.
+_SNAP_AT = 0.07
+MIX = {
+    # Snarl first, quieter, as the lead-in; each chomp cut starts right at its
+    # attack (measured), so the teeth land on _SNAP_AT.
+    "dog_bite_1": [("dog_snarl", "dog/dog-snarl.flac", [0.0, 0.2], 0.0, -5.0),
+                   ("vicious", "tiny-vicious-creature_0.ogg", [1.91, 2.0], _SNAP_AT, 0.0),
+                   ("click", "", None, _SNAP_AT, -9.0)],
+    "dog_bite_2": [("dog_snarl", "dog/dog-growl.flac", [0.1, 0.3], 0.0, -5.0),
+                   ("vicious", "tiny-vicious-creature_0.ogg", [4.485, 4.6], _SNAP_AT, 0.0),
+                   ("click", "", None, _SNAP_AT, -9.0)],
+    "dog_bite_3": [("dog_frieda", "dog-frieda-grunt-96khz-01.flac", [0.1, 0.32], 0.0, -5.0),
+                   ("vicious", "tiny-vicious-creature_0.ogg", [5.73, 5.85], _SNAP_AT, 0.0),
+                   ("click", "", None, _SNAP_AT, -9.0)],
+}
 
 ## Voice clips: output name -> (pack, file). One or two words each, played
 ## when someone starts talking to you or reacts (autoload/audio.gd VOICES).
@@ -300,6 +331,31 @@ def finish(data, sr):
     return data
 
 
+def teeth_click(sr):
+    """A short, bright click: the crack of teeth closing."""
+    n = int(sr * 0.012)
+    rng = np.random.default_rng(7)
+    noise = np.diff(rng.uniform(-1, 1, n + 1))  # differentiated noise = mostly highs
+    return noise * np.exp(-np.arange(n) / (sr * 0.0025))
+
+
+def build_mix(layers, offline):
+    """Mix the layers of one sound at RATE, each normalized, then placed."""
+    out = np.zeros(int(RATE * 1.0))
+    for key, rel, cut, at, gain_db in layers:
+        if key == "click":
+            data = teeth_click(RATE)
+        else:
+            data, sr = load_mono(source(key, rel, offline), cut)
+            if sr != RATE:  # simple linear resample; these are short one-shots
+                data = np.interp(np.arange(0, len(data), sr / RATE), np.arange(len(data)), data)
+            data = data / max(np.abs(data).max(), 1e-6)
+        start = int(RATE * at)
+        end = min(len(out), start + len(data))
+        out[start:end] += data[:end - start] * 10 ** (gain_db / 20)
+    return out
+
+
 def make_loop(data, sr, xfade):
     """Seamless loop: the last `xfade` seconds fade into the first ones, and
     the loop is that much shorter, so the end runs straight into the start."""
@@ -367,6 +423,9 @@ def build(offline):
         data, sr = load_mono(source(key, rel, offline), cut)
         write_ogg(finish(data, sr), sr, os.path.join(SFX_OUT, name + ".ogg"))
         print("  sfx   %s" % name)
+    for name, layers in MIX.items():
+        write_ogg(finish(build_mix(layers, offline), RATE), RATE, os.path.join(SFX_OUT, name + ".ogg"))
+        print("  sfx   %s (layered)" % name)
     for name, fn in SYNTH.items():
         write_ogg(finish(fn(), RATE), RATE, os.path.join(SFX_OUT, name + ".ogg"))
         print("  sfx   %s (generated)" % name)
@@ -399,6 +458,10 @@ def write_credits():
         used.setdefault(key, []).append(f"music/{name}.ogg  <-  {rel}")
     for name, (key, rel) in VOICE.items():
         used.setdefault(key, []).append(f"voice/{name}.ogg  <-  {rel}")
+    for name, layers in MIX.items():
+        for key, rel, _c, _a, _g in layers:
+            if key != "click":
+                used.setdefault(key, []).append(f"{name}.ogg  <-  {rel} (one layer)")
     for name, (key, rel, _x) in AMBIENCE.items():
         used.setdefault(key, []).append(f"ambience/{name}.ogg  <-  {rel} (looped)")
     lines = ["Audio used by Secret of Evermore 2: Return to Evermore",
