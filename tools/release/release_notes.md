@@ -10,13 +10,14 @@ The story, the realms and the real content come later.
 * **Walk between maps**: the prologue street's road leads to the test yard,
   and the yard to the combat arena. Health, charge and items come along
 * **A running clock**: morning, day, evening and night pass on their own in
-  the test yard, with a fade between them and music for each (F7 stops it,
+  the test yard and the combat arena, with a fade between them and music for each (F7 stops it,
   F9 speeds it up, F2 skips ahead). Story scenes can hold the clock
 * **Two shops**: the corner store closes at night, the all-night stand
   doesn't. Real 3D stalls with striped awnings, goods and a lantern
 * **Night changes things**: the kid misses more outside his flashlight
-  beam; the dog smells enemies (they glow while you drive him); rats go home
-  at dusk and bats drop out of the oaks, circle, and swoop to bite
+  beam; the dog smells enemies (they glow while you drive him); in the combat
+  arena rats go home at dusk and bats drop out of the oaks, circle, and
+  swoop to bite
 * **The dog leaps and bites**, like the original, and points out hidden
   items by himself whenever it's calm
 * **Smoother movement**: steadier turning, 10% faster walking and running,
@@ -32,6 +33,9 @@ The story, the realms and the real content come later.
 * **The dog**: follows the kid's trail, stays when told to
 * **Talking**: the prologue's opening (dinner with Dad, the dare at the
   Ruffleberg place), with a text box that fits its text and portraits
+* **A big combat arena**: 100 x 56 tiles of fields, oak groves, ponds, roads
+  and fenced lanes, far more than a wide screen shows. Enemies sleep far off
+  and wake as you walk up. The test yard has no enemies any more
 * **Combat**: a weapon swing with an **auto-filling charge meter** (no
   holding a button: wait and it climbs to x2 and x4), giant rats that wake
   as you get close, warn before they bite, stagger, and give up if you run

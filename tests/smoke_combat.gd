@@ -362,7 +362,9 @@ func _test_hd() -> void:
 	await _frames(12)
 	var hd: HdView = scene.get_node("HdView")
 	var rats := get_tree().get_nodes_in_group("enemy")
-	_check(rats.size() == 5, "the arena has 5 rats, found %d" % rats.size())
+	var yard: Node = scene.get_node("Yard")
+	var n_enemies: int = "".join(yard.layout).count("r") + "".join(yard.layout).count("x") + yard.cfg("ENEMY_ROOSTS").size()
+	_check(n_enemies >= 25 and rats.size() == n_enemies, "the big arena has %d enemies (rats, day rats, roosting bats), found %d" % [n_enemies, rats.size()])
 	var mirrored := 0
 	for r in rats:
 		if scene.get_node_or_null("HdView/" + String(r.name)) != null:

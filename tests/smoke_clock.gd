@@ -13,6 +13,8 @@
 #           down, the shutter says so) and open in the morning; the all-night
 #           stand is open at night; each hands over its item once per phase;
 #           set_rule() overrides the clock
+#           (the yard has no enemies; steps 6 and 7 run in the combat arena,
+#           which also runs the clock free)
 #        6. Night misses: only at night, only outside the flashlight beam (2D
 #           cone and HdView's spotlight), seeded dice; a miss deals nothing,
 #           pops "Miss" and whiffs
@@ -37,6 +39,7 @@
 extends Node
 
 const YARD_HD := "res://realms/big_yard/yard_hd.tscn"
+const ARENA_HD := "res://realms/test/combat_arena_hd.tscn"
 const LOT := "res://realms/podunk/ruffleberg_lot.tscn"
 
 var _failures: PackedStringArray = []
@@ -64,9 +67,17 @@ func _run() -> void:
 	await _frames(10)
 	await _test_yard_fades(scene)
 	await _test_shops(scene)
-	await _test_night_misses(scene)
-	await _test_dog_nose(scene)
 	scene.queue_free()
+	await _frames(5)
+	# The yard has no enemies (they live in the arena): night misses and the
+	# dog's nose are proved on the arena's always-there rats.
+	var arena: Node = load(ARENA_HD).instantiate()
+	add_child(arena)
+	await _frames(10)
+	_check(Clock.mode == "free", "the arena runs the clock free, so day and night happen there (%s)" % Clock.mode)
+	await _test_night_misses(arena)
+	await _test_dog_nose(arena)
+	arena.queue_free()
 	await _frames(5)
 	await _test_prologue_held()
 	if _failures.is_empty():
@@ -343,6 +354,8 @@ func _test_shops(_scene: Node) -> void:
 		elif s.shop_id == "all_night":
 			stand = s
 	_check(corner != null and stand != null, "the yard has both shops")
+	_check(get_tree().get_nodes_in_group("enemy").is_empty(), "the yard has no enemies (no rats, burrows or bats)")
+	_check(_scene.get_node("Yard").get_node_or_null("DayNight") == null, "and no day/night director")
 	if corner == null or stand == null:
 		return
 	_check(corner.rule == "follow_clock" and stand.rule == "always_open", "one follows the clock, one stays open")
@@ -433,7 +446,7 @@ func _test_night_misses(scene: Node) -> void:
 	# A miss deals nothing, pops "Miss" and whiffs.
 	var rat := _rat()
 	if rat == null:
-		_failures.append("no rat in the yard")
+		_failures.append("no rat in the arena")
 		return
 	var hp := rat.health.hp
 	kid.night_miss_chance = 1.0
@@ -501,7 +514,8 @@ func _test_prologue_held() -> void:
 # -----------------------------------------------------------------------------
 func _rat() -> Enemy:
 	for e in get_tree().get_nodes_in_group("enemy"):
-		if e is Enemy and not (e as Enemy).health.is_dead() and (e as Enemy).data.name_key == "enemy_rat":
+		# Only the arena's always-there rats: the day/night ones leave at dusk.
+		if e is Enemy and not (e as Enemy).health.is_dead() and (e as Enemy).data.name_key == "enemy_rat" 				and (e as Enemy).clock_rule != "follow_clock":
 			return e
 	return null
 

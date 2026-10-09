@@ -14,7 +14,8 @@
 #             EVERMORE_TOUR_SPOTS="start,pond"      (default: all spots)
 #             EVERMORE_TOUR_VIEW="2d"               (default: hd = the HD-2D view)
 #             EVERMORE_TOUR_MAP="street"            (default: yard; street = the
-#                                                   prologue road, HD only, STREET_SPOTS)
+#                                                   prologue road, HD only, STREET_SPOTS;
+#                                                   arena = the big combat arena, ARENA_SPOTS)
 #             EVERMORE_TOUR_WAIT=9                  (seconds to wait before each shot,
 #                                                   default 0.5; the day/night enemy swap takes ~10)
 #   Windows PowerShell: $env:EVERMORE_SHOT_DIR="C:\temp\shots" before running.
@@ -27,6 +28,7 @@ extends Node
 const YARD_SCENE := preload("res://realms/big_yard/prototype_yard.tscn")
 const HD_SCENE := preload("res://realms/big_yard/yard_hd.tscn")
 const STREET_SCENE := preload("res://realms/podunk/ruffleberg_lot_hd.tscn")
+const ARENA_SCENE := preload("res://realms/test/combat_arena_hd.tscn")
 
 ## name -> [kid tile, direction the kid walks into the shot]
 const SPOTS := {
@@ -34,13 +36,21 @@ const SPOTS := {
 	"pond":   [Vector2i(25, 8), Vector2.RIGHT],
 	"pen":    [Vector2i(9, 13), Vector2.DOWN],
 	"garden": [Vector2i(31, 17), Vector2.LEFT],
-	"oak":    [Vector2i(4, 6), Vector2.UP],  # under a bat roost (ENEMY_ROOSTS)
 	"shops":  [Vector2i(47, 9), Vector2.UP],  # the street: both stalls in view
 	"entrance": [Vector2i(4, 7), Vector2.LEFT],  # the path in from the prologue street
 }
 ## The prologue street (EVERMORE_TOUR_MAP=street).
 const STREET_SPOTS := {
 	"road": [Vector2i(33, 12), Vector2.RIGHT],  # the road east to the test yard, its sign
+}
+
+## The big combat arena (EVERMORE_TOUR_MAP=arena). The lone kid is far smaller
+## than the map: these show how much lies beyond the screen edges.
+const ARENA_SPOTS := {
+	"plaza":  [Vector2i(49, 45), Vector2.UP],  # the road in from the yard
+	"cross":  [Vector2i(49, 36), Vector2.UP],  # the crossroads, hedge and fence lanes
+	"pond":   [Vector2i(27, 29), Vector2.UP],  # the south shore of the big pond
+	"grove":  [Vector2i(58, 34), Vector2.UP],  # oaks with a bat roost (58, 30)
 }
 
 var _dir := OS.get_environment("EVERMORE_SHOT_DIR")
@@ -57,8 +67,9 @@ func _run() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(_dir)
 	var street := OS.get_environment("EVERMORE_TOUR_MAP") == "street"
-	var hd_mode := street or OS.get_environment("EVERMORE_TOUR_VIEW") != "2d"
-	var scene := (STREET_SCENE if street else HD_SCENE if hd_mode else YARD_SCENE).instantiate()
+	var arena := OS.get_environment("EVERMORE_TOUR_MAP") == "arena"
+	var hd_mode := street or arena or OS.get_environment("EVERMORE_TOUR_VIEW") != "2d"
+	var scene := (STREET_SCENE if street else ARENA_SCENE if arena else HD_SCENE if hd_mode else YARD_SCENE).instantiate()
 	if street:
 		scene.get_node("Yard").skip_intro = true
 	add_child(scene)
@@ -69,7 +80,7 @@ func _run() -> void:
 	var atmosphere: Atmosphere = yard.get_node("Atmosphere")
 	var cam: GameCamera = kid.get_node("Camera2D")
 	var times := _list("EVERMORE_TOUR_TIMES", ["day", "golden", "night"])
-	var table: Dictionary = STREET_SPOTS if street else SPOTS
+	var table: Dictionary = STREET_SPOTS if street else ARENA_SPOTS if arena else SPOTS
 	var spots := _list("EVERMORE_TOUR_SPOTS", table.keys())
 	var wait := float(OS.get_environment("EVERMORE_TOUR_WAIT")) if OS.has_environment("EVERMORE_TOUR_WAIT") else 0.5
 	await _frames(20 if hd_mode else 10)
@@ -124,6 +135,7 @@ func _frames(n: int) -> void:
 
 func _shot(shot_name: String) -> void:
 	await RenderingServer.frame_post_draw
+	print("[TOUR] fps ", Engine.get_frames_per_second(), " (", shot_name, ")")
 	var img := get_viewport().get_texture().get_image()
 	# 2D view renders at 640x360: blow it up 2x with crisp pixels. The HD-2D
 	# view already renders at the window's full resolution.

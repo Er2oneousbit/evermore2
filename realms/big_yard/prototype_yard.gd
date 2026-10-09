@@ -7,9 +7,9 @@
 #        Not part of the story (its realm was scrapped); it's the map the
 #        follow, aspect and HD-2D tests run on, and a sandbox for art and tech.
 #        East through the garden gate: a small street with two shops (the
-#        corner store closes at night, the all-night stand never does) and two
-#        rats in the far corner to try night fights on. The clock runs free
-#        here (24 minutes a day; F7 stops it, F9 speeds it up).
+#        corner store closes at night, the all-night stand never does). No
+#        enemies here: the rats and bats live in the combat arena. The clock
+#        runs free here (24 minutes a day; F7 stops it, F9 speeds it up).
 #
 # LEGEND (one character = one 32x32 tile)
 #   .  grass               :  dirt (paths, flowerbeds)   ~  pond (solid)
@@ -20,7 +20,6 @@
 #   f  flower              m  mushrooms                  w  wildflower patch
 #   ,  bare grass (no decal: under and above the stalls)
 #   A  corner store stall  N  all-night stall            1 / 2  their keepers
-#   x  giant rat (day: burrows at dusk)    bats hang in oaks (ENEMY_ROOSTS)
 #   <  the path west to the prologue street   ^  the street north to the
 #      combat arena (EXITS; both are tech-demo paths for scene swapping)
 #
@@ -50,8 +49,8 @@ const LAYOUT: Array[String] = [
 	"#....s......r.....#.:...............w...........::...#",
 	"#..w................:.....f..f..f..f...::::::::::::..#",
 	"#.......vv..........:................t..........::...#",
-	"#.....m..T.....r..#.:::::::......T.....#..s.....::.x.#",
-	"#..R.........s....#......B..vv.w.......#...T....::..x#",
+	"#.....m..T.....r..#.:::::::......T.....#..s.....::...#",
+	"#..R.........s....#......B..vv.w.......#...T....::...#",
 	"#.........w.......#...........m...vv...#.....v..::.r.#",
 	"######################################################",
 ]
@@ -76,20 +75,6 @@ const REALM_NAME_KEY := "realm_test_yard"
 const MUSIC_SET := "outdoor"  # the day and night tracks follow the clock
 ## The clock runs on its own here (a tech demo of the day going by).
 const CLOCK_MODE := "free"
-## Enemies follow the clock (systems/enemies/day_night.gd): the rats are out by
-## day and scurry into holes at dusk; bats hang in the oaks by day and fly by
-## night. Burrows: where each rat starts, plus holes under two bushes.
-const ENEMY_CLOCK := "follow_clock"
-const ENEMY_ROOSTS := [
-	{"enemy": "bat", "cell": Vector2i(2, 2)},
-	{"enemy": "bat", "cell": Vector2i(19, 4)},
-	{"enemy": "bat", "cell": Vector2i(28, 9)},
-	{"enemy": "bat", "cell": Vector2i(35, 2)},
-]
-const ENEMY_EXITS := [
-	{"cell": Vector2i(37, 5), "kind": "burrow"},
-	{"cell": Vector2i(26, 21), "kind": "burrow"},
-]
 const DIALOGUE := "res://data/dialogue/yard.dlg"
 ## Terrain under each character; anything not listed is grass.
 const TERRAIN_BY_CHAR := {":": "Dirt", "*": "Dirt", "~": "Shallow Water", ",": "Grass"}
@@ -122,7 +107,6 @@ const SHOPS_BY_CHAR := {
 	"2": {"id": "all_night", "keeper": "VENDOR", "rule": "always_open", "item": "soda",
 			"greet": "shop_allnight", "again": "shop_allnight_again"},
 }
-const ENEMIES_BY_CHAR := {"x": "rat"}
 ## Hidden items (the dog sniffs them out). Demo items for now.
 const HIDDEN_ITEMS := [
 	{"cell": Vector2i(9, 3), "kind": "buried", "item": "old_key"},
