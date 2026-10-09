@@ -3,7 +3,8 @@
 // -----------------------------------------------------------------------------
 // WHAT:  Draws one frame of a sprite on an upright quad (trees, bushes, rocks,
 //        reeds) or a flat one (lily pads), lit by the 3D sun and lights:
-//          - nearest-neighbor pixels, hard alpha cutout (so it casts proper
+//          - sharp-bilinear pixels (texel_aa.gdshaderinc: flat texels, one-pixel
+//            antialiased edges, no shimmer), hard alpha cutout (so it casts proper
 //            tree-shaped sun shadows and writes depth: no sorting problems)
 //          - wind sway that shifts whole texel rows (pixels never smear)
 //          - multi-frame animation computed here from TIME (no CPU per frame),
@@ -19,7 +20,9 @@
 shader_type spatial;
 render_mode cull_disabled, depth_draw_opaque, diffuse_lambert_wrap, specular_schlick_ggx;
 
-uniform sampler2D tex : source_color, filter_nearest;
+#include "res://assets/shaders/texel_aa.gdshaderinc"
+
+uniform sampler2D tex : source_color, filter_linear, repeat_disable;
 // One frame's rect inside the texture, in UV: (x, y, w, h).
 uniform vec4 frame_rect = vec4(0.0, 0.0, 1.0, 1.0);
 uniform vec2 texel = vec2(0.01, 0.01);
@@ -58,7 +61,7 @@ void fragment() {
 	if (uv.x < frame_left || uv.x > frame_left + frame_rect.z) {
 		discard;
 	}
-	vec4 c = texture(tex, uv);
+	vec4 c = texture(tex, texel_aa_uv(uv, vec2(textureSize(tex, 0))));
 	ALBEDO = c.rgb;
 	ALPHA = c.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;

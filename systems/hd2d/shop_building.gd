@@ -118,11 +118,7 @@ func setup(prop_name: String, shop_: Shop) -> void:
 	_build_beside()
 
 	# Sign on the front gable.
-	var sign_mat := StandardMaterial3D.new()
-	sign_mat.albedo_texture = load(TEX_DIR + "shop_sign_%s.png" % tag)
-	sign_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	sign_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	sign_mat.roughness = 0.9
+	var sign_mat := TexelMaterial.make(load(TEX_DIR + "shop_sign_%s.png" % tag), false, true)
 	var quad := QuadMesh.new()
 	quad.size = Vector2(0.42, 0.42)
 	_mesh("Sign", quad, Vector3(0, WALL_H + 0.27, FRONT_Z + 0.005), sign_mat)
@@ -147,9 +143,7 @@ func _build_goods(tag: String) -> void:
 	add_child(goods)
 	var tex: Texture2D = load(TEX_DIR + "shop_goods_%s.png" % tag)
 	for i in 4:
-		var m := _sprite_mat(tex)
-		m.uv1_scale = Vector3(0.25, 1, 1)
-		m.uv1_offset = Vector3(0.25 * i, 0, 0)
+		var m := _sprite_mat(tex, Vector2(0.25, 1), Vector2(0.25 * i, 0))
 		var q := QuadMesh.new()
 		q.size = Vector2(0.65, 0.65)
 		q.center_offset = Vector3(0, 0.325, 0)
@@ -163,19 +157,14 @@ func _build_beside() -> void:
 	var beside := Node3D.new()
 	beside.name = "Beside"
 	add_child(beside)
-	var crate_mat := StandardMaterial3D.new()
-	crate_mat.albedo_texture = load(TEX_DIR + "shop_crate.png")
-	crate_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	crate_mat.roughness = 0.9
+	var crate_mat := TexelMaterial.make(load(TEX_DIR + "shop_crate.png"))
 	var crate := _box("Crate", Vector3(0.6, 0.55, 0.6), Vector3(-HALF_W - 0.45, 0.275, 1.05), crate_mat)
 	crate.rotation.y = 0.2
 	crate.reparent(beside, false)
 	var extras: Texture2D = load(TEX_DIR + "shop_extras.png")
 	for spec in [["Barrel", 0, Vector3(HALF_W + 0.5, 0.0, 1.0), 1.0],
 			["Sack", 1, Vector3(-HALF_W - 0.45, 0.55, 1.05), 0.55]]:
-		var m := _sprite_mat(extras)
-		m.uv1_scale = Vector3(0.5, 1, 1)
-		m.uv1_offset = Vector3(0.5 * spec[1], 0, 0)
+		var m := _sprite_mat(extras, Vector2(0.5, 1), Vector2(0.5 * spec[1], 0))
 		var q := QuadMesh.new()
 		q.size = Vector2(1.0, 1.0) * spec[3]
 		q.center_offset = Vector3(0, 0.5 * spec[3], 0)
@@ -247,28 +236,17 @@ func _mesh(node_name: String, mesh: Mesh, at: Vector3, mat: Material) -> MeshIns
 	return mi
 
 
-## A cut-out sprite material (nearest, alpha scissor) for goods and extras.
-func _sprite_mat(tex: Texture2D) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_texture = tex
-	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	m.roughness = 0.9
-	return m
+## A cut-out sprite material (texel-AA, alpha scissor) for goods and extras;
+## `scale`/`offset` pick the slice of the atlas strip.
+func _sprite_mat(tex: Texture2D, scale: Vector2, offset: Vector2) -> ShaderMaterial:
+	return TexelMaterial.make(tex, false, true, scale, offset)
 
 
-func _tiled(path: String) -> StandardMaterial3D:
+func _tiled(path: String) -> ShaderMaterial:
 	return _tiled_tex(load(path))
 
 
-## World-space triplanar at 1 tile per meter, nearest: crisp and aligned.
-func _tiled_tex(tex: Texture2D) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_texture = tex
-	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	m.uv1_triplanar = true
-	m.uv1_world_triplanar = true
-	m.uv1_scale = Vector3.ONE
-	m.roughness = 0.9
-	return m
+## World-space triplanar at 1 tile per meter, sharp-bilinear: crisp texels
+## whose edges don't crawl when the camera moves.
+func _tiled_tex(tex: Texture2D) -> ShaderMaterial:
+	return TexelMaterial.make(tex, true)

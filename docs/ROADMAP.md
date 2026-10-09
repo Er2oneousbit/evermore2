@@ -36,6 +36,7 @@ the orange shelter tag).
 
 ## Later
 
+* Better foliage/tree sway (owner: the rigid one-block sway still looks bad): e.g. a few hand-made sway frames per tree, or a smooth sub-pixel sway with the new texel filtering
 * Find character and animal art with 8 directions (diagonals) for the kid and the dog: LPC only has 4; the owner wants 45-degree poses if a matching set exists
 * Night-only enemies and items (the hook is there: `ENEMY_CLOCK` / `"clock"` per spawner)
 * Save system (human-readable JSON), dialogue, the hub (The Mansion That Was), the prologue
@@ -74,6 +75,37 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: no more shimmering textures
+
+* Owner, from a 3440x1440 recording: shop siding and plank lines changed
+  thickness and crawled as the camera followed the kid, and posts and roof
+  edges stair-stepped. Cause confirmed: pixel art sampled with plain NEAREST
+  at a non-integer, drifting texel-to-pixel ratio, so a texel row covered 3 or
+  4 screen pixels depending on the frame.
+* Fix 1: sharp-bilinear ("fat pixel") lookup, `assets/shaders/texel_aa.gdshaderinc`:
+  LINEAR sampling with the UV snapped so each texel stays a flat block and
+  only a ~1 px band at the texel seam is blended (the first version
+  centred the remap on the texel instead of the seam and looked soft). Used by `hd_sprite` (props, signposts) and the new `hd_texel.gdshader`
+  (actors and weapons stay on plain nearest: camera-facing, they barely shimmer)
+  (`TexelMaterial`: shop walls/roof/counter/goods/sign/crate, fences, the
+  baked ground plane). Samplers don't wrap, so the top edge of a sprite can't
+  pick up the bottom row of its sheet (that drew stray dark lines at first).
+* Fix 2: MSAA 3D for geometry edges, new Settings option "Edge smoothing":
+  Low/Medium off, High 2x, Ultra 4x. MSAA rather than FXAA because it only
+  touches geometry edges and leaves pixel interiors alone (FXAA blurs pixel
+  art); it works on Forward+ and Compatibility. Alpha cut-out silhouettes are
+  not covered by MSAA.
+* Fix 3 (snap the camera to the texel grid) not done: the camera follows
+  smoothly and the shader fix covers the crawl.
+* Measured at 2560x1440 (real GPU), kid walking toward the shops, 39 frame
+  pairs, lower shop wall, after compensating the pan: mean abs luma diff
+  3.38 -> 3.31 (-2%); pixels flipping across the plank threshold 1.85% ->
+  1.92% (no gain). Crude: sub-pixel motion itself changes pixels, so the metric
+  has a floor; the crop is crisp like before, the seams just move smoothly.
+* Tests: `smoke_hd` checks the shaders (linear, texel-AA, no nearest), shop
+  parts, props, fences and ground materials, and MSAA per quality preset.
+  Sabotaged (hd_sprite back to nearest; High preset MSAA off): both fail.
 
 ## Done: tree tops no longer wipe
 
