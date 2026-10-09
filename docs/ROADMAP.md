@@ -23,6 +23,10 @@ Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
+0. **v0.6: the title screen** (built, see Done; the owner asks for the release): the
+   game opens on a live HD-2D title with New Game (boy or girl, name the kid,
+   name the dog), Settings, Debug, Quit and a greyed-out Continue until the
+   save system exists (see Later).
 1. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
    kitchen, lab), the torn clipping, Carltron waking, the flash. Needs interior
    tiles and HD-2D height (stairs, a basement). Dinner deserves a real kitchen
@@ -37,7 +41,7 @@ the orange shelter tag).
 ## Later
 
 * A better idle animation for the kid and NPCs (the LPC breathing frame opened a gap between shirt and trousers; the 1 px bob replacement was removed by the owner)
-* The real title screen asks "boy or girl" first, together with the kid's name and the dog's (the debug menu's "Play as" is the stand-in), and the save file keeps both
+* The save file keeps the kid's gender and both names (the title screen's New Game asks them); Continue on the title screen is greyed out until the save system below exists
 * Better foliage/tree sway (owner: the rigid one-block sway still looks bad): e.g. a few hand-made sway frames per tree, or a smooth sub-pixel sway with the new texel filtering
 * Find character and animal art with 8 directions (diagonals) for the kid and the dog: LPC only has 4; the owner wants 45-degree poses if a matching set exists
 * Night-only enemies and items (the hook is there: `ENEMY_CLOCK` / `"clock"` per spawner)
@@ -51,6 +55,7 @@ the orange shelter tag).
 
 | Date | Decision |
 |---|---|
+| 2026-10-09 | **The title screen is the next milestone (v0.6) and the new main scene** (owner). A live HD-2D backdrop (the Ruffleberg lot's iron gate at night: fireflies, light fog, a slow camera drift, crickets), the logo "Secret of Evermore 2" with "Return to Evermore" beneath, a pulsing "Press any key", then New Game / Continue (greyed out: no saves yet, see the save system under Later) / Settings / Debug (the debug start menu, visible while it's a tech demo) / Quit, with a title theme from the CC0 JRPG packs. New Game asks boy or girl, the kid's name (letter grid or keyboard, about 10 letters), the dog's name (Biscuit), then starts the prologue from the beginning. The pause menu gets "Quit to title" and the slice end returns to the title. `--yard` / `--arena` still skip it |
 | 2026-10-09 | **Play as a girl or a boy; the dialogue adapts** (owner: "main character should be a choice between girl or boy... framework to auto change dialogue based on that"). The story is the same either way (Carltron sees Dad's face in the kid's). Text uses tokens (`{he}`, `{son}`, `{boy\|girl}`...), one resolver for dialogue, HUD and names. Changes the design-bible Lead row |
 | 2026-10-09 | **A sky dial clock at the top centre, the quick slots at the bottom centre, unequal phase hours** (owner). One real minute is one game hour; morning 5:00-11:00, day 11:00-17:00, golden 17:00-20:00, night 20:00-5:00 (a longer night, OK'd). The dial shows the sun and moon opposite each other on a turning wheel;; no clock text at all (owner) |
 | 2026-10-09 | **The dog sniffs out hidden items in any stance when it's calm** (owner); Search is the keener, braver version (farther, quicker, skips fights). The dog's bite is a leap and bite, like the original |
@@ -80,11 +85,23 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: a title screen
+
+Owner: the title screen is the next milestone (v0.6, not released yet: the version stays 0.5.0 until asked).
+
+- **Screen:** `ui/title/title_screen.tscn` is the main scene. Backdrop `realms/title/title_lot_hd.tscn`: a small AsciiRealm built from the prologue street's layout and art (iron fence with its open gate, oaks, tall grass, the road), night preset (fireflies, fog), `HdView.focus_override` drifting the camera a few meters, the kid and dog every realm holds hidden and frozen, crickets from the outdoor ambience. The logo fades in (Cinzel, outline, shadow, a breathing gold glow), "Press any key" pulses (keyboard, gamepad or mouse), then the menu fades in. UI sits on its own CanvasLayer: the realm's Camera2D had shifted the default canvas up 144 px (found in the first screenshot).
+- **Menu:** New Game, Continue (disabled, unfocusable, so keyboard and gamepad navigation skip it), Settings, Debug (opens the debug menu, which has a new "Back to title"), Quit. Menu sounds, gamepad and keyboard, SafeFrame so any aspect.
+- **New Game:** boy or girl (both sprites facing the camera, the one under the cursor lit), the kid's name, the dog's name, a summary, then the prologue from its title card with its flags cleared (`DebugMenu.begin("prologue")`, after `GameState.new_game()`). The name screen takes an on-screen letter grid (gamepad, mouse) or typing; max 10 characters, Backspace, empty rejected with a message. Defaults: kid "Sam" (boy) / "Alex" (girl) in `data/names.json`, dog "Biscuit". Names feed `{kid}` / `{dog}`, the HUD cards and dialogue.
+- **Returning:** the pause menu has "Quit to title" (and keeps "Debug menu"), the end of the slice returns to the title, `PauseMenu.blocked` while on the title. `--yard` / `--arena` still skip straight to the maps.
+- **Music and font:** "Prairie Nights" from Juhani Junkala's JRPG Music Pack #1 [Exploration] (CC0) through `tools/audio/build_audio.py` as `title.ogg`; crickets under it. Font: Cinzel by the Cinzel Project Authors (SIL OFL 1.1, `credits/fonts/OFL-Cinzel.txt`, `assets/fonts/Cinzel.ttf`).
+- **Release:** `tools/release/README.txt` and `release_notes.md` say Evermore2.exe opens the title screen and Debug is on its menu. The CI start check (`""`, `--arena`, `--yard`) now starts the title for the empty case.
+- **Tests:** new `tests/smoke_title`: the build, Continue skipped, any key reveals the menu, Settings and Debug open, New Game through gender, name rules (typing, Backspace, empty rejected, ten letters), Biscuit default, the prologue loads with flags cleared and `{kid}`/`{dog}` resolved, slice end and pause "Quit to title" return, `--yard` bypass. Sabotaged three ways (empty names accepted, slice end sent to the debug menu, Continue made selectable): each fails. `smoke_debug_menu` updated for the new main scene. Full suite passes. Screenshots at 2560x1440 (`tests/screenshot_title`).
+
 ## Done: play as a girl or a boy
 
 Owner: "main character should be a choice between girl or boy... framework to auto change dialogue".
 
-- **State and menu:** `GameState.kid_gender` ("boy" default / "girl"), `set_kid_gender()` and `EventBus.kid_gender_changed`. The debug menu has "Play as: < Boy / Girl >", applied before the map loads and remembered in `debug_menu.cfg`. (The real title screen asks it first: on the Later list.)
+- **State and menu:** `GameState.kid_gender` ("boy" default / "girl"), `set_kid_gender()` and `EventBus.kid_gender_changed`. The debug menu has "Play as: < Boy / Girl >", applied before the map loads and remembered in `debug_menu.cfg`. (The title screen's New Game asks it first.)
 - **The girl:** LPC recipe `kid_girl`: same teen body, red longsleeve, jeans and white shoes, small female head, long straight chestnut hair (CC0 layer, so no share-alike added; the boy's hair is CC-BY-SA/GPL only). The faces step paints her nose and mouth (86 front frames, 5 hurt frames skipped like the rest). The kid actor swaps sheets live (2D and the HD sprite); the KID portrait follows (`CharacterData.sheet_girl`).
 - **Text:** one resolver, `GenderedText`: `{boy|girl}` splits and `{he} {him} {his} {son} {boy}` plus capitalised forms. Dialogue, HUD toast/notice, the ring menu and `Names.text` values use it (`Names.expand` for the rest). `DialogueScript` reports unbalanced braces, splits without two parts and unknown tokens with line numbers. Converted: Dex's "he brought a dog", "man", "buddy" (prologue.dlg), the ring menu's stance and Stay put text. Dad's 1995 lines stay male.
 - **Docs:** design-bible Lead row and story text made neutral (the dad's 1995 story stays "boy"), README, release README.

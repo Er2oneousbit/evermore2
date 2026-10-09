@@ -156,7 +156,11 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
   ([OpenGameArt](https://opengameart.org/users/subspaceaudio)).
   "A Place I Call Home" (dinner), "Childhood Friends" (the dare),
   "Grasslands" (the test yard, day), "Tropical Island" (day), "Childhood
-  Friends" (night), "Innocence" (night), "Preparing For Battle" (the combat arena)
+  Friends" (night), "Innocence" (night), "Preparing For Battle" (the combat arena),
+  "Prairie Nights" (the title screen)
+* **Font**: Cinzel by the Cinzel Project Authors (<https://github.com/NDISCOVER/Cinzel>),
+  SIL Open Font License 1.1, used for the title screen and its menus
+  (`assets/fonts/Cinzel.ttf`, licence text in `credits/fonts/OFL-Cinzel.txt`)
 * **RPG Sound Pack** by artisticdude: swings, the rat's bite, menu sounds
   ([OpenGameArt](https://opengameart.org/content/rpg-sound-pack))
 * **50 RPG sound effects** by Kenney (www.kenney.nl): the stick's crack, cloth

@@ -62,6 +62,7 @@ $tests = @(
     @{ Label = "day/night foes"; Scene = "res://tests/smoke_enemy_clock.tscn"; Args = @("--fixed-fps", "60") },
     @{ Label = "map exits";      Scene = "res://tests/smoke_travel.tscn";   Args = @("--fixed-fps", "60") },
     @{ Label = "debug menu";     Scene = "res://tests/smoke_debug_menu.tscn"; Args = @("--fixed-fps", "60") },
+    @{ Label = "title screen";   Scene = "res://tests/smoke_title.tscn";  Args = @("--fixed-fps", "60") },
     @{ Label = "boy or girl";    Scene = "res://tests/smoke_gender.tscn";   Args = @("--fixed-fps", "60") },
     @{ Label = "aspect (math)"; Scene = "res://tests/smoke_aspect.tscn";  Args = @() }
 )

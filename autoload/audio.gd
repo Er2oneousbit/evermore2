@@ -85,7 +85,7 @@ const SOUNDS := {
 ## Music name -> file in MUSIC_DIR. The tracks loop seamlessly.
 const MUSIC := {
 	"home": "home", "lot": "lot", "yard": "yard", "arena": "arena",
-	"tropical": "tropical", "innocence": "innocence",
+	"tropical": "tropical", "innocence": "innocence", "title": "title",
 }
 ## A music set -> the track list for each time of day. Going INTO a time picks
 ## the next track of its list (so day, night, day plays the other day track).

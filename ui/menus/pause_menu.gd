@@ -1,8 +1,8 @@
 # =============================================================================
 # pause_menu.gd  (autoload: PauseMenu)
 # -----------------------------------------------------------------------------
-# WHAT:  Esc / gamepad Start pauses the game and opens: Resume, Settings, Debug
-#        menu (back to the start menu), Quit to desktop. The game world stops (get_tree().paused); this menu and
+# WHAT:  Esc / gamepad Start pauses the game and opens: Resume, Settings, Quit
+#        to title, Debug menu (the tech demo start menu), Quit to desktop. The game world stops (get_tree().paused); this menu and
 #        the settings screen keep running.
 # HOW:   It's always loaded but builds its nodes the first time it opens.
 #
@@ -13,6 +13,9 @@ extends CanvasLayer
 
 signal opened
 signal closed
+
+## The title screen sets this: Esc / Start mean "back" there, not "pause".
+var blocked := false
 
 var _root: Control
 var _list: VBoxContainer
@@ -42,7 +45,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			close()
 			get_viewport().set_input_as_handled()
 		return
-	if BindingRow.listening:
+	if BindingRow.listening or blocked:
 		return
 	if not is_open():
 		open()
@@ -87,6 +90,12 @@ func open_settings() -> SettingsMenu:
 	_settings.closed.connect(_close_settings)
 	_root.add_child(_settings)
 	return _settings
+
+
+## Unpause and fade back to the title screen (nothing carries over).
+func back_to_title() -> void:
+	close()
+	Travel.go(TitleScreen.SCENE, "", false)
 
 
 ## Unpause and fade back to the debug start menu (nothing carries over).
@@ -138,6 +147,7 @@ func _build() -> void:
 	_list.add_child(_found)
 	_resume = _button("Resume", close)
 	_settings_button = _button("Settings", func() -> void: open_settings())
+	_button("Quit to title", back_to_title)
 	_button("Debug menu", back_to_debug_menu)
 	_button("Quit to desktop", func() -> void: get_tree().quit())
 	# The panel and list share visibility with the settings screen's swap.

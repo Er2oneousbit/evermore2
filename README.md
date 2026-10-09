@@ -54,7 +54,7 @@ for Windows or Linux. No engine needed: unzip and run.
 > and it's updated in place as they're polished. The story, the realms and the
 > real content come later.
 
-Inside: `Evermore2.exe` starts the prologue, `Combat arena.bat` the fight
+Inside: `Evermore2.exe` opens the title screen (New Game starts the prologue; Debug picks any map), `Combat arena.bat` the fight
 in a big countryside with giant rats, rats that go home at dusk and bats in
 the oaks (also on Hard), `Test yard.bat` the yard where a whole day goes by in 24 minutes (two shops,
 one that closes at night, no enemies). The three are joined by paths: follow the
@@ -72,10 +72,10 @@ The newest work runs from source in the free Godot engine.
    <https://godotengine.org/download>. It's a single file; no installer.
 2. Download this repo (**Code → Download ZIP**) and unzip it.
 3. Open Godot, click **Import**, and pick the `project.godot` file.
-4. Press **F5** to play. The game opens on a **Debug Menu**: pick the map to
-   start in (the prologue from the start or from the street, the test yard, the
-   combat arena), the time of day, Normal or Hard, and whether you play as a
-   girl or a boy (the dialogue follows your choice).
+4. Press **F5** to play. The game opens on the **title screen**: New Game
+   (boy or girl, name the kid and the dog, then the prologue) or Debug, a menu
+   to pick the map to start in (the prologue from the start or from the street,
+   the test yard, the combat arena), the time of day and Normal or Hard.
 
 It needs a graphics card with Vulkan or Direct3D 12 for the full look. On an
 older computer, start Godot with `--rendering-method gl_compatibility`: it still

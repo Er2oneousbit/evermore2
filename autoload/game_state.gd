@@ -94,6 +94,20 @@ func clear_flags(prefix: String) -> void:
 			_flags.erase(flag)
 
 
+## A fresh run for New Game (the title screen): the starting kit and no story
+## progress. Names and gender are set by the caller; difficulty stays.
+func new_game() -> void:
+	_flags.clear()
+	inventory = {"stick": 1}
+	equipped = {"kid": {"weapon": "stick"}, "dog": {}}
+	formulas = {}
+	quick_slots = ["", "", "", ""]
+	kid_stance = "offensive"
+	dog_stance = "offensive"
+	kid_name = ""
+	dog_name = ""
+
+
 ## Add (or, with a negative count, take away) items. Never below zero.
 func add_item(item_id: String, count := 1) -> void:
 	inventory[item_id] = maxi(0, int(inventory.get(item_id, 0)) + count)

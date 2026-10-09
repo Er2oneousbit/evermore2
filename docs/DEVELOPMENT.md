@@ -22,7 +22,8 @@ comes from free libraries with licenses that allow redistribution (see
 2. Clone this repo.
 3. Open Godot, click **Import**, pick this folder's `project.godot`.
    (First open takes a few seconds while Godot builds its `.godot/` cache.)
-4. Press **F5** (or the ▶ Play button) to run. The main scene is the **Debug
+4. Press **F5** (or the ▶ Play button) to run. The main scene is the **title
+   screen** (`ui/title/title_screen.tscn`); its Debug item opens the **Debug
    Menu** (`ui/debug_menu/debug_menu.tscn`): pick a map (prologue from the start,
    prologue street with the intro skipped, test yard, combat arena), a start time
    and the difficulty; it also lists the debug keys and opens Settings. The
@@ -347,11 +348,14 @@ Exports only include Godot resources. Files the game reads itself (like the
 
 The demo maps can be started from the command line: `-- --arena`,
 `-- --yard` (and `--hard`), in the editor build and the exported one. Those
-skip the Debug Menu (`Debug.start_scene_for` decides); with neither the game
-opens on it. The menu (`ui/debug_menu/debug_menu.gd`) sets the options, then
+skip the title screen (`Debug.start_scene_for` decides); with neither the game
+opens on it (`ui/title/title_screen.gd`: New Game runs `NewGameFlow`, then
+`DebugMenu.begin("prologue")`; the backdrop is `realms/title/title_lot_hd.tscn`,
+the camera drifts through `HdView.focus_override`; the pause menu is blocked
+there). The debug menu (`ui/debug_menu/debug_menu.gd`) sets the options, then
 `Travel.go(scene, "", false)` fades to the map with nothing carried over. The
-pause menu's "Debug menu" and the end of the prologue slice (10 s on the
-"To be continued" card) come back to it. The last choice is saved in
+pause menu's "Debug menu" comes back to it; "Quit to title" and the end of
+the prologue slice (10 s on the "To be continued" card) go to the title. The last choice is saved in
 `user://debug_menu.cfg` (tests keep it in memory). Its key panel is read from
 `Debug.HELP_TEXT`, so a new debug key goes there once.
 

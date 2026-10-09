@@ -210,6 +210,7 @@ MUSIC = {
     # day = yard + tropical (upbeat), night = lot + innocence (quiet).
     "tropical": ("jrpg_exploration", "Exploration6 - Tropical Island.ogg"),
     "innocence": ("jrpg_calm", "Calm6 - Innocence.ogg"),
+    "title": ("jrpg_exploration", "Exploration4 - Prairie Nights.ogg"),   # the title screen
 }
 
 
