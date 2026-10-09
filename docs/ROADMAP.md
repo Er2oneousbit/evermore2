@@ -131,6 +131,12 @@ crisp (nearest filter, integer scale, 2D pixel snapping). Measured at
 views, integer + keep, canvas scale equals the integer scale) and smoke_settings
 (mode after the view toggle); sabotaged back to VIEWPORT, both fail.
 
+* Fixed the same day: starting straight in CANVAS_ITEMS drew the 3D world in a
+  16:9 box with black bars on a 3440x1440 screen (seen in the owner's
+  recording). The scaler now starts in VIEWPORT and switches a frame later,
+  as it did before. Checked by launching the game and capturing the screen;
+  the headless tests can't see it
+
 ## Released: v0.5.0 (2026-10-09)
 
 The milestones below, down to v0.4.0: shops with depth, the playtest fixes
