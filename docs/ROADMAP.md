@@ -75,6 +75,12 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Released: v0.5.0 (2026-10-09)
+
+The milestones below, down to v0.4.0: shops with depth, the playtest fixes
+(movement, club, dog bite, sniffing), a debug start menu, walking between
+maps, and day and night enemies (bats).
+
 ## Done: shops with depth
 
 Owner: "The shops look cheesy, they need to appear to have some depth even if the other artifacts do not."

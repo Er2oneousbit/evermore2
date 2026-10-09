@@ -15,18 +15,19 @@ from the original game.
 HOW TO START
 ------------
 Windows
-  Evermore2.exe              The prologue: dinner with Dad, then the dare
-                             at the Ruffleberg place
+  Evermore2.exe              Opens a menu: pick the prologue, the street,
+                             the test yard or the combat arena, the start
+                             time and Normal/Hard
   Combat arena.bat           The combat arena: five giant rats
   Combat arena (Hard).bat    The same on Hard
-  Test yard.bat              The test yard: press F2 for day, golden hour
-                             and night
+  Test yard.bat              The test yard: shops, rats by day, bats by
+                             night, and a clock that runs
 
   The game isn't code-signed, so Windows may say "Windows protected your
   PC". Click "More info", then "Run anyway".
 
 Linux
-  ./Evermore2.x86_64         The prologue
+  ./Evermore2.x86_64         The start menu
   ./combat-arena.sh          The combat arena (add --hard for Hard)
   ./test-yard.sh             The test yard
 
@@ -53,9 +54,11 @@ Partner: Stay put     Q                   X
   (press again to call him back)
 Partner's stance      R                   RB
 Sniff (the dog)       C                   B
-Time of day           F2
+Next time of day      F2
 Debug overlay         F3
 Classic 2D view       F6
+Stop/start the clock  F7
+Clock speed x1/10/60  F9
 
 Every control except pause can be rebound: Esc > Settings > Controls.
 Settings also has graphics (quality presets, each effect, brightness),
@@ -75,9 +78,9 @@ Talking wins over attacking when someone is in reach.
 The duo: you drive one, the AI plays the other by his stance.
   The kid:  Offensive (goes after enemies near you) or Defensive (stays
             close, swings only at what comes within reach, at full power)
-  The dog:  Offensive (bites enemies near you) or Search (keeps out of
-            fights, sniffs out hidden items, bites back if something's
-            after him)
+  The dog:  Offensive (leaps at and bites enemies near you) or Search
+            (keeps out of fights and hunts for hidden items). On either,
+            when nothing's after you, he points out hidden items nearby
 
 The ring menu (I / Y) pauses and shows four rings (Z/X or LB/RB to switch):
 Equipment (up/down changes a slot), Items and Alchemy (E / A uses or casts
@@ -86,8 +89,8 @@ Select an item or formula and press 1-4 / the D-pad to put it in a quick
 slot; outside the menu the same key uses it. The test yard and the arena
 give you gear, apples, a soda, wild carrots and the Heal formula to try.
 
-Hidden items: the test yard hides five. The dog on Search finds buried
-ones and digs them up; drive him and press Sniff to see scent trails, then
+Hidden items: the test yard hides five. The dog finds buried ones and
+digs them up when it's calm (on Search he looks farther); drive him and press Sniff to see scent trails, then
 Talk / interact on the spot to dig. Look for a glint on bushes and rocks:
 the kid can search those. Esc shows how many you've found.
 Stay put leaves the partner where he is, even through a switch: leave the
@@ -103,3 +106,13 @@ Credits for every artist and license: CREDITS.md (in this folder).
 Code: MIT License (LICENSE). Art keeps its own licenses (see CREDITS.md).
 
 Made with love from your friendly hacker - er2oneousbit
+
+Walking between maps: the street's road (east) leads to the test yard, and
+the yard's shop street (north) to the combat arena. Your health, charge and
+items come with you.
+
+Day and night: in the test yard a day lasts 24 minutes (F9 speeds it up).
+The corner store closes at night; the all-night stand doesn't. At night the
+kid misses more outside his flashlight beam, the dog smells enemies (they
+glow while you drive him), rats go home and bats drop out of the oaks.
+Watch for a bat's squeak and dip before it dives: step aside.

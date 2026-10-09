@@ -2,6 +2,28 @@
 as they get built, and this release is updated in place as they're polished.
 The story, the realms and the real content come later.
 
+## New in this update
+
+* **A start menu**: pick the prologue, the street, the test yard or the
+  combat arena, the start time and Normal or Hard. Reaching the gate in the
+  prologue brings you back to it
+* **Walk between maps**: the prologue street's road leads to the test yard,
+  and the yard to the combat arena. Health, charge and items come along
+* **A running clock**: morning, day, evening and night pass on their own in
+  the test yard, with a fade between them and music for each (F7 stops it,
+  F9 speeds it up, F2 skips ahead). Story scenes can hold the clock
+* **Two shops**: the corner store closes at night, the all-night stand
+  doesn't. Real 3D stalls with striped awnings, goods and a lantern
+* **Night changes things**: the kid misses more outside his flashlight
+  beam; the dog smells enemies (they glow while you drive him); rats go home
+  at dusk and bats drop out of the oaks, circle, and swoop to bite
+* **The dog leaps and bites**, like the original, and points out hidden
+  items by himself whenever it's calm
+* **Smoother movement**: steadier turning, 10% faster walking and running,
+  and the club no longer loses its tip mid-swing
+* **Opens borderless fullscreen** at your screen's resolution (Settings has
+  windowed sizes)
+
 ## What's in it
 
 * **The HD-2D look**: pixel-art sprites in a lit 3D world, with sun shadows,
@@ -28,8 +50,8 @@ The story, the realms and the real content come later.
 * **Walking and running**: hold Run to run. Like the original, running
   costs your attack charge; run it to 0% and you're winded for a moment
 * **Hidden items and the dog's nose** (in the test yard): items buried,
-  tucked under bushes and rocks, or lying in nooks. The dog on Search finds
-  them by himself, points, barks and digs; drive him and sniff to see scent
+  tucked under bushes and rocks, or lying in nooks. The dog finds them by
+  himself when it's calm (farther on Search), points, barks and digs; drive him and sniff to see scent
   trails. A count of how many you've found is in the pause menu
 * **A real HUD**: a card for each of the duo with a health bar (a pale
   ghost shows what the last hit took), the charge bar, the partner's stance,
@@ -47,10 +69,10 @@ The story, the realms and the real content come later.
 ## Downloads
 
 * **Windows**: `Evermore2-tech-demo-windows.zip`. Unzip, run `Evermore2.exe`
-  for the prologue or `Combat arena.bat` for the fight. The exe isn't signed,
+  for the start menu, or `Test yard.bat` / `Combat arena.bat` to jump in. The exe isn't signed,
   so Windows may warn you: **More info**, then **Run anyway**
-* **Linux**: `Evermore2-tech-demo-linux.tar.gz`. Run `./Evermore2.x86_64` or
-  `./combat-arena.sh`
+* **Linux**: `Evermore2-tech-demo-linux.tar.gz`. Run `./Evermore2.x86_64`,
+  `./test-yard.sh` or `./combat-arena.sh`
 
 Needs a graphics card with Vulkan or Direct3D 12. The README.txt inside has
 the controls.
