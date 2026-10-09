@@ -5,7 +5,7 @@
 # USAGE:  tests/run_all.sh [path/to/godot]        (or set GODOT=...)
 # RUNS:   smoke_follow at 30, 60 and 120 RENDER fps (physics stays at 60 Hz;
 #         this proves nothing depends on the render frame rate, e.g. a 144 Hz
-#         monitor), smoke_visuals, smoke_hd, smoke_dialogue, smoke_combat, smoke_party, smoke_settings, smoke_audio, smoke_items, smoke_ring, smoke_rings, smoke_clock, smoke_enemy_clock, smoke_travel, smoke_debug_menu, smoke_aspect. No display needed. For the live ultrawide checks use run_aspect_matrix.sh.
+#         monitor), smoke_visuals, smoke_faces, smoke_hd, smoke_dialogue, smoke_combat, smoke_party, smoke_settings, smoke_audio, smoke_items, smoke_ring, smoke_rings, smoke_clock, smoke_enemy_clock, smoke_travel, smoke_debug_menu, smoke_aspect. No display needed. For the live ultrawide checks use run_aspect_matrix.sh.
 # EXIT:   0 if everything passed, 1 otherwise.
 #
 # Written with help from Claude (Anthropic) via Claude Code.
@@ -45,6 +45,7 @@ run "follow @30fps"  res://tests/smoke_follow.tscn --fixed-fps 30
 run "follow @60fps"  res://tests/smoke_follow.tscn --fixed-fps 60
 run "follow @120fps" res://tests/smoke_follow.tscn --fixed-fps 120
 run "visuals"        res://tests/smoke_visuals.tscn --fixed-fps 60
+run "faces"          res://tests/smoke_faces.tscn --fixed-fps 60
 run "hd-2d view"     res://tests/smoke_hd.tscn --fixed-fps 60
 run "dialogue"       res://tests/smoke_dialogue.tscn --fixed-fps 60
 run "combat"         res://tests/smoke_combat.tscn --fixed-fps 60

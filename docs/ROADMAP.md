@@ -77,6 +77,10 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: faces (a mouth and nose facing the camera)
+
+The generator draws eyes only; the original hero has a tiny mouth and a hint of a nose when facing the camera, nothing from the side. New `tools/art/faces.py` (build_art step `faces`) finds the eyes on every front ("down") frame of every animation row of the six LPC sheets (cyan glint template, 5 of 6 glints) and paints a 2 px nose (2 rows below the eye tops, soft skin shade) and a 2 px mouth (4 rows below, darker rosy shade of the skin, not black) at that fixed offset, so both ride the head bob. Bearded men (dad, grocer) get the nose only; the beard is left alone. Nose is hand-drawn because the generator's button nose is GPL / CC-BY-SA only and would make every sheet share-alike. Measured: 86-87 front frames per sheet painted, 4-5 hurt frames (head turned or dropped) skipped; a second run changes nothing. New `tests/smoke_faces`: eyes/mouth/nose offsets on all walk-down and idle frames, no mouth on side/back/hurt frames, mouth inside the head; sabotaged (mouth offset moved one row, beard check removed) and both fail. Full suite passes. Verified in game at 2560x1440. Version not bumped.
+
 ## Done: playtest fixes 2 (dig, shop flicker, idle, sway)
 
 - **Dog dig**: measured, the AI's dig showed `idle` on all 84 digging frames

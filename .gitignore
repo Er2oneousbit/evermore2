@@ -41,3 +41,4 @@ CLAUDE.md
 # Art pipeline download cache (tools/art/build_art.py re-downloads it)
 tools/art/.cache/
 tools/audio/.cache/
+__pycache__/

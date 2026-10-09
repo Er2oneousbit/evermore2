@@ -27,6 +27,7 @@ without clicking through it by hand.
 
 5. Copy `sheet.png` to the recipe's `output` path, and `credits.txt` + `credits.csv`
    to its `credits` folder. Update `CREDITS.md` if the layers changed.
+5b. Run `python tools/art/faces.py` to paint the nose and mouth on the front-facing frames (idempotent).
 6. Check the license column in `credits.csv`. Layers without OGA-BY / CC-BY
    (CC-BY-SA or GPL only) make the whole sheet share-alike; see the note in `CREDITS.md`.
 

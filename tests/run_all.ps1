@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     smoke_follow at 30, 60 and 120 RENDER fps (physics stays at 60 Hz; this proves
-    nothing depends on the render frame rate), smoke_visuals, smoke_hd, smoke_dialogue, smoke_combat, smoke_party, smoke_settings, smoke_audio, smoke_items, smoke_ring, smoke_rings, smoke_clock, smoke_aspect (math part).
+    nothing depends on the render frame rate), smoke_visuals, smoke_faces, smoke_hd, smoke_dialogue, smoke_combat, smoke_party, smoke_settings, smoke_audio, smoke_items, smoke_ring, smoke_rings, smoke_clock, smoke_aspect (math part).
     No display needed. For the live ultrawide checks use run_aspect_matrix.ps1.
 
 .PARAMETER Godot
@@ -47,6 +47,7 @@ $tests = @(
     @{ Label = "follow @60fps";  Scene = "res://tests/smoke_follow.tscn";  Args = @("--fixed-fps", "60") },
     @{ Label = "follow @120fps"; Scene = "res://tests/smoke_follow.tscn";  Args = @("--fixed-fps", "120") },
     @{ Label = "visuals";        Scene = "res://tests/smoke_visuals.tscn"; Args = @("--fixed-fps", "60") },
+    @{ Label = "faces";          Scene = "res://tests/smoke_faces.tscn";   Args = @("--fixed-fps", "60") },
     @{ Label = "hd-2d view";     Scene = "res://tests/smoke_hd.tscn";      Args = @("--fixed-fps", "60") },
     @{ Label = "dialogue";       Scene = "res://tests/smoke_dialogue.tscn"; Args = @("--fixed-fps", "60") },
     @{ Label = "combat";         Scene = "res://tests/smoke_combat.tscn";   Args = @("--fixed-fps", "60") },
