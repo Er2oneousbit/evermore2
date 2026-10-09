@@ -77,6 +77,26 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: playtest fixes 2 (dig, shop flicker, idle, sway)
+
+- **Dog dig**: measured, the AI's dig showed `idle` on all 84 digging frames
+  (the think step started the dig, then `_update_animation` played idle over it
+  and never ran again). It now plays `dig` throughout, in 2D and on the HD
+  sprite copy. The LPC sheet has no real dig frames (5-7 are near-identical
+  head-low poses), so the body also rocks into the hole per frame
+  (`Dog.DIG_BOB`) and dirt flies every 0.12 s.
+- **Shop tearing**: z-fighting. Trim, posts, base boards, lintel, sign, fascia,
+  rakes, ridge cap and shutter shared planes within 1 cm; trim now stands
+  proud in 2 cm steps. `smoke_hd` rebuilds every face from the meshes and fails
+  on any same-facing overlap closer than 1 cm.
+- **Breathing belly**: idle frame 1 of the LPC sheet leaves a strip of skin
+  between shirt and trousers (kid, Maya, Dex, vendor; measured). Idle and
+  combat idle hold frame 0 and bob the whole sprite 1 px. Walk shows no gap.
+- **Sway**: rocks no longer sway (the generator defaulted to 0.6); reeds,
+  tufts and wildflowers sway like grass. Tufts and wildflowers were flat
+  decals baked into the ground in HD-2D, so they are standing sprites now
+  (888 3D props in the test yard).
+
 ## Done: a sky dial clock
 
 A half-circle window of sky at the top centre of the HUD (`ui/hud/sky_dial.gd`)
