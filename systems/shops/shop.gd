@@ -19,8 +19,10 @@
 #                "item": "apple", "greet": "shop_corner", "again": "shop_corner_again",
 #                "closed": "shop_corner_closed"}
 #        Dialogue nodes come from the realm's DIALOGUE file.
-# HD-2D: the keeper and the shutter are both "hd_actor"s (a "Sprite" child),
-#        so HdView mirrors them and their own `visible`.
+# HD-2D: the keeper is an "hd_actor" mirrored as a sprite. The stall itself is
+#        a real 3D building (systems/hd2d/shop_building.gd) whose shutter
+#        panel follows `state_changed`; the 2D ShopShutter stays for talking
+#        only (meta "hd_skip": no sprite quad in HD).
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -36,6 +38,10 @@ const SHUTTER_TEXTURE := preload("res://assets/props/shops/shop_closed.png")
 ## From the keeper's feet to the stall's base (the stall prop one cell north),
 ## nudged a pixel toward the camera so the shutter draws over the stall.
 const STALL_OFFSET := Vector2(0, -31)
+
+## Emitted whenever the shop shows open or closed again (the HD-2D building
+## listens: shutter panel, night lamp).
+signal state_changed
 
 var shop_id := ""
 var keeper_id := ""
@@ -117,6 +123,7 @@ func refresh() -> void:
 	keeper.process_mode = Node.PROCESS_MODE_INHERIT if open else Node.PROCESS_MODE_DISABLED
 	shutter.visible = not open
 	keeper.start_node = greet_node if _given_at != Clock.phase_count else again_node
+	state_changed.emit()
 
 
 ## Has the keeper handed over this phase's item already?

@@ -15,7 +15,8 @@ class_name ShopShutter
 extends Node2D
 
 ## How close the kid must be to read it (px).
-@export var interact_range := 44.0
+## (A bit long: in HD-2D the 3D counter keeps him about 55 px from the stall.)
+@export var interact_range := 72.0
 
 var shop: Shop
 
@@ -23,6 +24,8 @@ var shop: Shop
 func _ready() -> void:
 	add_to_group("interactable")
 	add_to_group("hd_actor")
+	# HD-2D draws the closed shutter as a 3D panel (ShopBuilding3D), not a quad.
+	set_meta("hd_skip", true)
 	var s := Sprite2D.new()
 	s.name = "Sprite"
 	s.texture = Shop.SHUTTER_TEXTURE

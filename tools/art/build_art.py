@@ -354,7 +354,9 @@ def build_shops():
             img.alpha_composite(awning(awning_i), (4 + 32 * k, 6))
         img.alpha_composite(plaques[plaque_i], (40, 38))
         img.alpha_composite(bag, (52 - bag.width // 2, 50 - bag.height // 2))
-        write_prop(name, img, (52, 82), footprint=(96, 14), footprint_offset=(0, -7), occluder=(96, 14),
+        # The solid footprint covers the real 3D shop in HD-2D (back wall to the
+        # counter in front of the keeper): 54 px deep, from 6 px behind the base.
+        write_prop(name, img, (52, 82), footprint=(96, 54), footprint_offset=(0, 21), occluder=(96, 14),
                    shadow_size=(104, 16), shadow_alpha=0.4)
 
     stall("stall_corner", 2, 1568, 0)  # follows the clock: orange awning, brown wood
@@ -398,6 +400,21 @@ def build_shops():
     board.alpha_composite(plaques[3], (34, 10))
     board.save(out_path("assets", "props", "shops", "shop_closed.png"))
     vlog("shop_closed 92x46")
+
+    # Tiles for the HD-2D view's real 3D shops (systems/hd2d/shop_building.gd):
+    # 32x32 so a texel is 1/32 m like everything else. The siding repeats every
+    # 8 px vertically, the shingles every 32. a = corner store, b = all-night.
+    tex = lambda n: out_path("assets", "textures", "hd", n)
+    for tag, wall_x, roof_box, awn_i, plaque_i in (("a", 1568, (608, 8), 2, 0), ("b", 1248, (32, 8), 4, 3)):
+        crop(sheet, (wall_x + 16, 8, 32, 32)).save(tex(f"shop_wall_{tag}.png"))
+        crop(sheet, (wall_x + 16, 104, 32, 32)).save(tex(f"shop_counter_{tag}.png"))
+        crop(sheet, (roof_box[0], roof_box[1], 32, 32)).save(tex(f"shop_roof_{tag}.png"))
+        awning(awn_i).save(tex(f"shop_awning_{tag}.png"))
+        sign = Image.new("RGBA", (24, 24))
+        sign.alpha_composite(plaques[plaque_i], (0, 0))
+        sign.alpha_composite(bag, (12 - bag.width // 2, 12 - bag.height // 2))
+        sign.save(tex(f"shop_sign_{tag}.png"))
+    vlog("shop 3D textures: wall, counter, roof, awning, sign x2")
 
 
 def build_hd_textures():
