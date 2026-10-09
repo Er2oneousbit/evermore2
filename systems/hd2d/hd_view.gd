@@ -46,6 +46,13 @@ const PROP_LAYER := 4
 ## in_beam(): anything this close to the kid's feet (m) counts as lit.
 const BEAM_NEAR_M := 0.4
 const PROP_DEPTH_BIAS := -0.03
+## Props on the same row (or within a pixel of it, the map's jitter) overlap in
+## depth too: two oak canopies side by side were coplanar and flickered as the
+## camera moved (owner, 2026-10-09). Each prop in a row steps a further
+## PROP_ROW_STEP behind PROP_DEPTH_BIAS, in order of x, wrapping after
+## PROP_ROW_SLOTS. The whole range stays far smaller than the gap to the dog.
+const PROP_ROW_STEP := 0.001
+const PROP_ROW_SLOTS := 14
 const KID_DEPTH_BIAS := 0.02
 const NPC_DEPTH_BIAS := 0.015
 const DOG_DEPTH_BIAS := 0.01
@@ -430,6 +437,7 @@ func _build_props() -> void:
 	var shops := Node3D.new()
 	shops.name = "Shops"
 	add_child(shops)
+	var row_offsets := _prop_row_offsets()
 	for p in _world2d.get_children():
 		if not (p is Prop) or p.data == null or p.data.texture == null:
 			continue
@@ -457,11 +465,34 @@ func _build_props() -> void:
 			mi.scale = Vector3(flip, 1.0, 1.0)
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		else:
-			mi.position = to3(p.global_position) + Vector3(0.0, 0.0, PROP_DEPTH_BIAS)
+			mi.position = to3(p.global_position) + Vector3(0.0, 0.0, PROP_DEPTH_BIAS + row_offsets.get(p.get_instance_id(), 0.0))
 			mi.scale = Vector3(flip, _y_scale, 1.0)
 		mi.layers = PROP_LAYER
 		holder.add_child(mi)
 		_prop_count += 1
+
+
+## Extra depth (negative, meters) for every upright prop so no two in a row
+## share a depth: props are grouped by base y and numbered along x.
+func _prop_row_offsets() -> Dictionary:
+	var rows := {}
+	for p in _world2d.get_children():
+		if not (p is Prop) or p.data == null or p.data.texture == null:
+			continue
+		if p.data.ground_decal or ShopBuilding3D.STYLES.has(p.data.resource_path.get_file().get_basename()):
+			continue
+		var key := roundi(p.global_position.y)
+		if not rows.has(key):
+			rows[key] = []
+		rows[key].append(p)
+	var out := {}
+	for key in rows:
+		var row: Array = rows[key]
+		row.sort_custom(func(a: Node2D, b: Node2D) -> bool:
+			return a.global_position.x < b.global_position.x 					or (a.global_position.x == b.global_position.x and a.get_index() < b.get_index()))
+		for i in row.size():
+			out[row[i].get_instance_id()] = -PROP_ROW_STEP * float(i % PROP_ROW_SLOTS)
+	return out
 
 
 ## The Shop whose stall stands at this base point (null if none).

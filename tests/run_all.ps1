@@ -48,6 +48,7 @@ $tests = @(
     @{ Label = "follow @120fps"; Scene = "res://tests/smoke_follow.tscn";  Args = @("--fixed-fps", "120") },
     @{ Label = "visuals";        Scene = "res://tests/smoke_visuals.tscn"; Args = @("--fixed-fps", "60") },
     @{ Label = "hd-2d view";     Scene = "res://tests/smoke_hd.tscn";      Args = @("--fixed-fps", "60") },
+    @{ Label = "trees off paths"; Scene = "res://tests/smoke_realm_trees.tscn"; Args = @("--fixed-fps", "60") },
     @{ Label = "dialogue";       Scene = "res://tests/smoke_dialogue.tscn"; Args = @("--fixed-fps", "60") },
     @{ Label = "combat";         Scene = "res://tests/smoke_combat.tscn";   Args = @("--fixed-fps", "60") },
     @{ Label = "party";          Scene = "res://tests/smoke_party.tscn";    Args = @("--fixed-fps", "60") },

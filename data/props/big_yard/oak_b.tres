@@ -13,6 +13,7 @@ footprint_offset = Vector2(0, -4)
 shadow_texture = ExtResource("3_shadow")
 shadow_offset = Vector2(10, -8)
 shadow_alpha = 0.33
+tree = true
 sway_strength = 1
 sway_speed = 0.35
 sway_rooted = 0.42
