@@ -97,6 +97,7 @@ The kid and the dog only collide with **world**, so they never block each other.
 | 3 | Ambient particles (pollen, fireflies) - follow the camera, no tint | yes |
 | 5 | Combat FX (Fx): damage numbers, slash trails, projected through the live camera | no |
 | 4 | Color grade full-screen pass (Atmosphere) | - |
+| 5 | The title screen's UI (its own layer: the backdrop realm's Camera2D would shift the default canvas) | no |
 | 10 | HUD | no |
 | 15 | The prologue's title cards and fades | no |
 | 40 | Travel's fade between maps | no |
@@ -435,6 +436,7 @@ it and confirming the test fails:
 | Test | Needs a display? | Checks |
 |---|---|---|
 | `tests/run_all.sh` / `.ps1` | no | Runs every headless test below in one go |
+| `tests/smoke_title.tscn` | no | The title screen (logo, menu, Continue skipped, any key, Settings, Debug), New Game through gender and both names (typing rules, empty rejected, defaults), the prologue starting with the names, slice end and pause "Quit to title" returning |
 | `tests/smoke_follow.tscn` | no | Dog follow AI on the pen route, stay command, night + flashlight, the kid's feel (+10% speeds, steady facing, smooth reversals, a kept stride) |
 | `tests/smoke_visuals.tscn` | no | LPC animation rows, Atmosphere presets/particles, Prop building |
 | `tests/smoke_dialogue.tscn` | no | .dlg parsing and errors, the runner (choices, flags, conditions, commands, loop guard), every game script loads, talking to Maya in 2D and HD-2D |

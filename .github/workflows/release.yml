@@ -65,6 +65,7 @@ jobs:
         run: |
           chmod +x export/linux/Evermore2.x86_64
           fail=0
+          # "" starts the title screen (the main scene); the others skip it.
           for args in "" "--arena" "--yard" "--arena --hard"; do
             out=$(export/linux/Evermore2.x86_64 --headless --quit-after 300 -- --verbose $args 2>&1) || true
             if echo "$out" | grep -E "ERROR|SCRIPT ERROR" ; then

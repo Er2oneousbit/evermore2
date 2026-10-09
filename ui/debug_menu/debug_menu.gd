@@ -1,7 +1,7 @@
 # =============================================================================
-# debug_menu.gd  (main scene: ui/debug_menu/debug_menu.tscn)
+# debug_menu.gd  (ui/debug_menu/debug_menu.tscn, opened from the title screen)
 # -----------------------------------------------------------------------------
-# WHAT:  The screen the game opens on while it's a prototype: pick the map to
+# WHAT:  The tech-demo start menu (Debug on the title screen): pick the map to
 #        start in, the time of day and the difficulty, read the debug keys,
 #        open Settings or quit. Same look as the pause and settings menus.
 #          Prologue (from the start)      title card, dinner, street; the
@@ -9,18 +9,19 @@
 #          Prologue street (skip intro)   the street with the intro done
 #          Test yard, Combat arena        the demo maps
 #        "Play as: < Boy / Girl >" picks the kid (GameState.kid_gender: sprite,
-#        portrait and the {he}/{boy|girl} dialogue tokens); the real title screen
-#        will ask this first, with the name (ROADMAP).
+#        portrait and the {he}/{boy|girl} dialogue tokens); the title screen's
+#        New Game asks this first, with the names.
 #        Start time applies to maps with a free clock (the prologue keeps its
 #        held story timing). Hard is what --hard sets.
 # HOW:   begin() sets the options and hands the map to Travel.go (fade out,
 #        load, fade in) with carry = false: nothing rides along, the party
-#        stands on the map's own spawn. The pause menu's "Debug menu" and the
-#        end of the prologue slice come back here the same way. The last
+#        stands on the map's own spawn. The pause menu's "Debug menu" comes back
+#        here the same way (the title screen opens it too; "Back to title" goes the other way). The last
 #        choice is remembered in user://debug_menu.cfg (test runs keep it in
 #        memory) and the cursor starts on it.
 #        --yard / --arena skip the menu: Debug sends the game there and this
-#        scene stays empty (Debug.start_scene_for decides).
+#        scene stays empty (Debug.start_scene_for decides). It is no longer the
+#        main scene: the title screen is, and its Debug item opens this.
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -54,6 +55,7 @@ var difficulty_button: Button
 var gender_button: Button
 var settings_button: Button
 var quit_button: Button
+var title_button: Button
 
 var _time := "day"
 var _difficulty := "normal"
@@ -196,6 +198,7 @@ func _build() -> void:
 	gender_button = _cycler(list, "Play as", GENDERS, func() -> String: return _gender,
 		func(v: String) -> void: _gender = v)
 	settings_button = _button(list, "Settings", _open_settings)
+	title_button = _button(list, "Back to title", func() -> void: Travel.go(TitleScreen.SCENE, "", false))
 	quit_button = _button(list, "Quit", func() -> void: get_tree().quit())
 
 	var right := PanelContainer.new()

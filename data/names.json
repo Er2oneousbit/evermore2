@@ -7,6 +7,9 @@
 
   "_section_characters": "---- Characters ----",
   "kid_default": "Kid",
+  "_kid_default_note": "Pre-filled on the name screen per gender (neutral names); the kid_default below is only the fallback when no name was entered (debug starts)",
+  "kid_default_boy": "Sam",
+  "kid_default_girl": "Alex",
   "dog_default": "Biscuit",
   "npc_dad": "Dad",
   "npc_mom": "Mom",

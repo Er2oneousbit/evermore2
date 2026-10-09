@@ -15,10 +15,11 @@ from the original game.
 HOW TO START
 ------------
 Windows
-  Evermore2.exe              Opens a menu: pick the prologue, the street,
-                             the test yard or the combat arena, the start
-                             time, Normal/Hard, and whether you play as a
-                             girl or a boy (the dialogue follows)
+  Evermore2.exe              Opens the title screen. New Game: boy or girl,
+                             name the kid and the dog, then the prologue.
+                             Debug is on its menu: pick the prologue, the
+                             street, the test yard or the combat arena, the
+                             start time and Normal/Hard
   Combat arena.bat           The combat arena: a big countryside (100 x 56
                              tiles) with giant rats, rats that go home at
                              dusk and bats that roost in the oaks

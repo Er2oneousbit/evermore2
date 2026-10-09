@@ -150,6 +150,9 @@ var _kid2d: Kid
 var _dog2d: Dog
 var _atmo: Atmosphere
 var _cam: Camera3D
+## A point (Vector3, meters) the camera looks at instead of the leader: the
+## title screen's slow drift. null = follow the leader.
+var focus_override: Variant = null
 var _target := Vector3.ZERO
 var _sun: DirectionalLight3D
 var _flash: SpotLight3D
@@ -799,7 +802,7 @@ func _build_camera() -> void:
 
 ## Jump the camera straight to the leader (after a teleport, a scene load...).
 func snap_camera() -> void:
-	_target = _clamp_to_map(_leader3d().position)
+	_target = _clamp_to_map(_leader3d().position if focus_override == null else focus_override)
 	_place_camera()
 
 
@@ -815,7 +818,7 @@ func _leader3d() -> Sprite3D:
 
 
 func _follow_camera(delta: float) -> void:
-	var want := _clamp_to_map(_leader3d().position)
+	var want := _clamp_to_map(_leader3d().position if focus_override == null else focus_override)
 	_target = _target.lerp(want, 1.0 - exp(-camera_smoothing * delta))
 	_place_camera()
 

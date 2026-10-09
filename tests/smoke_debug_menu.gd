@@ -13,7 +13,7 @@
 #        5. "Prologue (from the start)" clears the intro flag, the skip entry
 #           sets it, the arena entry loads the arena
 #        6. the end of the prologue slice waits on its card, then fades to
-#           the menu (the wait is shortened here from 10 s)
+#           the title screen (the wait is shortened here from 10 s)
 #
 # RUN:   godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/smoke_debug_menu.tscn
 #        Exit code 0 = PASS, 1 = FAIL.
@@ -63,7 +63,7 @@ func _test_pure() -> void:
 	var keys := Debug.key_lines()
 	for k in ["F2", "F3", "F4", "F6", "F7", "F9"]:
 		_check(keys.size() > 0 and Array(keys).any(func(l: String) -> bool: return l.begins_with(k)), "the key list has %s" % k)
-	_check(ProjectSettings.get_setting("application/run/main_scene") == DebugMenu.SCENE, "the debug menu is the main scene")
+	_check(ProjectSettings.get_setting("application/run/main_scene") == TitleScreen.SCENE, "the title screen is the main scene (the debug menu hangs off it)")
 
 
 func _test_build() -> void:
@@ -143,14 +143,13 @@ func _test_slice_end() -> void:
 	lot.end_card_seconds = 0.5
 	lot._end_slice()  # not awaited: it ends by sending us to the menu
 	var frames := 0
-	while frames < 900 and not (get_tree().current_scene != null and get_tree().current_scene.scene_file_path == DebugMenu.SCENE and not Travel.busy):
+	while frames < 900 and not (get_tree().current_scene != null and get_tree().current_scene.scene_file_path == TitleScreen.SCENE and not Travel.busy):
 		await get_tree().physics_frame
 		frames += 1
 		if frames == 150:  # the 2 s fade is done, the card is up and waiting
 			_check(lot._card.visible and lot._card.text.begins_with("To be continued"), "the slice ends on its card")
 			_check(get_tree().current_scene != null and get_tree().current_scene.scene_file_path == STREET, "and waits there")
-	_check(frames < 900, "the card gives way to the debug menu (%d frames)" % frames)
-	_check(get_viewport().gui_get_focus_owner() == _menu().map_buttons["street"], "with the cursor on the last choice")
+	_check(frames < 900, "the card gives way to the title screen (%d frames)" % frames)
 
 
 # -----------------------------------------------------------------------------

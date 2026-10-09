@@ -76,7 +76,7 @@ The story, the realms and the real content come later.
 ## Downloads
 
 * **Windows**: `Evermore2-tech-demo-windows.zip`. Unzip, run `Evermore2.exe`
-  for the start menu, or `Test yard.bat` / `Combat arena.bat` to jump in. The exe isn't signed,
+  for the title screen (Debug on its menu picks any map), or `Test yard.bat` / `Combat arena.bat` to jump in. The exe isn't signed,
   so Windows may warn you: **More info**, then **Run anyway**
 * **Linux**: `Evermore2-tech-demo-linux.tar.gz`. Run `./Evermore2.x86_64`,
   `./test-yard.sh` or `./combat-arena.sh`
