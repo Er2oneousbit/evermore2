@@ -466,6 +466,8 @@ func _crossfade(to: AudioStreamPlayer, from: AudioStreamPlayer, seconds: float) 
 		if to:
 			to.volume_db = 0.0
 		return
+	if to == null and (from == null or not from.playing):
+		return  # a stop with nothing playing: no tween without tweeners
 	_fade = create_tween().set_parallel(true)
 	if to:
 		_fade.tween_property(to, "volume_db", 0.0, seconds).set_trans(Tween.TRANS_SINE)

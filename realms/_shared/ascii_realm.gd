@@ -770,7 +770,9 @@ func _build_signs() -> void:
 	for spec: Dictionary in cfg("SIGNS"):
 		var cell: Vector2i = spec["cell"]
 		var at := _cell_base(cell)
-		_place("signpost", at, spec.get("dir", Vector2.RIGHT) == Vector2.LEFT)  # the arrow points the way
+		# The art's arrow points right: mirrored for left, its own board for up.
+		var dir: Vector2 = spec.get("dir", Vector2.RIGHT)
+		_place("signpost_up" if dir == Vector2.UP else "signpost", at, dir == Vector2.LEFT)
 		var s := Signpost.new()
 		s.name = "Sign_%d_%d" % [cell.x, cell.y]
 		s.place_key = spec.get("place", "")

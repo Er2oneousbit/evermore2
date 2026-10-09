@@ -13,7 +13,9 @@
 class_name Signpost
 extends Node2D
 
-const ARROWS := {Vector2.LEFT: "<-", Vector2.RIGHT: "->", Vector2.UP: "^", Vector2.DOWN: "v"}
+## No entry for down: there's no art for it, and a text arrow that disagrees
+## with the board's carved one is worse than none.
+const ARROWS := {Vector2.LEFT: "<-", Vector2.RIGHT: "->", Vector2.UP: "^"}
 
 ## names.json key of the place the road leads to.
 var place_key := ""

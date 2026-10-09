@@ -9,7 +9,8 @@
 #   godot --path . -- --help       Print options and quit
 #   godot --path . -- --debug      Start with the debug overlay visible
 #   godot --path . -- --verbose    Print VERBOSE-level log lines too
-#   godot --path . -- --arena      Start in the combat arena (also --yard)
+#   godot --path . -- --arena      Start in the combat arena (also --yard); with
+#                                  neither, the game opens on the Debug Menu
 #
 # LOGGING:
 #   Debug.log_info("text")     always printed
@@ -38,8 +39,9 @@ Usage:  godot --path <project folder> -- [options]
   --debug        Start with the debug overlay visible (toggle any time with F3)
   --verbose      Print extra VERBOSE log lines (AI state changes, spawns, etc.)
   --hard         Play on Hard (enemies tougher, prices higher)
-  --arena        Start in the combat arena (giant rats)
-  --yard         Start in the test yard (the clock runs: morning, day, golden hour, night)
+  --arena        Start in the combat arena (giant rats), skipping the debug menu
+  --yard         Start in the test yard (the clock runs: morning, day, golden hour, night),
+                 skipping the debug menu (no map option: the game opens on that menu)
                  (the three demo maps are joined by paths: the street's road east to
                  the yard, the yard's shop street north to the arena)
 
@@ -99,6 +101,32 @@ func set_overlay_visible(value: bool) -> void:
 
 
 # -----------------------------------------------------------------------------
+# Start options (the pure parts, so tests can call them)
+# -----------------------------------------------------------------------------
+## The map a command line asks to start in ("" = none: show the debug menu).
+## The last of several map options wins, like the redirect itself.
+static func start_scene_for(args: PackedStringArray) -> String:
+	var scene := ""
+	for arg in args:
+		if START_SCENES.has(arg):
+			scene = START_SCENES[arg]
+	return scene
+
+
+## The in-game debug keys as "F2   Next time of day ..." lines, taken from
+## HELP_TEXT so the debug menu's panel can't drift from the --help list.
+static func key_lines() -> PackedStringArray:
+	var out := PackedStringArray()
+	var in_keys := false
+	for line in HELP_TEXT.split("\n"):
+		if line.begins_with("In-game debug keys"):
+			in_keys = true
+		elif in_keys and line.strip_edges().begins_with("F"):
+			out.append(line.strip_edges())
+	return out
+
+
+# -----------------------------------------------------------------------------
 # Logging helpers. Prefixes make grep-ing godot.log easy.
 # -----------------------------------------------------------------------------
 func log_info(msg: String) -> void:
@@ -138,6 +166,7 @@ func _parse_args(args: PackedStringArray) -> void:
 				GameState.difficulty = "hard"
 			"--arena", "--yard":
 				# Deferred: the main scene isn't loaded yet while autoloads start.
+				# (The debug menu sees the option too and stays out of the way.)
 				get_tree().change_scene_to_file.call_deferred(START_SCENES[arg])
 			_:
 				log_warn("Unknown option '%s' (run with -- --help for the list)" % arg)

@@ -82,15 +82,17 @@ func _input(event: InputEvent) -> void:
 
 
 ## Leave for `scene_path`, arriving on its entry `entry`. False if a swap is
-## already running or the scene doesn't exist.
-func go(scene_path: String, entry := "") -> bool:
+## already running or the scene doesn't exist. `carry` false = nothing comes
+## along and the party isn't moved (the debug menu: a fresh start on the map's
+## own spawn, or a menu screen that has no party).
+func go(scene_path: String, entry := "", carry := true) -> bool:
 	if busy:
 		return false
 	if not ResourceLoader.exists(scene_path):
 		Debug.log_error("Travel: no scene %s" % scene_path)
 		return false
 	busy = true
-	_carry = snapshot()
+	_carry = snapshot() if carry else {}
 	last_carry = _carry.duplicate()
 	pending_entry = entry
 	Debug.log_info("Travel: leaving for %s (entry '%s')" % [scene_path.get_file(), entry])

@@ -22,9 +22,13 @@ comes from free libraries with licenses that allow redistribution (see
 2. Clone this repo.
 3. Open Godot, click **Import**, pick this folder's `project.godot`.
    (First open takes a few seconds while Godot builds its `.godot/` cache.)
-4. Press **F5** (or the ▶ Play button) to run. The main scene is
-   `realms/podunk/ruffleberg_lot_hd.tscn` (the prologue). The test yard is
-   `realms/big_yard/yard_hd.tscn` (run it with `godot --path . res://realms/big_yard/yard_hd.tscn`).
+4. Press **F5** (or the ▶ Play button) to run. The main scene is the **Debug
+   Menu** (`ui/debug_menu/debug_menu.tscn`): pick a map (prologue from the start,
+   prologue street with the intro skipped, test yard, combat arena), a start time
+   and the difficulty; it also lists the debug keys and opens Settings. The
+   prologue is `realms/podunk/ruffleberg_lot_hd.tscn`, the test yard
+   `realms/big_yard/yard_hd.tscn` (run one directly with
+   `godot --path . res://realms/big_yard/yard_hd.tscn`).
 
 **Renderer:** use the default Forward+ (a GPU with Vulkan or Direct3D 12).
 Light shafts, pond reflections and ambient occlusion need it. Older GPU or a VM?
@@ -338,7 +342,14 @@ Exports only include Godot resources. Files the game reads itself (like the
 `export_presets.cfg`, or the exported game can't find them.
 
 The demo maps can be started from the command line: `-- --arena`,
-`-- --yard` (and `--hard`), in the editor build and the exported one.
+`-- --yard` (and `--hard`), in the editor build and the exported one. Those
+skip the Debug Menu (`Debug.start_scene_for` decides); with neither the game
+opens on it. The menu (`ui/debug_menu/debug_menu.gd`) sets the options, then
+`Travel.go(scene, "", false)` fades to the map with nothing carried over. The
+pause menu's "Debug menu" and the end of the prologue slice (10 s on the
+"To be continued" card) come back to it. The last choice is saved in
+`user://debug_menu.cfg` (tests keep it in memory). Its key panel is read from
+`Debug.HELP_TEXT`, so a new debug key goes there once.
 
 ## Code style and rules
 

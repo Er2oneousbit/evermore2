@@ -73,6 +73,38 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: a debug start menu
+
+Owner's request: "Open the game with a 'Debug Menu' where you can select which
+map to start with." The main scene is now `ui/debug_menu/debug_menu.tscn`,
+styled like the pause and settings menus (same theme, keyboard and gamepad,
+menu sounds, inside a SafeFrame):
+
+* **Maps**: Prologue (from the start: title card, dinner, street; the
+  `prologue.` flags are cleared), Prologue street (skip the intro: sets
+  `prologue.intro_done`), Test yard, Combat arena. Starting one fades to black
+  through `Travel.go` (new `carry` flag: nothing rides along, the party stands
+  on the map's own spawn) and fades in
+* **Options**: Start time (morning / day / golden / night; applies in free-clock
+  maps, the prologue keeps its held story timing), Difficulty (Normal / Hard,
+  the same as `--hard`), a panel of the debug keys read from `Debug.HELP_TEXT`,
+  Settings and Quit. The last choice is remembered in `user://debug_menu.cfg`
+  and the cursor starts on it
+* `--yard` / `--arena` still skip the menu (`Debug.start_scene_for`); tests that
+  load scenes directly are unaffected
+* The pause menu has "Debug menu" next to Quit. When the prologue slice ends on
+  "To be continued: the mansion.", the card stays 10 s (game time), then the game
+  fades back to this menu with the cursor on the last choice
+* Fixes: the yard's north signpost showed a right-pointing arrow (the art only
+  mirrors for left); north now has its own board (`signpost_up`, built in
+  `build_art.py`), and south signs show no text arrow (no art for it yet).
+  `Audio.stop_music` with nothing playing no longer logs an empty-tween error
+* Test: `smoke_debug_menu` (47 checks, 9 real map swaps): the pure --yard/--arena
+  decision and key list, the menu builds and every map scene loads, night + Hard
+  reach the yard, the pause menu returns with the cursor on the last choice, the
+  start entry clears the intro flag and the street entry sets it, and the slice
+  end returns to the menu. Sabotages checked (see the commit)
+
 ## Done: walking between maps
 
 The three demo maps are joined by paths, on one shared map-exit system every
