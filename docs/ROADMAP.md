@@ -226,6 +226,22 @@ reason:
   now excludes ENTER / LEAVE / ROOST); `smoke_follow` caught it.
 * Not done: `rise` and `fade` entrances and `edge` exits exist but no map uses
   them yet; no hidden-in-the-leaves bat variant; bats share the rat's sounds.
+* Bug fix (owner: "bats fly around crazy, didn't even get attacked"). Measured on
+  the combat arena, kid standing still, one night bat, 10 s: 0 bites, never left
+  CHASE (0 telegraphs), closest approach 99 px, mean 132 px. Cause: the chase
+  weave was added onto `velocity` every frame while steering could only correct
+  15 px/s per frame, so the sideways speed piled up and the bat orbited wildly
+  outside its attack range. Now a flyer circles its target at 70 px (smooth
+  steering, slow radius wobble), telegraphs (hovers low, squeak, orange pulse
+  0.5 s), dives at the spot the target stood when the telegraph began, bites for
+  3 on arrival, climbs away to about 105 px and rests 2.2 s. After: first bite at
+  2.0 s, one dive every 3.3 s, 3 bites in 10 s; sidestepping the telegraph dodges
+  it. Reach: a bat circling high (18 px up, 70 px out) is beyond the kid's swing
+  and the dog's leap; at the bottom of its dive (4 px up) both reach it. The AI
+  partner ignores flyers higher than 10 px unless within reach, so it fights a
+  diving bat and doesn't chase a circling one. `smoke_combat` covers bite time,
+  telegraph before bite, retreat, second dive, smoothness, reach, dodge and the
+  partner (sabotaged: bite never lands, no telegraph, jittery weave: all fail).
 
 ## Released: v0.4.0 (2026-10-09)
 
