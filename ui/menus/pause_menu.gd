@@ -1,8 +1,8 @@
 # =============================================================================
 # pause_menu.gd  (autoload: PauseMenu)
 # -----------------------------------------------------------------------------
-# WHAT:  Esc / gamepad Start pauses the game and opens: Resume, Settings, Quit
-#        to desktop. The game world stops (get_tree().paused); this menu and
+# WHAT:  Esc / gamepad Start pauses the game and opens: Resume, Settings, Debug
+#        menu (back to the start menu), Quit to desktop. The game world stops (get_tree().paused); this menu and
 #        the settings screen keep running.
 # HOW:   It's always loaded but builds its nodes the first time it opens.
 #
@@ -89,6 +89,12 @@ func open_settings() -> SettingsMenu:
 	return _settings
 
 
+## Unpause and fade back to the debug start menu (nothing carries over).
+func back_to_debug_menu() -> void:
+	close()
+	Travel.go(DebugMenu.SCENE, "", false)
+
+
 func _close_settings() -> void:
 	if _settings:
 		_settings.queue_free()
@@ -132,6 +138,7 @@ func _build() -> void:
 	_list.add_child(_found)
 	_resume = _button("Resume", close)
 	_settings_button = _button("Settings", func() -> void: open_settings())
+	_button("Debug menu", back_to_debug_menu)
 	_button("Quit to desktop", func() -> void: get_tree().quit())
 	# The panel and list share visibility with the settings screen's swap.
 	_list.visibility_changed.connect(func() -> void: panel.visible = _list.visible)

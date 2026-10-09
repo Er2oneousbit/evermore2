@@ -71,7 +71,9 @@ The newest work runs from source in the free Godot engine.
    <https://godotengine.org/download>. It's a single file; no installer.
 2. Download this repo (**Code → Download ZIP**) and unzip it.
 3. Open Godot, click **Import**, and pick the `project.godot` file.
-4. Press **F5** to play.
+4. Press **F5** to play. The game opens on a **Debug Menu**: pick the map to
+   start in (the prologue from the start or from the street, the test yard, the
+   combat arena), the time of day and Normal or Hard.
 
 It needs a graphics card with Vulkan or Direct3D 12 for the full look. On an
 older computer, start Godot with `--rendering-method gl_compatibility`: it still

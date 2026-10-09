@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PropData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://realms/_shared/prop_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/props/big_yard/signpost_up.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_script")
+texture = ExtResource("2_tex")
+base = Vector2(15, 38)
+footprint = Vector2(8, 6)
+footprint_offset = Vector2(0, -3)
+shadow_size = Vector2(14, 6)
+shadow_alpha = 0.4
+occluder_size = Vector2(6, 4)

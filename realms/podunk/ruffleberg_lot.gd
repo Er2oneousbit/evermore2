@@ -82,6 +82,10 @@ const INTRO_FLAG := "prologue.intro_done"
 ## box (20), so dinner can play as a conversation over black.
 const OVERLAY_LAYER := 15
 
+## How long "To be continued" stays up before the game goes back to the debug
+## menu (game time; tests shorten it).
+var end_card_seconds := 10.0
+
 var _overlay: CanvasLayer
 var _black: ColorRect
 var _card: Label
@@ -145,6 +149,8 @@ func _end_slice() -> void:
 	_card.text = "To be continued: the mansion."
 	_card.modulate.a = 1.0
 	_card.visible = true
+	await get_tree().create_timer(end_card_seconds).timeout
+	Travel.go(DebugMenu.SCENE, "", false)
 
 
 func _show_card(text: String, seconds: float) -> void:

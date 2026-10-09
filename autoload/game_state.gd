@@ -70,6 +70,13 @@ func get_flag(flag: String, default: Variant = false) -> Variant:
 	return _flags.get(flag, default)
 
 
+## Forget every flag of one realm ("prologue." -> the prologue plays fresh).
+func clear_flags(prefix: String) -> void:
+	for flag: String in _flags.keys():
+		if flag.begins_with(prefix):
+			_flags.erase(flag)
+
+
 ## Add (or, with a negative count, take away) items. Never below zero.
 func add_item(item_id: String, count := 1) -> void:
 	inventory[item_id] = maxi(0, int(inventory.get(item_id, 0)) + count)
