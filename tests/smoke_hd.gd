@@ -14,7 +14,7 @@
 #          6. the camera keeps the kid on screen, clear of the HUD, at the
 #             map's bottom and top rows, in both views and on a short map
 #             (the arena); at the bottom he once walked right off screen
-#          1b. each shop is a real 3D building (walls, roof, awning, counter,
+#          1b. each shop is a real 3D building (walls, roof, counter,
 #              sign) casting shadows; the shutter panel shows only while it's
 #              closed; the kid stops at the counter and can still talk
 #        It can't judge how things LOOK: that's what the screenshot tour is for.
@@ -151,7 +151,7 @@ func _run() -> void:
 		get_tree().quit(1)
 
 
-## Each stall is a 3D building: walls, roof, awning, counter, sign, casting
+## Each stall is a 3D building: walls, roof, counter, sign, casting
 ## shadows; its shutter shows only while the shop is closed; and the kid can
 ## still reach the counter (the 2D footprint) and talk to keeper or shutter.
 func _check_shops(hd: HdView, kid: Kid, stalls: Array[Prop]) -> void:
@@ -161,7 +161,7 @@ func _check_shops(hd: HdView, kid: Kid, stalls: Array[Prop]) -> void:
 	var shops_node := hd.get_node("Shops")
 	for b: ShopBuilding3D in buildings:
 		_check(b.get_parent() == shops_node, "shop building outside the Shops holder")
-		for part in ["BackWall", "SideWallL", "SideWallR", "RoofL", "RoofR", "FasciaL", "FasciaR", "RidgeCap", "PostL", "PostR", "Awning", "Counter", "Sign", "Shutter"]:
+		for part in ["BackWall", "SideWallL", "SideWallR", "RoofL", "RoofR", "FasciaL", "FasciaR", "RidgeCap", "PostL", "PostR", "Counter", "Sign", "Shutter"]:
 			var mi := b.get_node_or_null(part) as MeshInstance3D
 			_check(mi != null, "%s lacks a 3D %s" % [b.name, part])
 			if mi == null:

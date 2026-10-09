@@ -3,8 +3,9 @@
 # -----------------------------------------------------------------------------
 # WHAT:  Builds one shop out of 3D boxes: back wall, two side walls, corner
 #        posts and a base board, a low gable roof of fine shingles with fascia
-#        boards and a ridge cap, a gable front with the sign, a striped
-#        scalloped awning over a low counter with goods on it, a crate and a
+#        boards and a ridge cap, a gable front with the sign, an open front
+#        (no awning: it hid the keeper) over a low counter with goods on it,
+#        a crate and a
 #        barrel beside the stall, a hanging lantern, and (while the shop is
 #        closed) a slatted shutter over the counter opening. The keeper (a 2D
 #        Npc that HdView mirrors as a sprite) stands inside, behind the counter,
@@ -19,7 +20,7 @@
 #        calls setup(). Coordinates are meters from the stall's base point:
 #        +x east, +z toward the camera, y up. Textures are 32x32 tiles
 #        (tools/art/build_art.py `shops` step: LPC siding plus generated
-#        shingles, trim, awning cloth and shutter slats), triplanar in WORLD
+#        shingles, trim and shutter slats), triplanar in WORLD
 #        space at 1 tile per meter with nearest filtering, so a texel is about
 #        1/32 m like the sprites. Gameplay stays in 2D: the stall prop's solid
 #        footprint (96x54 px) covers this building, counter included; the crate
@@ -115,24 +116,6 @@ func setup(prop_name: String, shop_: Shop) -> void:
 	_box("CounterTop", Vector3(2 * HALF_W - 0.3, 0.06, 0.46), Vector3(0, COUNTER_H + 0.03, 1.3), wood)
 	_build_goods(tag)
 	_build_beside()
-
-	# Awning: striped cloth hanging from the lintel, slanting down and out, with
-	# a scalloped front edge (cut by alpha). The quad hangs from its top edge.
-	var awn := StandardMaterial3D.new()
-	awn.albedo_texture = load(TEX_DIR + "shop_awning_%s.png" % tag)
-	awn.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	awn.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	awn.cull_mode = BaseMaterial3D.CULL_DISABLED
-	awn.uv1_scale = Vector3(2 * HALF_W + 0.2, 1, 1)
-	awn.roughness = 0.9
-	var drop := 0.15
-	var out := 0.4
-	var cloth_len := sqrt(drop * drop + out * out)
-	var cloth := QuadMesh.new()
-	cloth.size = Vector2(2 * HALF_W + 0.2, cloth_len)
-	cloth.center_offset = Vector3(0, -cloth_len * 0.5, 0)
-	var awning := _mesh("Awning", cloth, Vector3(0, WALL_H - 0.05, FRONT_Z), awn)
-	awning.rotation.x = -atan2(out, drop)
 
 	# Sign on the front gable.
 	var sign_mat := StandardMaterial3D.new()
