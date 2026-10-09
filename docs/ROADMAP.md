@@ -36,6 +36,7 @@ the orange shelter tag).
 
 ## Later
 
+* Find character and animal art with 8 directions (diagonals) for the kid and the dog: LPC only has 4; the owner wants 45-degree poses if a matching set exists
 * Night-only enemies and items (the hook is there: `ENEMY_CLOCK` / `"clock"` per spawner)
 * Save system (human-readable JSON), dialogue, the hub (The Mansion That Was), the prologue
 * The realms (being redesigned, see design-bible.md section 8)
@@ -73,6 +74,17 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: shops with depth
+
+Owner: "The shops look cheesy, they need to appear to have some depth even if the other artifacts do not."
+
+* In the HD-2D view each shop is real 3D geometry (`systems/hd2d/shop_building.gd`), not a sprite quad: back wall, two side walls, a gable roof of shingles with a 0.25 m overhang, a gable front with the sign (and two small windows), posts and a lintel, a slanted striped awning projecting over a counter, the keeper standing inside behind it. The closed shutter is a 3D panel over the counter opening.
+* Textures are 32x32 tiles from the same LPC buildings tileset (`build_art.py` `shops` step), world-aligned triplanar with nearest filtering: a texel is 1/32 m like the sprites. Every part casts shadows, so the sun and the clock presets light and shade them like the fences.
+* Night: the always-open stand gets a warm lamp and lit gable windows; the corner store is dark while closed.
+* Gameplay stays 2D. The stall footprint grew from 96x14 to 96x54 px (back wall to the counter), so the kid now stops about 55 px in front of the base, level with the counter; the shutter's talk range went 44 to 72 px to match. The classic 2D view (F6) keeps its sprites.
+* Depth sort needs no bias for the buildings: they are real geometry, the depth buffer sorts kid and dog behind and in front. The old stall quads are skipped in HD.
+* Tests (`smoke_hd` section 1b): both shops build walls, roofs, awning, counter, sign and shutter nodes that cast shadows with nearest-filtered textures; the shutter is visible only while closed and the lamp lit only at night while open; the kid walking up stops at the counter and the talk target is the keeper (open) or the shutter (closed). Sabotaged: shutter always visible (3 failures), footprint back to 14 px (2 failures). Screenshots by day, golden and night judged from the tour.
 
 ## Done: playtest fixes (movement, club, dog bite, sniffing)
 

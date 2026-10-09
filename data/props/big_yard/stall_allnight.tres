@@ -7,8 +7,8 @@
 script = ExtResource("1_script")
 texture = ExtResource("2_tex")
 base = Vector2(52, 82)
-footprint = Vector2(96, 14)
-footprint_offset = Vector2(0, -7)
+footprint = Vector2(96, 54)
+footprint_offset = Vector2(0, 21)
 shadow_size = Vector2(104, 16)
 shadow_alpha = 0.4
 occluder_size = Vector2(96, 14)

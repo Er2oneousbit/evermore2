@@ -14,6 +14,9 @@
 #          6. the camera keeps the kid on screen, clear of the HUD, at the
 #             map's bottom and top rows, in both views and on a short map
 #             (the arena); at the bottom he once walked right off screen
+#          1b. each shop is a real 3D building (walls, roof, awning, counter,
+#              sign) casting shadows; the shutter panel shows only while it's
+#              closed; the kid stops at the counter and can still talk
 #        It can't judge how things LOOK: that's what the screenshot tour is for.
 #
 # RUN:   godot --headless --path . --fixed-fps 60 res://tests/smoke_hd.tscn
@@ -47,8 +50,11 @@ func _run() -> void:
 
 	# --- 1. Everything got mirrored --------------------------------------------
 	var expected_props := 0
+	var stalls: Array[Prop] = []
 	for p in yard.get_node("World").get_children():
-		if p is Prop and p.data and not (p.data.ground_decal and p.data.frames == 1):
+		if p is Prop and p.data and ShopBuilding3D.STYLES.has(p.data.resource_path.get_file().get_basename()):
+			stalls.append(p)  # real 3D buildings, checked in section 1b
+		elif p is Prop and p.data and not (p.data.ground_decal and p.data.frames == 1):
 			expected_props += 1
 	var got_props := hd.get_node("Props").get_child_count()
 	_check(got_props == expected_props, "3D props %d, expected %d (one per non-decal 2D prop)" % [got_props, expected_props])
@@ -58,6 +64,9 @@ func _run() -> void:
 		if (m as MeshInstance3D).mesh is BoxMesh and ((m as MeshInstance3D).mesh as BoxMesh).size.y > 0.5:
 			posts += 1
 	_check(posts == fence_cells, "3D fence posts %d, expected %d (one per fence cell)" % [posts, fence_cells])
+
+	# --- 1b. Shops are real 3D buildings (not sprite quads) ----------------------
+	await _check_shops(hd, kid, stalls)
 
 	# --- 2. Actors follow their 2D bodies --------------------------------------
 	Input.action_press("move_right")
@@ -140,6 +149,67 @@ func _run() -> void:
 		for f in _failures:
 			printerr("[TEST] FAIL  ", f)
 		get_tree().quit(1)
+
+
+## Each stall is a 3D building: walls, roof, awning, counter, sign, casting
+## shadows; its shutter shows only while the shop is closed; and the kid can
+## still reach the counter (the 2D footprint) and talk to keeper or shutter.
+func _check_shops(hd: HdView, kid: Kid, stalls: Array[Prop]) -> void:
+	var buildings := hd.get_tree().get_nodes_in_group("shop_building")
+	_check(stalls.size() == 2 and buildings.size() == stalls.size(),
+			"%d stalls but %d 3D shop buildings" % [stalls.size(), buildings.size()])
+	var shops_node := hd.get_node("Shops")
+	for b: ShopBuilding3D in buildings:
+		_check(b.get_parent() == shops_node, "shop building outside the Shops holder")
+		for part in ["BackWall", "SideWallL", "SideWallR", "RoofL", "RoofR", "Awning", "Counter", "Sign", "Shutter"]:
+			var mi := b.get_node_or_null(part) as MeshInstance3D
+			_check(mi != null, "%s lacks a 3D %s" % [b.name, part])
+			if mi == null:
+				continue
+			if part != "Sign":
+				_check(mi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "%s %s casts no shadow" % [b.name, part])
+			var tex := (mi.material_override as StandardMaterial3D).albedo_texture
+			_check((mi.material_override as StandardMaterial3D).texture_filter == BaseMaterial3D.TEXTURE_FILTER_NEAREST
+					and tex != null, "%s %s must use a nearest-filtered texture" % [b.name, part])
+		_check(b.shop != null, "%s isn't tied to its Shop" % b.name)
+	# Kid walking up from the street stops at the counter, in reach of both.
+	for st in stalls:
+		var shop: Shop = null
+		for s: Shop in hd.get_tree().get_nodes_in_group("shop"):
+			if s.global_position.distance_to(st.global_position - Shop.STALL_OFFSET) < 24.0:
+				shop = s
+		_check(shop != null, "no Shop at stall %s" % st.name)
+		if shop == null:
+			continue
+		var building: ShopBuilding3D = null
+		for b: ShopBuilding3D in buildings:
+			if b.shop == shop:
+				building = b
+		_check(building != null, "no building for shop %s" % shop.shop_id)
+		if building == null:
+			continue
+		for state in ["day", "night"]:
+			Clock.hold(state, 0.0)
+			await _frames(3)
+			_check(building.get_node("Shutter").visible == not shop.is_open(),
+					"%s at %s: shutter panel visible=%s but open=%s" % [shop.shop_id, state,
+					building.get_node("Shutter").visible, shop.is_open()])
+			var lit := (building.get_node("Lamp") as OmniLight3D).light_energy > 0.0
+			_check(lit == (state == "night" and shop.is_open()), "%s at %s: lamp lit=%s, open=%s" % [shop.shop_id, state, lit, shop.is_open()])
+			kid.global_position = st.global_position + Vector2(0, 90)
+			kid.velocity = Vector2.ZERO
+			kid.facing = Vector2.UP
+			await _frames(5)
+			Input.action_press("move_up")
+			await _frames(70)
+			Input.action_release("move_up")
+			await _frames(5)
+			var reach := kid.global_position.y - st.global_position.y
+			_check(reach >= 50.0 and reach < 80.0, "%s: kid stopped %.0f px south of the stall base (the 3D counter should stop him at 50+)" % [shop.shop_id, reach])
+			var target := Interaction.current_target()
+			var want: Node2D = shop.keeper if shop.is_open() else shop.shutter
+			_check(target == want, "%s at %s: talk target is %s, expected %s" % [shop.shop_id, state, target, want])
+	Clock.hold("day", 0.0)
 
 
 ## Kid on the first and last walkable rows (inside the fence): his feet

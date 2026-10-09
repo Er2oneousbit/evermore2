@@ -423,10 +423,22 @@ func _build_props() -> void:
 	var holder := Node3D.new()
 	holder.name = "Props"
 	add_child(holder)
+	var shops := Node3D.new()
+	shops.name = "Shops"
+	add_child(shops)
 	for p in _world2d.get_children():
 		if not (p is Prop) or p.data == null or p.data.texture == null:
 			continue
 		var d: PropData = p.data
+		var stall := d.resource_path.get_file().get_basename()
+		if ShopBuilding3D.STYLES.has(stall):
+			# A real 3D building instead of a sprite quad (see shop_building.gd).
+			var b := ShopBuilding3D.new()
+			b.name = "ShopBuilding_" + stall
+			b.position = to3(p.global_position)
+			shops.add_child(b)
+			b.setup(stall, _shop_at(p.global_position))
+			continue
 		var lying := d.ground_decal
 		if lying and d.frames == 1:
 			continue  # baked into the ground texture
@@ -446,6 +458,14 @@ func _build_props() -> void:
 		mi.layers = PROP_LAYER
 		holder.add_child(mi)
 		_prop_count += 1
+
+
+## The Shop whose stall stands at this base point (null if none).
+func _shop_at(base: Vector2) -> Shop:
+	for s: Shop in get_tree().get_nodes_in_group("shop"):
+		if s.global_position.distance_to(base - Shop.STALL_OFFSET) < 24.0:
+			return s
+	return null
 
 
 ## One quad per prop type, offset so the prop's base point sits at the origin.
@@ -594,7 +614,7 @@ func _build_actors() -> void:
 ## lights a second on the kid).
 func _add_new_actors() -> void:
 	for n in get_tree().get_nodes_in_group("hd_actor"):
-		if not _mirrored.has(n.get_instance_id()) and n is Node2D and n.has_node("Sprite"):
+		if not _mirrored.has(n.get_instance_id()) and n is Node2D and n.has_node("Sprite") 				and not n.has_meta("hd_skip"):
 			_add_actor(n, NPC_DEPTH_BIAS)
 
 

@@ -148,6 +148,8 @@ YardHD (Node)
       ├── Water    glossy plane over the water pixels (SSR reflections)
       ├── Props    one sprite quad per 2D Prop (shared mesh/material per type)
       ├── Fences   3D posts + rails built from LAYOUT
+      ├── Shops    one ShopBuilding3D per stall prop (real walls, roof, awning,
+      │            counter, shutter panel; replaces the stall's sprite quad)
       ├── Kid/Dog  Sprite3Ds copying the 2D sprites' frame + position each frame
       ├── Camera   perspective, follows the kid, clamped to the map
       └── Sun, flashlight, phone glow, WorldEnvironment, particles, cloud shadows
@@ -282,6 +284,14 @@ Why an autoload and not Atmosphere: time is game state. It must outlive a
 scene change, and shops, enemies and the kid ask it without finding a realm
 node (tests use it with no realm at all). Atmosphere is only the look.
 
+* **Shop buildings in HD-2D** (`systems/hd2d/shop_building.gd`): HdView swaps
+  each `stall_*` prop's quad for a `ShopBuilding3D` (boxes, prism gables,
+  slanted roof and awning; 32x32 LPC tiles, world triplanar, nearest, so
+  32 px = 1 m; all parts cast shadows). It listens to `Shop.state_changed`:
+  shutter panel while closed, lamp and gable windows at night while open.
+  The stall prop's 96x54 px footprint is the collision, the 2D `ShopShutter`
+  (`hd_skip` meta: no quad) only handles talking. Depth sorts by the depth
+  buffer, so no depth bias is needed.
 * **Shops** (`systems/shops/shop.gd`, AsciiRealm `SHOPS_BY_CHAR`): a keeper
   `Npc` on the shop's cell, the stall a prop one cell north, a `ShopShutter`
   (hd_actor + interactable) over its counter. `rule`: `follow_clock` (open
