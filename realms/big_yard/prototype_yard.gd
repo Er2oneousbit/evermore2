@@ -49,7 +49,7 @@ const LAYOUT: Array[String] = [
 
 const FENCE_CHAR := "#"
 const REALM_NAME_KEY := "realm_test_yard"
-const MUSIC := "yard"
+const MUSIC_SET := "outdoor"  # F2 switches between the day and night tracks
 ## Terrain under each character; anything not listed is grass.
 const TERRAIN_BY_CHAR := {":": "Dirt", "*": "Dirt", "~": "Shallow Water"}
 ## Which props each character can place (picked deterministically per cell).

@@ -9,6 +9,11 @@
 #          Audio.set_ambience("outdoor")                  birds by day, crickets
 #                                                         at night (follows the
 #                                                         time of day by itself)
+#          Audio.set_music_set("outdoor")                 music that follows the
+#                                                         time of day too: two
+#                                                         day and two night tracks,
+#                                                         each switch plays the
+#                                                         next one in that list
 #        SOUNDS is the one table of sound names: which files (one is picked at
 #        random, so repeats don't sound robotic), how loud, how much the pitch
 #        wanders. The files come from tools/audio/build_audio.py (all CC0, see
@@ -71,7 +76,17 @@ const SOUNDS := {
 	"switch":     {"files": ["switch"], "db": -16.0, "pitch": 0.0},
 }
 ## Music name -> file in MUSIC_DIR. The tracks loop seamlessly.
-const MUSIC := {"home": "home", "lot": "lot", "yard": "yard", "arena": "arena"}
+const MUSIC := {
+	"home": "home", "lot": "lot", "yard": "yard", "arena": "arena",
+	"tropical": "tropical", "innocence": "innocence",
+}
+## A music set -> the track list for each time of day. Going INTO a time picks
+## the next track of its list (so day, night, day plays the other day track).
+## A list shared by two times (day and golden) keeps playing across them.
+const _OUTDOOR_DAY := ["yard", "tropical"]
+const MUSIC_SETS := {
+	"outdoor": {"day": _OUTDOOR_DAY, "golden": _OUTDOOR_DAY, "night": ["lot", "innocence"]},
+}
 
 const VOICE_DIR := "res://assets/audio/voice/"
 ## Voices: real voice actors saying one or two words ("Hey!", "What?") when
@@ -129,6 +144,8 @@ var music_name := ""
 ## The ambience loop playing now ("" = none) and the kind of place.
 var ambience_name := ""
 var ambience_set := ""
+## The music set active now ("" = none; play_music() clears it).
+var music_set := ""
 
 var _streams: Dictionary = {}  # file -> AudioStream
 var _world: Array[AudioStreamPlayer2D] = []
@@ -140,6 +157,7 @@ var _amb: Array[AudioStreamPlayer] = []
 var _amb_on := 0
 var _amb_fade: Tween
 var _time_name := "day"
+var _music_turn: Dictionary = {}  # time name -> how many times we entered it
 var _bird_timer := 0.0
 var _frame_counts: Dictionary = {}
 var _frame := -1
@@ -182,7 +200,8 @@ func _ready() -> void:
 	_bird_timer = randf_range(BIRD_EVERY.x, BIRD_EVERY.y)
 	EventBus.time_of_day_changed.connect(func(t: String) -> void:
 		_time_name = t
-		_update_ambience(2.5))
+		_update_ambience(2.5)
+		_update_music_set(2.5, false))
 
 
 func _process(delta: float) -> void:
@@ -250,6 +269,36 @@ func play_at(sound: String, world_pos: Vector2, pitch := 1.0) -> bool:
 
 ## Crossfade to a music track ("" or an unknown name stops the music).
 func play_music(track: String, fade := 1.0) -> void:
+	music_set = ""  # picking a track by hand ends any time-of-day set
+	_play_track(track, fade)
+
+
+## Music that follows the time of day ("outdoor", or "" for none). Starts the
+## current time's next track; the set stays until play_music()/set_music_set("").
+func set_music_set(kind: String, fade := 1.5) -> void:
+	if kind != "" and not MUSIC_SETS.has(kind):
+		Debug.log_warn("Audio: unknown music set '%s'" % kind)
+		kind = ""
+	music_set = kind
+	_music_turn.clear()
+	if kind != "":
+		_update_music_set(fade, true)
+
+
+## keep: stay on a track that already belongs to the new time's list (day to
+## golden shares one), unless the set was just started.
+func _update_music_set(fade: float, force: bool) -> void:
+	if music_set == "":
+		return
+	var list: Array = MUSIC_SETS[music_set].get(_time_name, [])
+	if list.is_empty() or (not force and list.has(music_name)):
+		return
+	var turn: int = _music_turn.get(_time_name, 0)
+	_music_turn[_time_name] = turn + 1
+	_play_track(list[turn % list.size()], fade)
+
+
+func _play_track(track: String, fade: float) -> void:
 	if track == music_name:
 		return
 	if not MUSIC.has(track):

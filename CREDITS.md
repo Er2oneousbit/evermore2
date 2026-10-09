@@ -125,7 +125,8 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
   [Exploration]*, *#4 [Calm]* and *#5 [Action]*
   ([OpenGameArt](https://opengameart.org/users/subspaceaudio)).
   "A Place I Call Home" (dinner), "Childhood Friends" (the dare),
-  "Grasslands" (the test yard), "Preparing For Battle" (the combat arena)
+  "Grasslands" (the test yard, day), "Tropical Island" (day), "Childhood
+  Friends" (night), "Innocence" (night), "Preparing For Battle" (the combat arena)
 * **RPG Sound Pack** by artisticdude: swings, the rat's bite, menu sounds
   ([OpenGameArt](https://opengameart.org/content/rpg-sound-pack))
 * **50 RPG sound effects** by Kenney (www.kenney.nl): the stick's crack, cloth
