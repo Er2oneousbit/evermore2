@@ -13,6 +13,8 @@
 #                                                   morning works too)
 #             EVERMORE_TOUR_SPOTS="start,pond"      (default: all spots)
 #             EVERMORE_TOUR_VIEW="2d"               (default: hd = the HD-2D view)
+#             EVERMORE_TOUR_MAP="street"            (default: yard; street = the
+#                                                   prologue road, HD only, STREET_SPOTS)
 #             EVERMORE_TOUR_WAIT=9                  (seconds to wait before each shot,
 #                                                   default 0.5; the day/night enemy swap takes ~10)
 #   Windows PowerShell: $env:EVERMORE_SHOT_DIR="C:\temp\shots" before running.
@@ -24,6 +26,7 @@ extends Node
 
 const YARD_SCENE := preload("res://realms/big_yard/prototype_yard.tscn")
 const HD_SCENE := preload("res://realms/big_yard/yard_hd.tscn")
+const STREET_SCENE := preload("res://realms/podunk/ruffleberg_lot_hd.tscn")
 
 ## name -> [kid tile, direction the kid walks into the shot]
 const SPOTS := {
@@ -33,6 +36,11 @@ const SPOTS := {
 	"garden": [Vector2i(31, 17), Vector2.LEFT],
 	"oak":    [Vector2i(4, 6), Vector2.UP],  # under a bat roost (ENEMY_ROOSTS)
 	"shops":  [Vector2i(47, 9), Vector2.UP],  # the street: both stalls in view
+	"entrance": [Vector2i(4, 7), Vector2.LEFT],  # the path in from the prologue street
+}
+## The prologue street (EVERMORE_TOUR_MAP=street).
+const STREET_SPOTS := {
+	"road": [Vector2i(33, 12), Vector2.RIGHT],  # the road east to the test yard, its sign
 }
 
 var _dir := OS.get_environment("EVERMORE_SHOT_DIR")
@@ -48,8 +56,11 @@ func _run() -> void:
 		get_tree().quit(2)
 		return
 	DirAccess.make_dir_recursive_absolute(_dir)
-	var hd_mode := OS.get_environment("EVERMORE_TOUR_VIEW") != "2d"
-	var scene := (HD_SCENE if hd_mode else YARD_SCENE).instantiate()
+	var street := OS.get_environment("EVERMORE_TOUR_MAP") == "street"
+	var hd_mode := street or OS.get_environment("EVERMORE_TOUR_VIEW") != "2d"
+	var scene := (STREET_SCENE if street else HD_SCENE if hd_mode else YARD_SCENE).instantiate()
+	if street:
+		scene.get_node("Yard").skip_intro = true
 	add_child(scene)
 	var yard: Node = scene.get_node("Yard") if hd_mode else scene
 	var hd: HdView = scene.get_node("HdView") if hd_mode else null
@@ -58,11 +69,12 @@ func _run() -> void:
 	var atmosphere: Atmosphere = yard.get_node("Atmosphere")
 	var cam: GameCamera = kid.get_node("Camera2D")
 	var times := _list("EVERMORE_TOUR_TIMES", ["day", "golden", "night"])
-	var spots := _list("EVERMORE_TOUR_SPOTS", SPOTS.keys())
+	var table: Dictionary = STREET_SPOTS if street else SPOTS
+	var spots := _list("EVERMORE_TOUR_SPOTS", table.keys())
 	var wait := float(OS.get_environment("EVERMORE_TOUR_WAIT")) if OS.has_environment("EVERMORE_TOUR_WAIT") else 0.5
 	await _frames(20 if hd_mode else 10)
 	for spot: String in spots:
-		var info: Array = SPOTS[spot]
+		var info: Array = table[spot]
 		var tile: Vector2i = info[0]
 		var walk: Vector2 = info[1]
 		for t: String in times:

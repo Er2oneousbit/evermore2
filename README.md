@@ -56,7 +56,9 @@ for Windows or Linux. No engine needed: unzip and run.
 
 Inside: `Evermore2.exe` starts the prologue, `Combat arena.bat` the fight
 with the giant rats (also on Hard), `Test yard.bat` the yard where a whole day goes by in 24 minutes (two shops,
-one that closes at night). The
+one that closes at night). The three are joined by paths: follow the
+prologue street's road east to the yard, and the yard's shop street north to
+the arena. The
 exe isn't code-signed, so Windows may warn you: **More info**, then
 **Run anyway**. On Linux use `./Evermore2.x86_64`, `./combat-arena.sh` and
 `./test-yard.sh`.

@@ -185,15 +185,15 @@ Full detail per layer (artists and licenses): `credits/grocer/credits.txt` and
 `credits/vendor/credits.txt` (and `.csv`). Like the cast above, the hair layers
 are CC-BY-SA 3.0 / GPL 3.0.
 
-## Market stalls: `assets/props/big_yard/stall_*.png`, `assets/props/shops/shop_closed.png`
+## Market stalls and the signpost: `assets/props/big_yard/stall_*.png`, `assets/props/big_yard/signpost.png`, `assets/props/shops/shop_closed.png`
 
 * Composed from `lpc-tileset-buildings.png` in
   [LPC Revised - Fully Configured 4 Seasons Tilesets for Tiled Map Editor](https://opengameart.org/content/lpc-revised-fully-configured-4-seasons-tilesets-for-tiled-map-editor)
   (JaidynReiman; LPC Revised by Eliza Wyatt and the artists listed under the ground tileset
   above). License: **OGA-BY 3.0** / CC-BY 3.0.
 * Modified by this project: wood siding walls, awnings and a sign plaque with the money-bag
-  icon cropped and composed into stalls and a closed shutter (`tools/art/build_art.py`,
-  `build_shops`).
+  icon cropped and composed into stalls and a closed shutter; the siding and its frame cut
+  into a signpost board and post, with a drawn arrow (`tools/art/build_art.py`, `build_shops`).
 
 ## Item icons: `assets/items/lpc_items.png` (ring menu, hidden items)
 

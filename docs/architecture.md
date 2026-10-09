@@ -25,6 +25,7 @@ GAME
 │   ├── Difficulty   Normal/Hard levers in one table                     [done]
 │   ├── Fx           Damage numbers, "Miss", slash trails, hit-stop, shake [done]
 │   ├── Party        Kid + dog: switching, Stay put, stances, knockouts  [done]
+│   ├── Travel       Walking between maps: fade, scene swap, entry, carry-over  [done]
 │   └── Economy      Per-realm currencies, exchange rates, trade routes [todo]
 │   (Audio: "SFX" and "Music" buses under Master; Settings sets their volume)
 │
@@ -97,6 +98,8 @@ The kid and the dog only collide with **world**, so they never block each other.
 | 5 | Combat FX (Fx): damage numbers, slash trails, projected through the live camera | no |
 | 4 | Color grade full-screen pass (Atmosphere) | - |
 | 10 | HUD | no |
+| 15 | The prologue's title cards and fades | no |
+| 40 | Travel's fade between maps | no |
 | 100 | Debug overlay | no |
 
 ## 3. How a realm is built
@@ -332,6 +335,47 @@ node (tests use it with no realm at all). Atmosphere is only the look.
     per row (3 flight, folded, hanging, twitch) from OGA "Bat (Rework)" by
     AntumDeluge after bagzie, OGA-BY 3.0; credits in `credits/enemies/`.
 
+## 3g. Walking between maps (`autoload/travel.gd`, `systems/travel/`)
+
+```
+Realm config (AsciiRealm)
+  EXITS   {">": {"to": "res://realms/big_yard/yard_hd.tscn", "entry": "from_street"}}
+  ENTRIES {"from_yard": {"cell": Vector2i(34, 11), "facing": Vector2.LEFT}}
+  SIGNS   [{"cell": Vector2i(35, 13), "place": "realm_test_yard", "dir": Vector2.RIGHT}]
+     |  _build_exits: exit chars sit on the map edge (validated); their ground
+     |  (Dirt) runs on through the apron; a wall one tile past the gap
+     v
+MapExits (child of the realm)  each physics frame: Party.leader inside an exit?
+     |  (not while armed == false, Dialogue, KO, paused, Travel.busy)
+     v
+Travel.go(scene, entry)   autoload: busy = true (_input swallows everything,
+     |                    kid/dog stand still), snapshot() HP/charge/leader/stay,
+     |                    fade to black 0.5 s, change_scene_to_file
+     v
+new AsciiRealm._ready -> Travel.realm_ready(self): entry_spot() places leader
+     |                    on the cell, partner a tile behind, facing set; HP and
+     |                    charge restored; Party.place(leader, staying)
+     v
+scene_changed + 2 frames: Camera2D.reset_smoothing, HdView.snap_camera,
+                          fade in 0.5 s, busy = false, `finished`
+```
+
+* **Why an autoload:** the fade and the snapshot must outlive the old scene,
+  and the snapshot must exist when the new kid's `_ready` runs.
+* **No bounce:** `MapExits.armed` stays false after a load until the leader
+  has been seen outside every exit; entries are also validated to be at least
+  two tiles from any exit.
+* **What carries over:** Travel carries HP (a KO arrives at 30%), charge,
+  the driven member and Stay put. Inventory, gear, stances, flags and the
+  clock live in autoloads. Each realm's own CLOCK_MODE, MUSIC/MUSIC_SET and
+  AMBIENCE take over on arrival; music crossfades.
+* **Story maps:** the prologue skips its intro when `prologue.intro_done` is set.
+  Demo maps share their kit through `START_ITEMS_FLAG`.
+* A plain load (F5, `--yard`, `--arena`, a restart after a wipe) has no pending
+  entry: the party starts on the layout's K/D.
+* Tests: `smoke_travel` hands "current scene" to a holder node so it lives
+  through the swaps.
+
 ## 4. Follow AI (how it works)
 
 `systems/party/follower.gd`, used by whichever member the AI plays (the dog
@@ -379,6 +423,7 @@ it and confirming the test fails:
 | `tests/smoke_rings.tscn` | no | The Items, Alchemy and Party rings (use, cast, cost, experience and levels, stances, Stay put), quick slots (assign, move, fire on whoever you drive, notices, not mid-conversation), the D-pad moving to quick slots and old saves, dialogue keys |
 | `tests/smoke_clock.tscn` | no | The clock: phase order and wrap on game time, the long fade, pause, hold/set/release, F7/F9; the yard runs free and its HD look fades; the prologue holds (and @time keeps it held); shops open/closed by the clock, the shutter, one item per phase, set_rule; night misses only outside the beam (2D cone and HD spotlight, seeded dice, "Miss", no damage); the dog's scent glow only at night while driving him |
 | `tests/smoke_enemy_clock.tscn` | no | The day/night enemy swap on the yard: rats out and bats hanging by day, a rat respawns by its burrow; at dusk the idle rat leaves and is removed only invisible or off camera, the fighting rat stays, no respawn at night, the bats drop one at a time after dark with a cue; at dawn bats hang up again and the rats return staggered |
+| `tests/smoke_travel.tscn` | no | Walking between maps: the fresh prologue plays its intro; dog-driven street -> yard (entry spot and facing, HP, charge, leader, Stay put carried, clock hold released, both cameras snapped, no bounce back from the arrival exit); Esc mid-swap; yard -> arena -> yard (kit not doubled); back to the street with no intro and the clock held |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |

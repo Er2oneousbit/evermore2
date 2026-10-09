@@ -354,6 +354,12 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 		move_and_slide()
 		return
+	if Travel.busy:
+		# Walking to the next map (fade, scene change): stand still, face
+		# where the entry says. The charge waits too.
+		velocity = Vector2.ZERO
+		_update_animation()
+		return
 	charge.tick(delta)
 	_stagger = maxf(0.0, _stagger - delta)
 	var input_dir := Vector2.ZERO

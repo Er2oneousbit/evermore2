@@ -13,6 +13,7 @@
 #   .  grass      :  dirt (the road, the old path)   %  iron fence (the lot)
 #   #  wood fence (the neighbors')   K kid   D dog   M Maya   X Dex
 #   G  the gate: walking up to it starts the "gate" conversation
+#   >  the road east, off the map: to the test yard (EXITS)
 #   T  oak   v  tall grass   B  bush   s  shrub   l  leafy plant
 #   w  wildflowers   f  a flower
 #
@@ -36,8 +37,8 @@ const LAYOUT: Array[String] = [
 	"#..................G.................#",
 	"#....s......M.......X......f.....s...#",
 	"#.w......................w...........#",
-	"#::::::::::::::::::::::::::::::::::::#",
-	"#::::::::::::::::::::::::::::::::::::#",
+	"#::::::::::::::::::::::::::::::::::::>",
+	"#::::::::::::::::::::::::::::::::::::>",
 	"#...K.D.........w............w.......#",
 	"#..B.....l.....T........B.......T....#",
 	"#.......w...........................B#",
@@ -68,6 +69,14 @@ const NPCS_BY_CHAR := {
 	"X": {"id": "DEX", "start": "dex", "facing": Vector2.LEFT},
 }
 const TRIGGERS_BY_CHAR := {"G": {"start": "gate", "once": false}}
+## The road runs on east to the test yard (a tech demo path, owner
+## 2026-10-09: "a good way to test scene swapping").
+const EXITS := {">": {"to": "res://realms/big_yard/yard_hd.tscn", "entry": "from_street"}}
+const ENTRIES := {"from_yard": {"cell": Vector2i(34, 11), "facing": Vector2.LEFT}}
+const SIGNS := [{"cell": Vector2i(35, 13), "place": "realm_test_yard", "dir": Vector2.RIGHT}]
+## Set once the street has faded in after dinner: coming back from another
+## map never replays the title card, dinner or the arrival talk.
+const INTRO_FLAG := "prologue.intro_done"
 
 ## Layer for the title cards and fades: above the HUD (10), below the text
 ## box (20), so dinner can play as a conversation over black.
@@ -82,7 +91,7 @@ func _ready() -> void:
 	super()
 	_build_overlay()
 	Dialogue.command.connect(_on_command)
-	if skip_intro:
+	if skip_intro or GameState.get_flag(INTRO_FLAG):
 		_black.visible = false
 	else:
 		_play_intro.call_deferred()
@@ -105,6 +114,7 @@ func _play_intro() -> void:
 	await fade.finished
 	_black.visible = false
 	_kid.set_physics_process(true)
+	GameState.set_flag(INTRO_FLAG)
 	Dialogue.start(DIALOGUE, "lot_arrive")
 
 

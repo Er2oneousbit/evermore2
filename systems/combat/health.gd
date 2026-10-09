@@ -82,6 +82,13 @@ func revive(fraction := 0.3) -> void:
 	changed.emit(hp, max_hp)
 
 
+## Set HP straight (carried over from the last map, see Travel). No hit, no
+## heal: just the new number.
+func set_hp(value: int) -> void:
+	hp = clampi(value, 0, max_hp)
+	changed.emit(hp, max_hp)
+
+
 ## Set new maximum (difficulty, armor upgrades) and refill.
 func reset(new_max: int) -> void:
 	max_hp = maxi(1, new_max)

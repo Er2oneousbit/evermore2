@@ -360,6 +360,26 @@ def build_shops():
     stall("stall_corner", 2, 1568, 0)  # follows the clock: orange awning, brown wood
     stall("stall_allnight", 4, 1248, 3)  # always open: sky-blue awning, cream wood, dark sign
 
+    # A signpost for the roads between maps (AsciiRealm SIGNS): a board of
+    # the brown siding on a post cut from the siding's frame. The board stays
+    # blank but for a carved arrow; the place name is game text (names.json).
+    sign = Image.new("RGBA", (30, 40))
+    post = crop(sheet, (1568, 8, 6, 30))
+    sign.alpha_composite(post, (12, 10))
+    board = siding(1584, 8, 26, 14)
+    edge = Image.new("RGBA", (28, 16), (52, 33, 20, 255))
+    sign.alpha_composite(edge, (1, 3))
+    sign.alpha_composite(board, (2, 4))
+    dark = (58, 36, 22, 255)
+    for x in range(8, 20):          # the arrow's shaft
+        sign.putpixel((x, 10), dark)
+        sign.putpixel((x, 11), dark)
+    for k in range(4):              # its head
+        for y in range(10 - k, 12 + k):
+            sign.putpixel((23 - k, y), dark)
+    write_prop("signpost", sign, (15, 38), footprint=(8, 6), footprint_offset=(0, -3), occluder=(6, 4),
+               shadow_size=(14, 6), shadow_alpha=0.4)
+
     # The closed shutter: slatted panel over the counter, a blank dark plaque.
     board = Image.new("RGBA", (92, 46))
     board.alpha_composite(siding(1408 + 16, 192 + 8, 92, 46), (0, 0))

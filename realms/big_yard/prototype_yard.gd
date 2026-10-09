@@ -21,6 +21,8 @@
 #   ,  bare grass (no decal: under and above the stalls)
 #   A  corner store stall  N  all-night stall            1 / 2  their keepers
 #   x  giant rat (day: burrows at dusk)    bats hang in oaks (ENEMY_ROOSTS)
+#   <  the path west to the prologue street   ^  the street north to the
+#      combat arena (EXITS; both are tech-demo paths for scene swapping)
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -28,14 +30,14 @@
 extends AsciiRealm
 
 const LAYOUT: Array[String] = [
-	"######################################################",
+	"################################################^^####",
 	"#...vv....w...t.................vv.....#.t......::...#",
 	"#.T.................wr..~~~~~~~....T...#....,,,.::..T#",
 	"#v...............m.....~~~~~~~~~~......#..s.,,,.::...#",
 	"#......w....s......T..~~~~~~~~~~~~.....#....,,,.::.v.#",
 	"#..K............w......~~~~~~~~~~..BB..#....,A,.::...#",
 	"#...D....................~~~~~~........#B....1..::..s#",
-	"#....::::::::::::::::.......w..........#........::...#",
+	"<::::::::::::::::::::.......w..........#........::...#",
 	"#B..vv.:..ll....B...:...w......l.....t.#.v...w..::.t.#",
 	"#......:............:.....vvT..........#....,,,.::...#",
 	"#######:.##########.:.T.......w...s.r..#....,,,.::...#",
@@ -55,6 +57,21 @@ const LAYOUT: Array[String] = [
 ]
 
 const FENCE_CHAR := "#"
+## Paths to the other demo maps (realms/_shared/ascii_realm.gd MAP EXITS).
+const EXITS := {
+	"<": {"to": "res://realms/podunk/ruffleberg_lot_hd.tscn", "entry": "from_yard"},
+	"^": {"to": "res://realms/test/combat_arena_hd.tscn", "entry": "from_yard"},
+}
+const ENTRIES := {
+	"from_street": {"cell": Vector2i(3, 7), "facing": Vector2.RIGHT},
+	"from_arena": {"cell": Vector2i(48, 3), "facing": Vector2.DOWN},
+}
+const SIGNS := [
+	{"cell": Vector2i(1, 6), "place": "town", "dir": Vector2.LEFT},
+	{"cell": Vector2i(50, 2), "place": "realm_combat_arena", "dir": Vector2.UP},
+]
+## The arena hands out the same kit: once between them.
+const START_ITEMS_FLAG := "demo.start_items"
 const REALM_NAME_KEY := "realm_test_yard"
 const MUSIC_SET := "outdoor"  # the day and night tracks follow the clock
 ## The clock runs on its own here (a tech demo of the day going by).

@@ -128,6 +128,24 @@ func _apply_roles() -> void:
 		f.set_state(Follower.State.STAY if staying and not is_leader else Follower.State.IDLE)
 
 
+## Put `member` in charge right away, with Stay put as given: after a map
+## change (Travel), where the new scene starts with the kid in charge. No
+## glide, no sound: the camera jumps over with him.
+func place(member: Node2D, stay: bool) -> void:
+	staying = stay
+	var old := leader
+	if is_instance_valid(member):
+		leader = member
+	_apply_roles()
+	for m in [old, kid, dog]:
+		var cam: Camera2D = m.get_node_or_null("Camera2D") if is_instance_valid(m) else null
+		if cam and cam.get_parent() != leader:
+			cam.reparent(leader)
+			cam.position = Vector2.ZERO
+	if old != leader:
+		EventBus.control_changed.emit(leader)
+
+
 ## The 2D camera rides on the leader; move it over and let it glide.
 func _move_camera(from: Node2D, to: Node2D) -> void:
 	var cam: Camera2D = null
