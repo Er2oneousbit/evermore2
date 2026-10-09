@@ -45,10 +45,12 @@ void fragment() {
 
 	// 0 at the roots, 1 at the top (UV.y = 0 is the top of the quad).
 	float h = clamp(((1.0 - UV.y) - rooted) / max(1.0 - rooted, 0.001), 0.0, 1.0);
-	h *= h;
 	float t = TIME * sway_speed * 6.2831 + phase * 2.0;
 	float sway = sin(t) * 0.75 + sin(t * 2.37 + 1.3) * 0.25;
-	float shift = round(sway * sway_strength * h);
+	// Everything above the roots moves as one block. Scaling the shift by height
+	// made the row where it rounds from 0 to 1 slide up and down the canopy as
+	// the wind changed: a visible wipe (owner, 2026-10-09).
+	float shift = round(sway * sway_strength * step(0.001, h));
 
 	vec2 uv = vec2(frame_rect.x + (f + UV.x) * frame_rect.z - shift * texel.x,
 			frame_rect.y + UV.y * frame_rect.w);

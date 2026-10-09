@@ -30,6 +30,7 @@ func _run() -> void:
 	await _test_lpc_sprite()
 	await _test_atmosphere()
 	await _test_prop()
+	_test_rigid_sway()
 	if _failures.is_empty():
 		print("[TEST] PASS  smoke_visuals")
 		get_tree().quit(0)
@@ -168,3 +169,19 @@ func _wait(seconds: float) -> void:
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
+
+
+## Wind sway moves everything above the roots as ONE block. A shift scaled by
+## height rounds to whole texels at a row that slides up and down as the wind
+## changes, which read as a glitchy wipe across the tree tops (owner). The
+## renderer can't be read back headless, so this checks the shader math.
+func _test_rigid_sway() -> void:
+	for path in ["res://assets/shaders/hd_sprite.gdshader", "res://assets/shaders/wind_sway.gdshader"]:
+		var code := (load(path) as Shader).code
+		var line := ""
+		for l in code.split("
+"):
+			if l.strip_edges().begins_with("float shift"):
+				line = l
+		_check(line.contains("step(0.001, h)"), "%s: sway shift must not scale with height (%s)" % [path, line.strip_edges()])
+

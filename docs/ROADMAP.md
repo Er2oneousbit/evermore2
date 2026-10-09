@@ -75,6 +75,16 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: tree tops no longer wipe
+
+* Owner, from a screen recording: the tree tops had "a sort of wiping up and
+  down that makes it look like it's glitching". The wind sway shifted each
+  texel row by an amount that grew with height, rounded to whole texels, so
+  the row where the shift stepped from 0 to 1 slid up and down the canopy as
+  the wind changed. Now everything above the roots shifts as one block (both
+  the HD-2D and the classic shader). Test: `smoke_visuals` checks the shift
+  no longer scales with height; reverting either shader fails it
+
 ## Done: sharp text at any resolution
 
 Owner report (3440x1440): the debug menu opened "low res". The window used
