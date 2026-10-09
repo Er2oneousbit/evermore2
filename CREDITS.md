@@ -171,6 +171,23 @@ From the [Universal LPC Spritesheet Character Generator](https://github.com/Libe
   License: **OGA-BY 3.0**. Unmodified.
 * Details: `credits/weapons/credits.txt`.
 
+## Shopkeepers: `assets/characters/{grocer,vendor}/`
+
+Built with the same LPC generator (recipes in `tools/lpc/characters.json`).
+Full detail per layer (artists and licenses): `credits/grocer/credits.txt` and
+`credits/vendor/credits.txt` (and `.csv`). Like the cast above, the hair layers
+are CC-BY-SA 3.0 / GPL 3.0.
+
+## Market stalls: `assets/props/big_yard/stall_*.png`, `assets/props/shops/shop_closed.png`
+
+* Composed from `lpc-tileset-buildings.png` in
+  [LPC Revised - Fully Configured 4 Seasons Tilesets for Tiled Map Editor](https://opengameart.org/content/lpc-revised-fully-configured-4-seasons-tilesets-for-tiled-map-editor)
+  (JaidynReiman; LPC Revised by Eliza Wyatt and the artists listed under the ground tileset
+  above). License: **OGA-BY 3.0** / CC-BY 3.0.
+* Modified by this project: wood siding walls, awnings and a sign plaque with the money-bag
+  icon cropped and composed into stalls and a closed shutter (`tools/art/build_art.py`,
+  `build_shops`).
+
 ## Item icons: `assets/items/lpc_items.png` (ring menu, hidden items)
 
 * **[LPC] Items and game effects** by Reemax, with Sharm, ETTiNGRiNDER, wulax,

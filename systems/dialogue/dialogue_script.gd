@@ -24,6 +24,8 @@
 #   @set flag.name = 3           ... or to a number, true/false, or "text"
 #   @clear flag.name             set a story flag to false
 #   @time night 3                any other @command goes to the scene to handle
+#                                (@time morning/day/golden/night [fade seconds]
+#                                jumps the game clock; a held clock stays held)
 #   [flag] / [!flag] at the start of any statement (choices too) = only when
 #                                the flag is truthy / falsy. Example:
 #   * [!prologue.dared] What's the dare? -> dare

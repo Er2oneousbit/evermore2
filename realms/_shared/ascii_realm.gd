@@ -23,6 +23,7 @@
 #   any key of NPCS_BY_CHAR        an NPC who stands there
 #   any key of TRIGGERS_BY_CHAR    walking onto it starts a conversation
 #   any key of ENEMIES_BY_CHAR     an enemy (data/enemies/<id>.tres) waits there
+#   any key of SHOPS_BY_CHAR       a shop's keeper stands there (systems/shops/shop.gd)
 #
 # HIDDEN ITEMS sit on top of the layout (a bush cell can hide something), so
 #   they're a list, not characters:
@@ -91,8 +92,24 @@ const DEFAULTS := {
 	"NPCS_BY_CHAR": {},
 	## char -> {"start": "gate", "once": true}
 	"TRIGGERS_BY_CHAR": {},
-	## char -> enemy id (data/enemies/<id>.tres)
+	## char -> enemy id (data/enemies/<id>.tres), or {"id": "rat", "clock": "follow_clock"}
+	## to override ENEMY_CLOCK for that spawner.
 	"ENEMIES_BY_CHAR": {},
+	## The game clock here (autoload/clock.gd): "free" (keeps running from
+	## whatever time it is), "set" (starts at the Atmosphere's start_time and
+	## runs) or "hold" (frozen at start_time; the scene moves it with @time).
+	"CLOCK_MODE": "free",
+	## Do this realm's enemies follow the clock ("follow_clock") or ignore it
+	## ("unchanged")? A hook only: nothing reacts to follow_clock yet (no
+	## night-only enemies so far). A spawner can override it, see ENEMIES_BY_CHAR.
+	"ENEMY_CLOCK": "unchanged",
+	## char -> shop spec (systems/shops/shop.gd): {"id": "corner_store",
+	## "keeper": "GROCER", "rule": "follow_clock", "item": "apple", "greet": "shop_a",
+	## "again": "shop_a_again", "closed": "shop_a_closed"}. The char's cell is
+	## where the keeper stands; the stall prop is its own char.
+	"SHOPS_BY_CHAR": {},
+	## Prop characters never mirrored (stalls with signs on them).
+	"NO_FLIP_CHARS": "",
 	## [{"cell": Vector2i, "kind": "buried"/"tucked"/"secret", "item": id, "count": n}]
 	"HIDDEN_ITEMS": [],
 	## Demo maps: items handed to the party the first time the map loads in a
@@ -155,6 +172,18 @@ func _ready() -> void:
 ## A setting: the realm's constant if it declared one, else the default.
 func cfg(key: String) -> Variant:
 	return _cfg.get(key, DEFAULTS.get(key))
+
+
+## A realm setting read straight from a node's script, before (or without)
+## its _ready: the node's constant, else DEFAULTS if it's a realm, else
+## `fallback`. Children (Atmosphere) use it: their _ready runs first.
+static func const_of(node: Node, key: String, fallback: Variant) -> Variant:
+	if node == null or node.get_script() == null:
+		return fallback
+	var consts: Dictionary = node.get_script().get_script_constant_map()
+	if consts.has(key):
+		return consts[key]
+	return DEFAULTS.get(key, fallback) if node is AsciiRealm else fallback
 
 
 ## The playable map area in world pixels.
@@ -232,7 +261,7 @@ func _validate_layout() -> bool:
 	var ok := true
 	var known := ".KD" + "".join(cfg("TERRAIN_BY_CHAR").keys()) + "".join(cfg("FENCES").keys()) \
 			+ "".join(cfg("PROPS_BY_CHAR").keys()) + "".join(cfg("NPCS_BY_CHAR").keys()) \
-			+ "".join(cfg("TRIGGERS_BY_CHAR").keys()) + "".join(cfg("ENEMIES_BY_CHAR").keys())
+			+ "".join(cfg("TRIGGERS_BY_CHAR").keys()) + "".join(cfg("ENEMIES_BY_CHAR").keys()) 			+ "".join(cfg("SHOPS_BY_CHAR").keys())
 	for y in layout.size():
 		if layout[y].length() != width:
 			Debug.log_error("LAYOUT row %d is %d chars wide, expected %d" % [y, layout[y].length(), width])
@@ -247,7 +276,7 @@ func _validate_layout() -> bool:
 			Debug.log_error("LAYOUT needs exactly one %s, found %d" % [spawn, joined.count(spawn)])
 			ok = false
 	ok = _validate_hidden() and ok
-	if not cfg("NPCS_BY_CHAR").is_empty() or not cfg("TRIGGERS_BY_CHAR").is_empty():
+	if not cfg("NPCS_BY_CHAR").is_empty() or not cfg("TRIGGERS_BY_CHAR").is_empty() 			or not cfg("SHOPS_BY_CHAR").is_empty():
 		if String(cfg("DIALOGUE")).is_empty():
 			Debug.log_error("%s has NPCs or triggers but no DIALOGUE file" % name)
 			ok = false
@@ -351,6 +380,8 @@ func _build_cells() -> void:
 	var npcs: Dictionary = cfg("NPCS_BY_CHAR")
 	var triggers: Dictionary = cfg("TRIGGERS_BY_CHAR")
 	var enemies: Dictionary = cfg("ENEMIES_BY_CHAR")
+	var shops: Dictionary = cfg("SHOPS_BY_CHAR")
+	var no_flip: String = cfg("NO_FLIP_CHARS")
 	var decals: Array = cfg("DECALS")
 	var big: String = cfg("BIG_PROP_CHARS")
 	var density: float = cfg("DECAL_DENSITY")
@@ -369,6 +400,8 @@ func _build_cells() -> void:
 				_add_trigger(triggers[ch], Vector2i(x, y))
 			elif enemies.has(ch):
 				_spawn_enemy(enemies[ch], cell_base)
+			elif shops.has(ch):
+				_spawn_shop(shops[ch], cell_base)
 			elif ch == ".":
 				if not decals.is_empty() and float(h % 1000) / 1000.0 < density:
 					_place(decals[(h >> 10) % decals.size()], cell_base + _jitter(h), (h >> 3) & 1 == 1)
@@ -376,7 +409,7 @@ func _build_cells() -> void:
 			elif props.has(ch):
 				var options: Array = props[ch]
 				var at := cell_base if big.contains(ch) else cell_base + _jitter(h)
-				_place(options[(h >> 8) % options.size()], at, (h >> 2) & 1 == 1)
+				_place(options[(h >> 8) % options.size()], at, (h >> 2) & 1 == 1 and not no_flip.contains(ch))
 
 
 func _spawn_npc(spec: Dictionary, at: Vector2) -> void:
@@ -390,15 +423,23 @@ func _spawn_npc(spec: Dictionary, at: Vector2) -> void:
 	_counts["npcs"] += 1
 
 
-func _spawn_enemy(id: String, at: Vector2) -> void:
+func _spawn_enemy(spec: Variant, at: Vector2) -> void:
+	var id: String = spec["id"] if spec is Dictionary else String(spec)
 	var data := load("res://data/enemies/%s.tres" % id) as EnemyData
 	if data == null:
 		Debug.log_error("Missing enemy data/enemies/%s.tres" % id)
 		return
 	var e := Enemy.create(data, at)
+	e.clock_rule = spec.get("clock", cfg("ENEMY_CLOCK")) if spec is Dictionary else cfg("ENEMY_CLOCK")
 	_counts["enemies"] += 1
 	e.name = "%s_%d" % [id.capitalize(), _counts["enemies"]]
 	_world.add_child(e)
+
+
+func _spawn_shop(spec: Dictionary, at: Vector2) -> void:
+	var shop := Shop.create(spec, cfg("DIALOGUE"), at)
+	_world.add_child(shop)
+	_counts["npcs"] += 1
 
 
 func _add_trigger(spec: Dictionary, cell: Vector2i) -> void:

@@ -1,0 +1,28 @@
+# =============================================================================
+# yard.dlg  -  The test yard's street: two shopkeepers and a closed sign
+# -----------------------------------------------------------------------------
+# Format: systems/dialogue/dialogue_script.gd (header). Speakers are
+# data/characters/<ID>.tres. Used by realms/big_yard/prototype_yard.gd
+# (SHOPS_BY_CHAR): a shop plays its greet node and then hands over its item
+# once per phase of the game clock; after that, the "again" node. Tech demo
+# lines, not story.
+#
+# Written with help from Claude (Anthropic) via Claude Code.
+# Made with love from your friendly hacker - er2oneousbit
+# =============================================================================
+
+== shop_corner
+GROCER: Morning, noon or golden hour, the corner store's open. Here, take an apple.
+GROCER: No money? Nobody has money. We close when it gets dark.
+
+== shop_corner_again
+GROCER: That's your apple for now. Come back later and there might be another.
+
+== shop_corner_closed
+: CLOSED. Open again in the morning.
+
+== shop_allnight
+VENDOR: Open all night, every night. Have a soda, on the house.
+
+== shop_allnight_again
+VENDOR: One per customer per shift. I don't make the rules. I do, actually.

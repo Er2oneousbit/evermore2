@@ -23,7 +23,9 @@ signal light_toggled(is_on: bool)
 @warning_ignore("unused_signal")
 signal dog_state_changed(state_name: String)
 
-## Time of day changed in the current realm ("day", "golden", "night").
+## Time of day changed in the current realm ("morning", "day", "golden",
+## "night"). The game clock (autoload/clock.gd) drives it through Atmosphere;
+## Clock.last_blend says how long the change fades.
 @warning_ignore("unused_signal")
 signal time_of_day_changed(time_name: String)
 

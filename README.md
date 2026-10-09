@@ -55,7 +55,8 @@ for Windows or Linux. No engine needed: unzip and run.
 > real content come later.
 
 Inside: `Evermore2.exe` starts the prologue, `Combat arena.bat` the fight
-with the giant rats (also on Hard), `Test yard.bat` the day/night yard. The
+with the giant rats (also on Hard), `Test yard.bat` the yard where a whole day goes by in 24 minutes (two shops,
+one that closes at night). The
 exe isn't code-signed, so Windows may warn you: **More info**, then
 **Run anyway**. On Linux use `./Evermore2.x86_64`, `./combat-arena.sh` and
 `./test-yard.sh`.
@@ -92,6 +93,7 @@ runs, without the light shafts, reflections and blur.
 | Partner's stance (Offensive, Defensive / Search) | R | RB |
 | Sniff (driving the dog) | C | B |
 | Time of day (prototype) | F2 | |
+| Stop the clock / clock speed (prototype) | F7 / F9 | |
 | Classic 2D view (prototype) | F6 | |
 
 Every control except the pause button can be rebound in **Settings →

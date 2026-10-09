@@ -36,7 +36,7 @@ the orange shelter tag).
 
 ## Later
 
-* **A running clock with script control**: morning, midday, evening and night pass on their own; each map or scene can *set* the time (then it runs on), *hold* it (frozen until released), or leave it *free*. Open questions: how long a game day lasts, and whether time changes gameplay (shops, night-only enemies or items)
+* Night-only enemies and items (the hook is there: `ENEMY_CLOCK` / `"clock"` per spawner)
 * Save system (human-readable JSON), dialogue, the hub (The Mansion That Was), the prologue
 * The realms (being redesigned, see design-bible.md section 8)
 * Player 2 controls the dog; rebinding, accessibility (text size, colorblind swaps, shake toggle)
@@ -70,6 +70,56 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: a running clock, two shops, night effects
+
+The day now goes by on its own: **morning, day, golden hour, night**, and
+around again. A game day is 24 real minutes (6 a phase, one constant:
+`Clock.DAY_MINUTES`), counted in game time, so it stops with the pause and
+ring menus. Every change fades over 6 seconds (sky, sun, fog, music,
+ambience, the flashlight). Owner's request: "Expand the area a bit and
+include two shops. One that closes and one that stays open. Have the clock
+and provide a debug button option to stop or change the clock. Make sure
+there is a fade effect between day changes. Kid misses more, dog doesn't
+change other than baddies might be a bit brighter or highlighted given dogs
+could smell them."
+
+* **The clock** (`autoload/clock.gd`, an autoload because time is game state:
+  it outlives scene changes and shops/enemies/the kid ask it without a
+  realm). Modes from the 2026-10-09 decision: *free*, *set* (jump, then run
+  on), *hold* (frozen until released). Each realm picks one with
+  `CLOCK_MODE`: the test yard runs free, the prologue holds (golden on the
+  street, `@time night` at the dare, exactly as before).
+* **Morning**, a new look in both views: soft, cool, a pale sun at 36
+  degrees, a light mist. `@time morning` works in dialogue; music and
+  ambience use the day tracks and birds.
+* **Debug keys**: F2 next time of day (with a fade), **F7** stop/restart the
+  clock, **F9** speed x1 / x10 / x60; the F3 overlay shows phase, minutes
+  into it, mode and speed.
+* **The test yard grew east**: through a gate in the garden fence, a dirt
+  street with **two stalls** composed from the LPC Revised buildings tileset
+  and two new shopkeepers (LPC generator). The corner store follows the
+  clock: closed at night (keeper gone, a shutter down that says "Open again
+  in the morning"). The all-night stand never closes. No money in the game,
+  so each keeper hands over an item (apple, soda) once per phase. The open
+  rule is per shop (`follow_clock` / `always_open` / `always_closed`) and a
+  scene can override it. Two rats wait in the far corner.
+* **The kid misses more at night**: a swing at something outside his
+  flashlight beam misses 20% of the time ("Miss" pops up, the swing whiffs).
+  In the beam, or by day: normal. The beam is the real HD spotlight (a 2D
+  cone in the classic view).
+* **The dog's nose at night**: while you drive the dog at night, enemies glow
+  softly (2D halo, HD shader). No stat changes; off by day and while
+  driving the kid.
+* **Enemies and the clock**: a per-realm `ENEMY_CLOCK` and per-spawner
+  setting (`follow_clock` / `unchanged`), only a hook for now; the yard's
+  rats are `unchanged`.
+* Test: new `smoke_clock` (phase order and wrap on game time, the fade
+  measured on the HD sun mid-way, pause, hold/set/release, F7/F9, the
+  prologue held, both shops by night and morning, one item per phase, night
+  misses only outside the beam with seeded dice: 1000 swings miss about
+  20%, the dog's glow only at night while driving him). Sabotaged: clock
+  order swapped, hold ignored, beam ignored: each fails. All 15 test runs pass.
 
 ## Done: music follows the time of day
 

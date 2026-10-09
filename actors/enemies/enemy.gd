@@ -15,6 +15,10 @@
 #        armor, harder hits).
 # PLACE: Enemy.create(data, position), or an AsciiRealm's ENEMIES_BY_CHAR.
 # HD-2D: in group "hd_actor" (the flash and blink mirror through modulate).
+# NIGHT: while you drive the dog at night his nose picks enemies out: `scent`
+#        fades to 1 and they glow softly (a ScentGlow under them in 2D; HdView
+#        passes `scent` to hd_actor.gdshader). No stat changes (owner: "dog
+#        doesn't change other than baddies might be a bit brighter").
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -31,6 +35,10 @@ const ACCEL := 900.0
 ## below 1.0 on purpose: brighter-than-white sprites trip HD-2D's bloom under a
 ## strong sun and halo everything nearby, the kid included.
 const FLASH := Color(1.0, 0.68, 0.22)
+## The scent glow: warm, soft, and how fast it fades in or out (per second).
+const SCENT_COLOR := Color(1.0, 0.86, 0.5)
+const SCENT_FADE := 2.5
+const GLOW_DOT := preload("res://assets/fx/glow_dot.tres")
 
 @export var data: EnemyData
 
@@ -38,6 +46,14 @@ var state: State = State.IDLE
 var home := Vector2.ZERO
 var target: Node2D
 var health: Health
+## Does this enemy follow the game clock? "unchanged" or "follow_clock"
+## (AsciiRealm ENEMY_CLOCK, per spawner). Only a hook so far: nothing reacts
+## to "follow_clock" yet (no night-only enemies).
+var clock_rule := "unchanged"
+## 0..1: how strongly the dog smells it (night + the dog driven). Both views
+## draw it; tests read it.
+var scent := 0.0
+var _scent_glow: Sprite2D
 
 var _sprite: AnimalSprite
 var _timer := 0.0
@@ -101,8 +117,35 @@ func _build() -> void:
 	add_child(_sprite)
 	_sprite.animation_finished.connect(_on_animation_finished)
 
+	# Behind the body, additive: a soft warm halo the dog "smells" at night.
+	_scent_glow = Sprite2D.new()
+	_scent_glow.name = "ScentGlow"
+	_scent_glow.texture = GLOW_DOT
+	_scent_glow.scale = Vector2(5.0, 3.0)
+	_scent_glow.position = Vector2(0, -data.paws_y * 0.2)
+	var add := CanvasItemMaterial.new()
+	add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	_scent_glow.material = add
+	_scent_glow.visible = false
+	add_child(_scent_glow)
+	move_child(_scent_glow, _sprite.get_index())  # drawn before (under) the body
+
+
+## Should enemies glow for the dog's nose right now? At night, while the
+## player drives the dog. Off by day and while driving the kid.
+static func scent_wanted() -> bool:
+	return Clock.is_night() and Party.leader is Dog
+
+
+func _update_scent(delta: float) -> void:
+	var want := 1.0 if scent_wanted() and state != State.DEAD else 0.0
+	scent = move_toward(scent, want, SCENT_FADE * delta)
+	_scent_glow.visible = scent > 0.0
+	_scent_glow.modulate = Color(SCENT_COLOR, 0.7 * scent)
+
 
 func _physics_process(delta: float) -> void:
+	_update_scent(delta)
 	if state == State.DEAD:
 		return
 	_timer -= delta

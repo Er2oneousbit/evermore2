@@ -2,7 +2,7 @@
 # atmosphere.gd  -  Per-realm mood: time of day, color grade, ambient life
 # -----------------------------------------------------------------------------
 # WHAT:  One node that owns everything about how a realm FEELS, per time of
-#        day ("day", "golden", "night"):
+#        day ("morning", "day", "golden", "night"):
 #          - CanvasModulate tint of the world (lights add on top, so the
 #            flashlight matters at night)
 #          - full-screen color grade (assets/shaders/color_grade.gdshader):
@@ -11,6 +11,12 @@
 #            at night
 #          - drifting cloud shadows over the ground (day / golden hour)
 #        Switching time of day tweens all of it together. F2 cycles it.
+#
+# TIME COMES FROM THE CLOCK (autoload/clock.gd): this node follows
+#        Clock.phase_changed and fades over the blend the clock asks for (a
+#        long one when the clock moves on by itself). On load it hands the
+#        realm's CLOCK_MODE and `start_time` to the clock. set_time() (F2, a
+#        dialogue's @time) is a Clock.jump: a held clock stays held.
 #
 # HOW TO USE IN A REALM: add an Atmosphere node to the realm scene and pick
 #        `start_time`. That's it. To give a realm its own mood, duplicate
@@ -34,6 +40,14 @@ extends Node
 ##   pollen/fireflies 0..1 ambient particle visibility
 ##   clouds          0..1 drifting cloud-shadow darkness
 const PRESETS := {
+	# Morning: soft and cool, a little mist (the grade's cloud shadows), low
+	# pale shafts; brighter than golden so it reads at a glance.
+	"morning": {
+		"tint": Color(0.9, 0.94, 1.0), "saturation": 0.98, "contrast": 1.0,
+		"shadow_tint": Color(0.2, 0.28, 0.5, 0.3), "highlight_tint": Color(0.92, 0.96, 1.0, 0.3),
+		"shafts": 0.35, "shaft_color": Color(0.88, 0.94, 1.0), "vignette": 0.26,
+		"vignette_color": Color(0.06, 0.08, 0.16), "pollen": 0.3, "fireflies": 0.0, "clouds": 0.18,
+	},
 	"day": {
 		"tint": Color(1.0, 1.0, 1.0), "saturation": 1.08, "contrast": 1.03,
 		"shadow_tint": Color(0.12, 0.16, 0.38, 0.22), "highlight_tint": Color(1.0, 0.98, 0.9, 0.25),
@@ -53,22 +67,24 @@ const PRESETS := {
 		"vignette_color": Color(0.0, 0.01, 0.06), "pollen": 0.0, "fireflies": 1.0, "clouds": 0.0,
 	},
 }
-const TIME_ORDER: Array[String] = ["day", "golden", "night"]
+## Same order as the clock: morning, day, golden, night, morning...
+const TIME_ORDER: Array[String] = ["morning", "day", "golden", "night"]
 
 const GRADE_SHADER := preload("res://assets/shaders/color_grade.gdshader")
 const CLOUD_NOISE := preload("res://assets/shaders/cloud_noise.tres")
 const GLOW_DOT := preload("res://assets/fx/glow_dot.tres")
 
 ## Time of day when the realm loads.
-@export_enum("day", "golden", "night") var start_time := "golden"
-## Seconds to blend between times of day.
+@export_enum("morning", "day", "golden", "night") var start_time := "golden"
+## Seconds to blend when F2 skips to the next time of day (the clock's own
+## changes use Clock.FADE_SECONDS).
 @export var blend_seconds := 0.8
 ## Pollen motes per 640x360 of visible area (ultrawide gets proportionally more).
 @export var pollen_density := 60
 ## Fireflies per 640x360 of visible area.
 @export var firefly_density := 26
 
-## Current time of day ("day", "golden", "night").
+## Current time of day ("morning", "day", "golden", "night").
 var time_name := ""
 
 ## Draw the 2D mood layers (tint, grade, particles). The HD-2D view turns
@@ -100,7 +116,11 @@ func _ready() -> void:
 	_build_particles()
 	ScreenScaler.view_changed.connect(_on_view_changed)
 	_on_view_changed(ScreenScaler.view_size, ScreenScaler.scale)
-	set_time(start_time, 0.0)
+	# The realm (our parent) picks how the clock behaves here. Read straight
+	# from its script: its _ready (and config) runs after ours.
+	Clock.enter_realm(AsciiRealm.const_of(get_parent(), "CLOCK_MODE", "set"), start_time)
+	Clock.phase_changed.connect(_apply)
+	_apply(Clock.phase, 0.0)
 	Settings.changed.connect(func(key: String, _v: Variant) -> void:
 		if key == "brightness" and presets.has(time_name):
 			_modulate.color = _bright(presets[time_name]["tint"]))
@@ -122,16 +142,25 @@ func _process(_delta: float) -> void:
 		_grade_mat.set_shader_parameter("cam_px", (center - Vector2(ScreenScaler.view_size) * 0.5).floor())
 
 
-## Next time of day in TIME_ORDER (what F2 does).
+## Next time of day in TIME_ORDER (what F2 does), with a short fade.
 func cycle_time() -> void:
 	var i := TIME_ORDER.find(time_name)
 	set_time(TIME_ORDER[(i + 1) % TIME_ORDER.size()], blend_seconds)
 
 
-## Switch to a time of day, blending over `seconds` (0 = instantly).
+## Switch to a time of day, blending over `seconds` (0 = instantly). This
+## moves the game clock (Clock.jump, mode unchanged); the look follows it.
 func set_time(new_time: String, seconds := 0.8) -> void:
 	if not presets.has(new_time):
 		Debug.log_warn("Atmosphere: unknown time of day '%s'" % new_time)
+		return
+	Clock.jump(new_time, seconds)
+
+
+## The clock moved on: fade the look to `new_time` and announce it.
+func _apply(new_time: String, seconds: float) -> void:
+	if not presets.has(new_time):
+		Debug.log_warn("Atmosphere: no preset for time of day '%s'" % new_time)
 		return
 	time_name = new_time
 	var p: Dictionary = presets[new_time]

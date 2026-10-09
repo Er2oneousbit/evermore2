@@ -80,11 +80,25 @@ extends CharacterBody2D
 
 ## Flashlight brightness per time of day. A phone light is invisible at noon,
 ## so in daylight it would only wash out the scene. Unknown names use night.
-const LIGHT_ENERGY_BY_TIME := {"day": 0.0, "golden": 0.35, "night": 1.3}
+const LIGHT_ENERGY_BY_TIME := {"morning": 0.0, "day": 0.0, "golden": 0.35, "night": 1.3}
 ## Seconds to fade the flashlight when the time of day changes.
 const LIGHT_FADE := 0.6
 ## Chest height of the flashlight (phone held up in front).
 const LIGHT_HEIGHT := -26.0
+## The flashlight beam for gameplay in the classic 2D view (HdView answers
+## from its real spotlight in HD): a cone ahead of him, this long and this
+## wide each side of where he faces. Close to his feet always counts.
+const BEAM_RANGE_PX := 256.0
+const BEAM_HALF_ANGLE_DEG := 32.0
+const BEAM_NEAR_PX := 13.0  # = HdView.BEAM_NEAR_M
+
+## Night swings at something OUTSIDE the flashlight beam miss this often
+## (0..1). In the beam, or by day: never (owner: "Kid misses more").
+@export_range(0.0, 1.0) var night_miss_chance := 0.2
+## The dice for night misses. Tests seed it (or set night_miss_chance to 0/1).
+var miss_rng := RandomNumberGenerator.new()
+## Night misses so far (tests, debugging).
+var misses := 0
 
 ## Last non-zero movement direction. Other systems (attacks, interaction,
 ## the flashlight) read this to know which way the kid is looking.
@@ -127,6 +141,7 @@ var _on_screen: VisibleOnScreenNotifier2D
 
 
 func _ready() -> void:
+	miss_rng.randomize()
 	add_to_group("kid")
 	add_to_group("hd_actor")
 	_flashlight.enabled = light_on
@@ -276,8 +291,17 @@ func _land_swing() -> void:
 			_make_hit, _swing_level)
 
 
-## One HitInfo per target for the current swing.
+## One HitInfo per target for the current swing, or null for a night miss
+## (Combat.strike skips it): "Miss" pops up and the swing whiffs.
 func _make_hit(hb: Hurtbox) -> HitInfo:
+	# Where the target stands (its feet), not its raised hurtbox: the beam is
+	# judged on the ground, like the lit patch you see.
+	var feet := (hb.get_parent() as Node2D).global_position if hb.get_parent() is Node2D else hb.global_position
+	if misses_at(feet):
+		misses += 1
+		Fx.miss(hb.global_position + Vector2(0, -28))
+		Audio.play_at("swing", hb.global_position, 1.3)
+		return null
 	var info := HitInfo.make(weapon.damage * _swing_mult, global_position, hb.global_position,
 			weapon.knockback, "player", self)
 	info.stagger = weapon.stagger
@@ -285,9 +309,43 @@ func _make_hit(hb: Hurtbox) -> HitInfo:
 	return info
 
 
+## Roll for a night miss against a target at `point`: only at night, only
+## outside the beam, at night_miss_chance.
+func misses_at(point: Vector2) -> bool:
+	if not Clock.is_night() or point_in_beam(point):
+		return false
+	return miss_rng.randf() < night_miss_chance
+
+
+## Is a world point lit by his flashlight? HD view: HdView's real spotlight;
+## classic 2D (and headless tests): the BEAM_* cone. Light off = nothing is.
+func point_in_beam(point: Vector2) -> bool:
+	if not light_on:
+		return false
+	var hd := get_tree().get_first_node_in_group("hd_view") as HdView
+	if hd and hd.enabled:
+		return hd.in_beam(point)
+	return in_beam_2d(point)
+
+
+## The 2D beam: a cone BEAM_RANGE_PX long, BEAM_HALF_ANGLE_DEG each side.
+func in_beam_2d(point: Vector2) -> bool:
+	if not light_on:
+		return false
+	var to := point - global_position
+	var dist := to.length()
+	if dist <= BEAM_NEAR_PX:
+		return true
+	if dist > BEAM_RANGE_PX:
+		return false
+	var face := facing if facing != Vector2.ZERO else Vector2.DOWN
+	return absf(face.angle_to(to)) <= deg_to_rad(BEAM_HALF_ANGLE_DEG)
+
+
 func _on_time_of_day_changed(time_name: String) -> void:
 	var energy: float = LIGHT_ENERGY_BY_TIME.get(time_name, LIGHT_ENERGY_BY_TIME["night"])
-	create_tween().tween_property(_flashlight, "energy", energy, LIGHT_FADE)
+	# Fade with the sky (the clock's own changes take several seconds).
+	create_tween().tween_property(_flashlight, "energy", energy, maxf(LIGHT_FADE, Clock.last_blend))
 
 
 func _physics_process(delta: float) -> void:

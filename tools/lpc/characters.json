@@ -23,5 +23,17 @@
     "output": "assets/characters/dex/dex_lpc.png",
     "credits": "credits/dex/",
     "hash": "#sex=teen&body=Body_Color_light&head=Human_Male_Small_light&expression=Neutral_light&hair=Cowlick_blonde&clothes=TShirt_charcoal&legs=Pants_navy&shoes=Revised_Shoes_black"
+  },
+  "grocer": {
+    "notes": "Test yard shopkeeper (the corner store that closes at night). Gray hair and beard, navy button-up.",
+    "output": "assets/characters/grocer/grocer_lpc.png",
+    "credits": "credits/grocer/",
+    "hash": "#sex=male&body=Body_Color_olive&head=Human_Male_olive&expression=Neutral_olive&hair=Parted_gray&beard=Basic_Beard_gray&clothes=Longsleeve_2_Buttoned_navy&legs=Pants_charcoal&shoes=Revised_Shoes_brown"
+  },
+  "vendor": {
+    "notes": "Test yard shopkeeper (the all-night stand). Red ponytail, orange longsleeve.",
+    "output": "assets/characters/vendor/vendor_lpc.png",
+    "credits": "credits/vendor/",
+    "hash": "#sex=female&body=Body_Color_amber&head=Human_Female_amber&expression=Neutral_amber&hair=Ponytail_redhead&clothes=Longsleeve_2_orange&legs=Pants_charcoal&shoes=Revised_Shoes_black"
   }
 }

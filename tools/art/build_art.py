@@ -28,7 +28,7 @@ USAGE:
   python3 tools/art/build_art.py --offline  build from the cache only
   python3 tools/art/build_art.py --list     list packs, licenses, cache status
   python3 tools/art/build_art.py --only props,dog   rebuild some steps only
-  Steps: tileset, props, hd, dog, enemies, items, weapons, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
+  Steps: tileset, props, shops, hd, dog, enemies, items, weapons, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
 
 Written with help from Claude (Anthropic) via Claude Code.
 Made with love from your friendly hacker - er2oneousbit
@@ -323,6 +323,45 @@ def build_props():
         plant(f"tuft_{'abcdef'[i]}", tufts, (x, 0, 32, 32), decal=True)
 
 
+def build_shops():
+    """Two market stalls and a "closed" shutter for the test yard's street,
+    composed from the LPC Revised buildings tileset (wood siding walls, the
+    front-facing awnings, a sign plaque with the money-bag icon)."""
+    log("Shops: market stalls and the closed shutter from the LPC Revised buildings tileset")
+    sheet = os.path.join(pack_dir("exterior"), "lpc-tileset-buildings.png")
+
+    def awning(i):   # 0 white, 1 yellow, 2 orange, 3 slate, 4 sky, 5 green
+        return crop(sheet, (1216, 22 + 64 * i, 32, 28))
+
+    def siding(x, y, w, h):   # wood siding panels (light band at y, darker one at y + 96)
+        return crop(sheet, (x, y, w, h))
+
+    plaques = [crop(sheet, (868 + 32 * i, 1060, 24, 24)) for i in range(4)]  # light, mid, pale, dark
+    bag = trim(crop(sheet, (934, 1090, 20, 24)), pad=0)
+
+    def stall(name, awning_i, wall_x, plaque_i):
+        w, h = 104, 84
+        img = Image.new("RGBA", (w, h))
+        img.alpha_composite(siding(wall_x + 16, 8, 96, 46), (4, 22))       # back wall
+        img.alpha_composite(siding(wall_x + 16, 96 + 8, 100, 16), (2, 66))  # counter (darker band)
+        for k in range(3):
+            img.alpha_composite(awning(awning_i), (4 + 32 * k, 6))
+        img.alpha_composite(plaques[plaque_i], (40, 38))
+        img.alpha_composite(bag, (52 - bag.width // 2, 50 - bag.height // 2))
+        write_prop(name, img, (52, 82), footprint=(96, 14), footprint_offset=(0, -7), occluder=(96, 14),
+                   shadow_size=(104, 16), shadow_alpha=0.4)
+
+    stall("stall_corner", 2, 1568, 0)  # follows the clock: orange awning, brown wood
+    stall("stall_allnight", 4, 1248, 3)  # always open: sky-blue awning, cream wood, dark sign
+
+    # The closed shutter: slatted panel over the counter, a blank dark plaque.
+    board = Image.new("RGBA", (92, 46))
+    board.alpha_composite(siding(1408 + 16, 192 + 8, 92, 46), (0, 0))
+    board.alpha_composite(plaques[3], (34, 10))
+    board.save(out_path("assets", "props", "shops", "shop_closed.png"))
+    vlog("shop_closed 92x46")
+
+
 def build_hd_textures():
     """Textures for the HD-2D view's real 3D geometry (fence posts and rails),
     cut from the same LPC Revised tileset so the palette matches the sprites."""
@@ -463,7 +502,7 @@ def build_credits():
             "Modifications by this project: the magenta filler cells cleared (tools/art/build_art.py, build_enemies).\n")
 
 
-STEPS = {"tileset": build_tileset, "props": build_props, "hd": build_hd_textures, "dog": build_dog,
+STEPS = {"tileset": build_tileset, "props": build_props, "shops": build_shops, "hd": build_hd_textures, "dog": build_dog,
          "enemies": build_enemies, "items": build_items, "weapons": build_weapons, "credits": build_credits}
 
 

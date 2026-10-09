@@ -13,6 +13,8 @@
   "_npc_note": "Maya and Dex are placeholder names (design-bible.md section 4)",
   "npc_maya": "Maya",
   "npc_dex": "Dex",
+  "npc_grocer": "Grocer",
+  "npc_vendor": "Night Vendor",
   "professor": "Professor Sidney Ruffleberg",
   "professor_echo": "The Professor's Echo",
   "robot": "Carltron",
