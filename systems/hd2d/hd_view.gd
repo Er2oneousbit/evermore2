@@ -50,6 +50,8 @@ const DOG_DEPTH_BIAS := 0.01
 
 const SPRITE_SHADER := preload("res://assets/shaders/hd_sprite.gdshader")
 const ACTOR_SHADER := preload("res://assets/shaders/hd_actor.gdshader")
+## For layers that reach below the feet (the weapon): see that file.
+const ACTOR_GROUND_SHADER := preload("res://assets/shaders/hd_actor_ground.gdshader")
 const WATER_SHADER := preload("res://assets/shaders/hd_water.gdshader")
 const CLOUD_SHADER := preload("res://assets/shaders/hd_cloud_shadow.gdshader")
 const RIPPLE_NOISE := preload("res://assets/shaders/ripple_noise.tres")
@@ -594,7 +596,7 @@ func _add_actor(actor: Node2D, depth_bias: float) -> Sprite3D:
 	for layer_name: String in layers:
 		var l2 := actor.get_node_or_null(layer_name) as Sprite2D
 		if l2:
-			var l3 := _make_actor_sprite(l2, actor.name + layer_name)
+			var l3 := _make_actor_sprite(l2, actor.name + layer_name, true)
 			_actors.append([actor, l3, depth_bias + float(layers[layer_name]), layer_name])
 	# Drop the 3D sprites when their actor leaves for good.
 	actor.tree_exiting.connect(func() -> void: _forget_actor(actor), CONNECT_ONE_SHOT)
@@ -609,7 +611,9 @@ func _forget_actor(actor: Node2D) -> void:
 	_actors = _actors.filter(func(a: Array) -> bool: return a[0] != actor)
 
 
-func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:
+## `ground_clamp`: a layer whose art reaches below the feet (a swung club) gets
+## the ground-clamped material, or its low end sinks into the ground plane.
+func _make_actor_sprite(src: Sprite2D, actor_name: String, ground_clamp := false) -> Sprite3D:
 	var s := Sprite3D.new()
 	s.name = actor_name
 	s.texture = src.texture
@@ -622,10 +626,11 @@ func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:
 	s.shaded = true
 	s.double_sided = true
 	# Lit like the ground it stands on, never backlit (see hd_actor.gdshader).
-	s.material_override = _actor_material(src.texture)
+	s.material_override = _actor_material(src.texture, ground_clamp)
+	s.set_meta("ground_clamp", ground_clamp)
 	s.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	s.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if ground_clamp else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	s.scale = Vector3(1.0, _y_scale, 1.0)
 	s.layers = ACTOR_LAYER
 	add_child(s)
@@ -643,11 +648,11 @@ func _make_actor_sprite(src: Sprite2D, actor_name: String) -> Sprite3D:
 
 
 ## One character material per sprite sheet.
-func _actor_material(tex: Texture2D) -> ShaderMaterial:
-	var key := tex.get_instance_id() if tex else 0
+func _actor_material(tex: Texture2D, ground_clamp := false) -> ShaderMaterial:
+	var key := "%d%s" % [tex.get_instance_id() if tex else 0, "c" if ground_clamp else ""]
 	if not _actor_materials.has(key):
 		var m := ShaderMaterial.new()
-		m.shader = ACTOR_SHADER
+		m.shader = ACTOR_GROUND_SHADER if ground_clamp else ACTOR_SHADER
 		m.set_shader_parameter("tex", tex)
 		m.set_shader_parameter("lift", _to.get("actor_lift", 0.08) if not _to.is_empty() else 0.08)
 		_actor_materials[key] = m
@@ -659,7 +664,7 @@ func _sync_actor(s3: Sprite3D, s2: Sprite2D, pos: Vector2, depth_bias: float) ->
 		s3.texture = s2.texture
 		s3.hframes = s2.hframes
 		s3.vframes = s2.vframes
-		s3.material_override = _actor_material(s2.texture)
+		s3.material_override = _actor_material(s2.texture, bool(s3.get_meta("ground_clamp", false)))
 	s3.position = to3(pos) + Vector3(0.0, 0.0, depth_bias)
 	s3.frame_coords = s2.frame_coords
 	s3.offset = Vector2(s2.offset.x, -s2.offset.y)  # hops (item pickups)
