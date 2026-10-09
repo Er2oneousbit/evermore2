@@ -89,6 +89,10 @@ On Windows PowerShell, set variables first: `$env:EVERMORE_SHOT_DIR="C:\temp\sho
 
 A run that prints a `SCRIPT ERROR` fails, even if the test printed PASS.
 
+To prove a new check catches its bug, break the code and run the test:
+`python tools/dev/sab.py FILE OLD NEW smoke_x` replaces OLD with NEW, runs
+the test, prints its result and always restores the file.
+
 The headless renderer draws nothing, so tests check logic and structure; how
 things *look* is checked with the screenshot tour. A fix comes with a test that
 fails without it (each existing check was proven that way; see
