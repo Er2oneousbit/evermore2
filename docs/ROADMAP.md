@@ -36,6 +36,7 @@ the orange shelter tag).
 
 ## Later
 
+* **A running clock with script control**: morning, midday, evening and night pass on their own; each map or scene can *set* the time (then it runs on), *hold* it (frozen until released), or leave it *free*. Open questions: how long a game day lasts, and whether time changes gameplay (shops, night-only enemies or items)
 * Save system (human-readable JSON), dialogue, the hub (The Mansion That Was), the prologue
 * The realms (being redesigned, see design-bible.md section 8)
 * Player 2 controls the dog; rebinding, accessibility (text size, colorblind swaps, shake toggle)
@@ -46,6 +47,7 @@ the orange shelter tag).
 
 | Date | Decision |
 |---|---|
+| 2026-10-09 | **Time of day: a clock that scripts can set or hold** (owner: "can we have it both?"). A scene can start the clock at a time, stop it for as long as the scene needs, or let it run as normal (outside villages, where the script doesn't care) |
 | 2026-10-08 | **Alchemy: ingredients per cast, formulas level with use** (owner). Each cast uses up its ingredients and earns the formula experience; enough casts level it up and it gets stronger. Only the kid casts |
 | 2026-10-08 | **Quick slots on the D-pad** (owner): four slots, D-pad on the gamepad, 1-4 on the keyboard; the gamepad moves with the left stick only |
 | 2026-10-08 | **Ring menu, friendlier than the original** (owner: it "could be putsy"). The pain points: hunting across rings and opening it for everything. So every ring is a visible tab, and quick slots come with the Items and Alchemy rings. One menu for both: a button flips to the other's gear. First version: Equipment only |
