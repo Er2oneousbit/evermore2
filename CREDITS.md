@@ -92,6 +92,13 @@ Full detail per layer: `credits/<name>/credits.txt` / `credits.csv`.
   License: **CC-BY 4.0**. Modified by this project: the magenta filler cells
   cleared (`tools/art/build_art.py`, `build_enemies`). Detail: `credits/enemies/credits.txt`.
 
+* **Bat** (`assets/characters/enemies/bat/bat.png`): created by **bagzie**
+  ([Bat Sprite](https://opengameart.org/node/26447)), reworked by **AntumDeluge** as
+  [Bat (Rework)](https://opengameart.org/content/bat-rework). License: **OGA-BY 3.0**
+  (page also lists CC-BY 3.0). Modified by this project: the hanging (upside down) frames
+  made from the front-facing frame (`tools/art/build_art.py`, `build_bat`). Detail and the
+  license text: `credits/enemies/`.
+
 ## Ground tileset: `assets/tilesets/lpc_revised/terrain_summer.png`
 
 * [LPC Revised - Fully Configured 4 Seasons Tilesets for Tiled Map Editor](https://opengameart.org/content/lpc-revised-fully-configured-4-seasons-tilesets-for-tiled-map-editor)

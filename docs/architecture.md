@@ -293,10 +293,44 @@ node (tests use it with no realm at all). Atmosphere is only the look.
   `Clock.is_night()` and `Party.leader is Dog`. 2D: an additive `ScentGlow`
   under the body. HD: `hd_actor.gdshader`'s `instance uniform scent`, set per
   sprite by HdView. No stat changes.
-* **Enemies and the clock**: AsciiRealm `ENEMY_CLOCK` ("unchanged" or
-  "follow_clock"), per spawner `{"id": "rat", "clock": ...}` in
-  `ENEMIES_BY_CHAR`, lands on `Enemy.clock_rule`. A hook only: nothing reacts
-  to follow_clock yet. The test yard's rats are "unchanged".
+* **Enemies and the clock** (`systems/enemies/day_night.gd`): AsciiRealm
+  `ENEMY_CLOCK` ("unchanged" or "follow_clock"), per spawner
+  `{"id": "rat", "clock": ...}` in `ENEMIES_BY_CHAR`, plus `ENEMY_ROOSTS` (oak
+  cells where bats hang) and `ENEMY_EXITS` (extra burrows, or edge gaps with an
+  `out` direction). follow_clock spawners are registered with the realm's
+  `DayNightDirector` instead of being spawned. `EnemyData` "Day and night":
+  `active` (always/day/night; morning and golden count as day), `leaves_by`
+  (burrow/edge/fade/roost), `arrives_by` (offscreen/burrow/drop/rise/fade),
+  `sound_cue`, `flies`/`fly_height`, `respawn_seconds`, `roosts`/`hang_height`.
+  * `populate()` fills the realm for the current phase on load, no ceremony.
+  * `Clock.phase_changed` queues staggered jobs (game time): leave / recall,
+    drop (wake roosting bats), arrive (spawn); cue jobs a second ahead. Window
+    = fade 6 s + 4 s, MIN_GAP 0.7 s, night arrivals wait DARK_DELAY 3 s, dawn
+    arrivals 1.5 s. A new phase replaces the old plan (so a pending respawn
+    dies at dusk).
+  * Leaving: `Enemy.begin_leave(kind, point)` (state LEAVE) to the nearest exit
+    of its kind (spawner homes are burrows). `_reconcile` (4x/s) removes it only
+    when `leave_done` (sunk into the hole / faded) or `not on_camera()` (the
+    live camera in either view via `Fx.world_to_screen`, plus VIEW_MARGIN).
+    Enemies in combat (`Enemy.in_combat()`: chasing/attacking/hurt or hit within
+    COMBAT_MEMORY) are never retired; the leave starts when they calm down.
+    A stuck leaver tries another exit, then gives up until the next phase.
+  * Arriving: "offscreen" (and a killed bat returning to its tree) waits for the
+    spawn point to be out of view (15 s, then a visible burrow entrance, bats
+    just wait for the next dusk); the others play `Enemy.begin_entrance` (ENTER:
+    not hittable) after the cue.
+  * Roosts: a bat is one persistent enemy. By day state ROOST (hanging frame,
+    height = hang_height, no aggro, not in group "hurtbox", twitches); dusk drops
+    it (ENTER "drop") into a flutter/weave/swoop flyer (ignores collisions);
+    dawn LEAVE "roost" flies it back to hang. Nobody is removed.
+  * Flyers: `Enemy.height` is drawn through the sprite's offset (HdView copies
+    it); the hurtbox rides up with it.
+  * `Enemy.is_active()` (the AI partner's target filter) excludes ENTER, LEAVE
+    and ROOST. The director's `removal_log`, `arrival_log`, `cue_log` and
+    `enabled` flag are for tests (`smoke_enemy_clock`).
+  * Art: `bat.png` is built by `tools/art/build_art.py` (`build_bat`), 6 frames
+    per row (3 flight, folded, hanging, twitch) from OGA "Bat (Rework)" by
+    AntumDeluge after bagzie, OGA-BY 3.0; credits in `credits/enemies/`.
 
 ## 4. Follow AI (how it works)
 
@@ -344,6 +378,7 @@ it and confirming the test fails:
 | `tests/smoke_ring.tscn` | no | Equipment data and rules (only owned pieces that fit, the weapon slot never empty, armor adding up and cutting damage, a new weapon's swing and charge), the demo kit once, the ring menu (pause, tabs, one step per push, hold to spin, instant change and its panel, Tab to the dog, Esc, not mid-conversation, HD-2D placement) |
 | `tests/smoke_rings.tscn` | no | The Items, Alchemy and Party rings (use, cast, cost, experience and levels, stances, Stay put), quick slots (assign, move, fire on whoever you drive, notices, not mid-conversation), the D-pad moving to quick slots and old saves, dialogue keys |
 | `tests/smoke_clock.tscn` | no | The clock: phase order and wrap on game time, the long fade, pause, hold/set/release, F7/F9; the yard runs free and its HD look fades; the prologue holds (and @time keeps it held); shops open/closed by the clock, the shutter, one item per phase, set_rule; night misses only outside the beam (2D cone and HD spotlight, seeded dice, "Miss", no damage); the dog's scent glow only at night while driving him |
+| `tests/smoke_enemy_clock.tscn` | no | The day/night enemy swap on the yard: rats out and bats hanging by day, a rat respawns by its burrow; at dusk the idle rat leaves and is removed only invisible or off camera, the fighting rat stays, no respawn at night, the bats drop one at a time after dark with a cue; at dawn bats hang up again and the rats return staggered |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |

@@ -336,7 +336,7 @@ func _test_prologue_held() -> void:
 # -----------------------------------------------------------------------------
 func _rat() -> Enemy:
 	for e in get_tree().get_nodes_in_group("enemy"):
-		if e is Enemy and not (e as Enemy).health.is_dead():
+		if e is Enemy and not (e as Enemy).health.is_dead() and (e as Enemy).data.name_key == "enemy_rat":
 			return e
 	return null
 

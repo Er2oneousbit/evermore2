@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://systems/combat/enemy_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/characters/enemies/bat/bat.png" id="2_sheet"]
+
+[resource]
+script = ExtResource("1_script")
+name_key = "enemy_bat"
+sheet = ExtResource("2_sheet")
+frame_px = Vector2i(48, 64)
+paws_y = 44
+anims = {
+&"idle": {"row": 0, "frames": [3], "fps": 1.0, "loop": true},
+&"walk": {"row": 0, "frames": [0, 1, 2, 1], "fps": 10.0, "loop": true},
+&"attack": {"row": 0, "frames": [0, 1, 2, 1], "fps": 12.0, "loop": false},
+&"die": {"row": 0, "frames": [3, 4, 4], "fps": 5.0, "loop": false},
+&"hang": {"row": 0, "frames": [4], "fps": 1.0, "loop": true, "one_dir": true},
+&"twitch": {"row": 0, "frames": [4, 5, 4], "fps": 9.0, "loop": false, "one_dir": true}
+}
+attack_hit_frame = 2
+sound_windup = "wing_flap"
+sound_attack = "rat_bite"
+sound_hurt = "rat_pain"
+sound_death = "rat_death"
+hp = 8
+armor = 0.0
+damage = 3.0
+walk_speed = 50.0
+chase_speed = 95.0
+knockback_taken = 1.4
+aggro_radius = 130.0
+leash_radius = 300.0
+attack_range = 26.0
+attack_reach = 28.0
+attack_arc = 120.0
+windup_seconds = 0.3
+attack_cooldown = 1.4
+knockback_dealt = 90.0
+stagger_dealt = 0.15
+hurt_radius = 13.0
+body_size = Vector2(10, 6)
+active = "night"
+leaves_by = "roost"
+arrives_by = "drop"
+sound_cue = "wing_flap"
+flies = true
+fly_height = 18.0
+roosts = true
+hang_height = 46.0

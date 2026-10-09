@@ -28,7 +28,7 @@ USAGE:
   python3 tools/art/build_art.py --offline  build from the cache only
   python3 tools/art/build_art.py --list     list packs, licenses, cache status
   python3 tools/art/build_art.py --only props,dog   rebuild some steps only
-  Steps: tileset, props, shops, hd, dog, enemies, items, weapons, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
+  Steps: tileset, props, shops, hd, dog, enemies, bat, items, weapons, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
 
 Written with help from Claude (Anthropic) via Claude Code.
 Made with love from your friendly hacker - er2oneousbit
@@ -78,6 +78,12 @@ PACKS = {
         "url": "https://opengameart.org/sites/default/files/lpc_animals_2022_v1.1.zip",
         "page": "https://opengameart.org/content/lpc-bears-deer-lions-and-more",
         "license": "CC-BY 4.0",
+    },
+    "bat": {
+        "title": "Bat (Rework) by AntumDeluge, from the Bat Sprite by bagzie",
+        "url": "https://opengameart.org/sites/default/files/bat-1.3.zip",
+        "page": "https://opengameart.org/content/bat-rework",
+        "license": "OGA-BY 3.0 / CC-BY 3.0",
     },
 }
 
@@ -388,6 +394,35 @@ def build_enemies():
         img.save(out_path("assets", "characters", "enemies", "rat", out))
 
 
+def build_bat():
+    """The bat (Bat Rework 1.3, S/W/E/N sheet: 48x64 frames, 3 flight frames per
+    direction). Output is a 6-column sheet, rows down/left/right/up like the
+    LPC animals: frames 0-2 flight, 3 = wings folded (the 'idle'), 4 = hanging
+    upside down, 5 = hanging with a wing twitch. The hanging frames are made
+    here (the pack has no perch): the folded down-facing bat flipped over and
+    narrowed, same on every row so any facing works."""
+    log("Enemies: the bat")
+    sheet_in = Image.open(os.path.join(pack_dir("bat"), "PNG", "48x64", "bat-SWEN.png")).convert("RGBA")
+    out = Image.new("RGBA", (48 * 6, 64 * 4), (0, 0, 0, 0))
+    base = sheet_in.crop((48, 0, 96, 64))  # facing us, wings spread flat
+    box = base.getbbox()
+    body = base.crop(box)
+    # Folded wings: squeeze to ~55% wide, flip so it hangs head-down.
+    folded = body.resize((max(8, int(body.width * 0.55)), body.height), Image.NEAREST)
+    hang = folded.transpose(Image.FLIP_TOP_BOTTOM)
+    twitch = body.resize((int(body.width * 0.8), body.height), Image.NEAREST).transpose(Image.FLIP_TOP_BOTTOM)
+    for row in range(4):
+        for col in range(3):
+            out.alpha_composite(sheet_in.crop((col * 48, row * 64, col * 48 + 48, row * 64 + 64)), (col * 48, row * 64))
+        idle = sheet_in.crop((48, row * 64, 96, row * 64 + 64))
+        out.alpha_composite(idle, (3 * 48, row * 64))
+        for col, img in ((4, hang), (5, twitch)):
+            # Hanging point (top of the sprite) sits at y = 14 so the bat's body
+            # hangs below the origin line the game places under the canopy.
+            out.alpha_composite(img, (col * 48 + (48 - img.width) // 2, row * 64 + 14))
+    out.save(out_path("assets", "characters", "enemies", "bat", "bat.png"))
+
+
 def build_items():
     """Item icons for hidden items, equipment and the ring menu later: a 16x16
     grid of 32x32 icons (weapons, armor, potions, food, keys, tools, maps).
@@ -499,11 +534,19 @@ def build_credits():
             "=============\n\n"
             "assets/characters/enemies/rat/: the giant rat by Sevarihk, adapted for LPC by tapatilorenzo.\n"
             f"Pack: {PACKS['animals']['title']}\n{PACKS['animals']['page']}\nLicense: {PACKS['animals']['license']}\n"
-            "Modifications by this project: the magenta filler cells cleared (tools/art/build_art.py, build_enemies).\n")
+            "Modifications by this project: the magenta filler cells cleared (tools/art/build_art.py, build_enemies).\n\n"
+            "assets/characters/enemies/bat/bat.png: the bat, created by bagzie (Bat Sprite,\n"
+            "https://opengameart.org/node/26447), reworked (canvas, recolor, S/W/E/N sheet) by AntumDeluge.\n"
+            f"Pack: {PACKS['bat']['title']}\n{PACKS['bat']['page']}\nLicense: {PACKS['bat']['license']}\n"
+            "Copyright/Attribution Notice (from the page): Created by bagzie.\n"
+            "Modifications by this project: the three flight frames kept as-is; wings-folded and hanging\n"
+            "(upside down) frames made from the front-facing frame (tools/art/build_art.py, build_bat).\n")
+    shutil.copyfile(os.path.join(pack_dir("bat"), "LICENSE-OGA-BY-3.0.txt"), out_path("credits", "enemies", "bat_LICENSE-OGA-BY-3.0.txt"))
+    shutil.copyfile(os.path.join(pack_dir("bat"), "README.txt"), out_path("credits", "enemies", "bat_README.txt"))
 
 
 STEPS = {"tileset": build_tileset, "props": build_props, "shops": build_shops, "hd": build_hd_textures, "dog": build_dog,
-         "enemies": build_enemies, "items": build_items, "weapons": build_weapons, "credits": build_credits}
+         "enemies": build_enemies, "bat": build_bat, "items": build_items, "weapons": build_weapons, "credits": build_credits}
 
 
 def main():
