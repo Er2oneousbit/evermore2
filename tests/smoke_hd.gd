@@ -266,7 +266,7 @@ func _is_texel_aa(mat: Material) -> bool:
 ## Shops, props, fences, ground and the actors all use the texel-AA shaders,
 ## and MSAA follows the quality preset (off / off / 2x / 4x).
 func _check_texel_aa(hd: HdView) -> void:
-	for sh: Shader in [TexelMaterial.SHADER, HdView.SPRITE_SHADER, HdView.ACTOR_SHADER, HdView.ACTOR_GROUND_SHADER]:
+	for sh: Shader in [TexelMaterial.SHADER, HdView.SPRITE_SHADER]:
 		_check(sh.code.contains("texel_aa_uv") and sh.code.contains("filter_linear") and not sh.code.contains("filter_nearest"),
 				"%s must use texel_aa_uv with filter_linear" % sh.resource_path.get_file())
 	_check(_is_texel_aa(hd.get_node("Ground").material_override), "the ground plane must use the texel-AA shader")

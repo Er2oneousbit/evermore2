@@ -85,9 +85,9 @@ the orange shelter tag).
   4 screen pixels depending on the frame.
 * Fix 1: sharp-bilinear ("fat pixel") lookup, `assets/shaders/texel_aa.gdshaderinc`:
   LINEAR sampling with the UV snapped so each texel stays a flat block and
-  only a ~0.6 px band at its edge is blended (a full pixel looked soft on
-  small texels). Used by `hd_sprite` (props, signposts), `hd_actor` and
-  `hd_actor_ground` (actors, weapons) and the new `hd_texel.gdshader`
+  only a ~1 px band at the texel seam is blended (the first version
+  centred the remap on the texel instead of the seam and looked soft). Used by `hd_sprite` (props, signposts) and the new `hd_texel.gdshader`
+  (actors and weapons stay on plain nearest: camera-facing, they barely shimmer)
   (`TexelMaterial`: shop walls/roof/counter/goods/sign/crate, fences, the
   baked ground plane). Samplers don't wrap, so the top edge of a sprite can't
   pick up the bottom row of its sheet (that drew stray dark lines at first).
@@ -100,9 +100,9 @@ the orange shelter tag).
   smoothly and the shader fix covers the crawl.
 * Measured at 2560x1440 (real GPU), kid walking toward the shops, 39 frame
   pairs, lower shop wall, after compensating the pan: mean abs luma diff
-  3.38 -> 2.94 (-13%); pixels flipping across the plank threshold 1.85% ->
-  1.62% (-12%). Crude: sub-pixel motion itself changes pixels, so the metric
-  has a floor.
+  3.38 -> 3.31 (-2%); pixels flipping across the plank threshold 1.85% ->
+  1.92% (no gain). Crude: sub-pixel motion itself changes pixels, so the metric
+  has a floor; the crop is crisp like before, the seams just move smoothly.
 * Tests: `smoke_hd` checks the shaders (linear, texel-AA, no nearest), shop
   parts, props, fences and ground materials, and MSAA per quality preset.
   Sabotaged (hd_sprite back to nearest; High preset MSAA off): both fail.

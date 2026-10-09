@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------
 // WHAT:  texel_aa_uv(uv, tex_size) remaps a UV so a LINEAR sample returns the
 //        flat colour of the texel under it, blended with its neighbour only in
-//        a band about 0.6 of a screen pixel wide at the texel edge.
+//        a band about one screen pixel wide at the texel edge.
 // WHY:   Plain NEAREST sampling of pixel art on a perspective 3D surface
 //        gives each texel row 3 or 4 screen pixels depending on the frame, so
 //        planks and rails crawl and change thickness as the camera drifts by
@@ -20,8 +20,11 @@
 // =============================================================================
 vec2 texel_aa_uv(vec2 uv, vec2 tex_size) {
 	vec2 px = uv * tex_size;
-	// 0.6 of a pixel: a full pixel looked soft on small texels (owner needs it crisp).
-	vec2 fw = max(fwidth(px) * 0.6, vec2(1e-4));
-	vec2 f = fract(px);
-	return (floor(px) + 0.5 + clamp((f - 0.5) / fw, -0.5, 0.5)) / tex_size;
+
+	vec2 fw = max(fwidth(px), vec2(1e-4));
+
+	// Centred on the texel SEAM: samples the seam (50/50 blend) only exactly on it
+	// and a texel centre (flat colour) once half a pixel away.
+	vec2 seam = floor(px + 0.5);
+	return (seam + clamp((px - seam) / fw, -0.5, 0.5)) / tex_size;
 }

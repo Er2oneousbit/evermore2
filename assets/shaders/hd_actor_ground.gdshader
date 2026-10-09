@@ -19,9 +19,7 @@
 shader_type spatial;
 render_mode cull_disabled, depth_draw_opaque, diffuse_lambert_wrap, specular_schlick_ggx;
 
-#include "res://assets/shaders/texel_aa.gdshaderinc"
-
-uniform sampler2D tex : source_color, filter_linear, repeat_disable;
+uniform sampler2D tex : source_color, filter_nearest;
 uniform float lift : hint_range(0.0, 1.0) = 0.1;
 
 // Just above the ground, not on it: equal depths would z-fight the ground.
@@ -34,7 +32,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 c = texture(tex, texel_aa_uv(UV, vec2(textureSize(tex, 0)))) * COLOR;
+	vec4 c = texture(tex, UV) * COLOR;
 	ALBEDO = c.rgb;
 	ALPHA = c.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
