@@ -5,7 +5,7 @@
 [![Tech demo](https://img.shields.io/badge/download-tech%20demo-orange.svg)](https://github.com/Er2oneousbit/evermore2/releases/tag/tech-demo)
 
 A fan sequel to *Secret of Evermore* (Square, 1995): a top-down action RPG
-about a kid, his shelter dog, and a world built from dreams. Thirty years after
+about a kid (play as a girl or a boy), a shelter dog, and a world built from dreams. Thirty years after
 the original, Professor Ruffleberg's machine wakes up again, and so does Carltron.
 
 It's drawn the way Square Enix remakes its own SNES classics (Octopath
@@ -74,7 +74,8 @@ The newest work runs from source in the free Godot engine.
 3. Open Godot, click **Import**, and pick the `project.godot` file.
 4. Press **F5** to play. The game opens on a **Debug Menu**: pick the map to
    start in (the prologue from the start or from the street, the test yard, the
-   combat arena), the time of day and Normal or Hard.
+   combat arena), the time of day, Normal or Hard, and whether you play as a
+   girl or a boy (the dialogue follows your choice).
 
 It needs a graphics card with Vulkan or Direct3D 12 for the full look. On an
 older computer, start Godot with `--rendering-method gl_compatibility`: it still

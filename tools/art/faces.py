@@ -46,7 +46,7 @@ except ImportError:
     sys.exit("ERROR: Pillow is required:  pip install pillow")
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-CHARACTERS = ["kid", "dad", "maya", "dex", "grocer", "vendor"]
+CHARACTERS = ["kid", "kid_girl", "dad", "maya", "dex", "grocer", "vendor"]
 FRAME = 64
 COLUMNS = 13
 # First row of each 4-direction animation block (up, left, down, right), from

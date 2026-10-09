@@ -115,6 +115,7 @@ trail never breaks.
 | What | Source | Rebuild with |
 |---|---|---|
 | The kid | Universal LPC Character Generator (teen body, red longsleeve, jeans) | `node tools/lpc/build_character.js kid <out dir>` |
+| The kid as a girl (the player picks) | Same generator, same outfit, long straight CC0 hair | `node tools/lpc/build_character.js kid_girl <out dir>` (then `build_art.py --only faces`) |
 | The dog | LPC shiba by Sevarihk, recolored into a brown brindle mutt | `python3 tools/art/build_art.py --only dog` |
 | Ground tiles + autotile data | LPC Revised summer tileset (JaidynReiman's Tiled build) | `python3 tools/art/build_art.py --only tileset` |
 | Trees, bushes, flowers, rocks, pond plants | LPC Revised 4-Season Terrain (Eliza Wyatt et al.) | `python3 tools/art/build_art.py --only props` |
@@ -149,6 +150,8 @@ MAYA: You actually came.         SPEAKER: text  (speaker = data/characters/MAYA.
 MAYA (relieved): Good.           an emotion (portrait variant; falls back)
 : The fridge hums.               narration
 KID: Hi, {dog}.                  {kid}/{dog} = the player's names; {key} = data/names.json
+DEX: Hey you, {boy|girl}!        the kid is a boy or a girl (player's choice): boy part | girl part
+DEX: {He} came. Tell {him}.      {he} {him} {his} {son} {boy} (+ capitalised {He}...): he/she, him/her...
 * "Easy." -> dex_easy            a choice (consecutive * lines = one menu)
 * [prologue.talked_to_maya] ...  [flag] / [!flag] = only when the flag is set / not set
 @set prologue.dared              story flags (GameState); @clear flag

@@ -6,6 +6,12 @@
     "hash": "#sex=teen&body=Body_Color_light&head=Human_Male_Small_light&expression=Neutral_light&hair=Messy2_chestnut&clothes=Longsleeve_2_red&legs=Pants_blue&shoes=Revised_Shoes_white",
     "credits": "credits/kid/"
   },
+  "kid_girl": {
+    "notes": "The kid as a girl (owner, 2026-10-09: play as a girl or a boy). Same 13-year-old teen body and small head, light skin, red longsleeve, blue jeans, white sneakers. Long straight chestnut hair (CC0 layer: reads as a girl at a glance and keeps the sheet's hair out of share-alike).",
+    "output": "assets/characters/kid_girl/kid_girl_lpc.png",
+    "hash": "#sex=teen&body=Body_Color_light&head=Human_Female_Small_light&expression=Neutral_light&hair=Long_straight_chestnut&clothes=Longsleeve_2_red&legs=Pants_blue&shoes=Revised_Shoes_white",
+    "credits": "credits/kid_girl/"
+  },
   "dad": {
     "notes": "43, the kid's dad (the 1995 boy). Same chestnut hair and light skin as the kid on purpose: the photo reveal depends on the family resemblance. Beard, green button-up, charcoal pants.",
     "output": "assets/characters/dad/dad_lpc.png",

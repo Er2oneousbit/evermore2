@@ -7,8 +7,8 @@ decisions live in [design-bible.md](design-bible.md).
 
 ## The plan
 
-A sequel to *Secret of Evermore* (1995), thirty years on. A 13-year-old and his
-shelter dog are pulled into Evermore 2.0, a world that grows from the dreams of
+A sequel to *Secret of Evermore* (1995), thirty years on. A 13-year-old (a girl
+or a boy, the player's choice) and a shelter dog are pulled into Evermore 2.0, a world that grows from the dreams of
 whoever enters it, and Carltron wants the kid back as his "anchor". The boy who
 beat Carltron in 1995 is the kid's dad. Realms (being redesigned), a dog that
 changes form in each, alchemy, and the ring menu (the outline is in the design
@@ -37,6 +37,7 @@ the orange shelter tag).
 ## Later
 
 * A better idle animation for the kid and NPCs (the LPC breathing frame opened a gap between shirt and trousers; the 1 px bob replacement was removed by the owner)
+* The real title screen asks "boy or girl" first, together with the kid's name and the dog's (the debug menu's "Play as" is the stand-in), and the save file keeps both
 * Better foliage/tree sway (owner: the rigid one-block sway still looks bad): e.g. a few hand-made sway frames per tree, or a smooth sub-pixel sway with the new texel filtering
 * Find character and animal art with 8 directions (diagonals) for the kid and the dog: LPC only has 4; the owner wants 45-degree poses if a matching set exists
 * Night-only enemies and items (the hook is there: `ENEMY_CLOCK` / `"clock"` per spawner)
@@ -50,6 +51,7 @@ the orange shelter tag).
 
 | Date | Decision |
 |---|---|
+| 2026-10-09 | **Play as a girl or a boy; the dialogue adapts** (owner: "main character should be a choice between girl or boy... framework to auto change dialogue based on that"). The story is the same either way (Carltron sees Dad's face in the kid's). Text uses tokens (`{he}`, `{son}`, `{boy\|girl}`...), one resolver for dialogue, HUD and names. Changes the design-bible Lead row |
 | 2026-10-09 | **A sky dial clock at the top centre, the quick slots at the bottom centre, unequal phase hours** (owner). One real minute is one game hour; morning 5:00-11:00, day 11:00-17:00, golden 17:00-20:00, night 20:00-5:00 (a longer night, OK'd). The dial shows the sun and moon opposite each other on a turning wheel;; no clock text at all (owner) |
 | 2026-10-09 | **The dog sniffs out hidden items in any stance when it's calm** (owner); Search is the keener, braver version (farther, quicker, skips fights). The dog's bite is a leap and bite, like the original |
 | 2026-10-09 | **Paths between the demo maps, to test scene swapping** (owner: "why not make a path between them? Good way to test scene swapping!"). The prologue street's road runs east to the test yard, the yard's shop street north to the combat arena, and back. Every future map uses the same exits |
@@ -77,6 +79,16 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: play as a girl or a boy
+
+Owner: "main character should be a choice between girl or boy... framework to auto change dialogue".
+
+- **State and menu:** `GameState.kid_gender` ("boy" default / "girl"), `set_kid_gender()` and `EventBus.kid_gender_changed`. The debug menu has "Play as: < Boy / Girl >", applied before the map loads and remembered in `debug_menu.cfg`. (The real title screen asks it first: on the Later list.)
+- **The girl:** LPC recipe `kid_girl`: same teen body, red longsleeve, jeans and white shoes, small female head, long straight chestnut hair (CC0 layer, so no share-alike added; the boy's hair is CC-BY-SA/GPL only). The faces step paints her nose and mouth (86 front frames, 5 hurt frames skipped like the rest). The kid actor swaps sheets live (2D and the HD sprite); the KID portrait follows (`CharacterData.sheet_girl`).
+- **Text:** one resolver, `GenderedText`: `{boy|girl}` splits and `{he} {him} {his} {son} {boy}` plus capitalised forms. Dialogue, HUD toast/notice, the ring menu and `Names.text` values use it (`Names.expand` for the rest). `DialogueScript` reports unbalanced braces, splits without two parts and unknown tokens with line numbers. Converted: Dex's "he brought a dog", "man", "buddy" (prologue.dlg), the ring menu's stance and Stay put text. Dad's 1995 lines stay male.
+- **Docs:** design-bible Lead row and story text made neutral (the dad's 1995 story stays "boy"), README, release README.
+- **Tests:** new `smoke_gender` (resolver, error line numbers, every .dlg parses, prologue line differs by gender, menu sets GameState and the 2D/HD sprite textures, live swap). Sabotaged three ways (girl index forced to boy, `_apply_gender` disabled, menu not setting the gender): each fails. Full suite: ALL TESTS PASSED. Version not bumped.
 
 ## Done: faces (a mouth and nose facing the camera)
 

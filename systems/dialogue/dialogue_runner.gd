@@ -16,6 +16,7 @@
 #   get_flag(name) -> Variant      default: GameState.get_flag
 #   set_flag(name, value)          default: GameState.set_flag
 #   resolve_name(key) -> String    default: {kid}/{dog} -> player names, else Names.text
+#   gender                         "boy"/"girl" for {he} and {boy|girl} (default: GameState.kid_gender)
 #   signal command(name, args)     for @time, @fade, ... (the scene handles them)
 #
 # Written with help from Claude (Anthropic) via Claude Code.
@@ -34,6 +35,9 @@ var get_flag := func(flag: String) -> Variant: return GameState.get_flag(flag)
 var set_flag := func(flag: String, value: Variant) -> void: GameState.set_flag(flag, value)
 var resolve_name := func(key: String) -> String: return DialogueRunner.default_name(key)
 
+## Whose pronouns {he} and {boy|girl} use. Empty = the kid's (GameState).
+var gender := ""
+
 var script_data: DialogueScript
 var node_name := ""
 var finished := true
@@ -41,17 +45,12 @@ var finished := true
 var _index := 0
 var _pending_menu: Dictionary = {}  # the menu waiting for choose()
 var _shown_options: Array = []      # its options that passed their [cond]
-var _subst_regex := RegEx.create_from_string("\\{([A-Za-z0-9_.]+)\\}")
 
 
-## The player's names for {kid} and {dog}; any other key comes from names.json.
+## The player's names for {kid} and {dog}; any other key comes from names.json
+## (Names.default_name).
 static func default_name(key: String) -> String:
-	match key:
-		"kid":
-			return GameState.get_kid_name()
-		"dog":
-			return GameState.get_dog_name()
-	return Names.text(key)
+	return Names.default_name(key)
 
 
 ## Begin at a node. Returns false (and logs) if the script or node is bad.
@@ -133,12 +132,10 @@ func choose(i: int) -> void:
 	_index = 0
 
 
-## Replace {key} with names (see resolve_name).
+## Expand every {token}: names via resolve_name, pronouns and {boy|girl}
+## splits for `gender` (see GenderedText).
 func substitute(text: String) -> String:
-	var out := text
-	for m in _subst_regex.search_all(text):
-		out = out.replace(m.get_string(0), resolve_name.call(m.get_string(1)))
-	return out
+	return GenderedText.expand(text, gender if not gender.is_empty() else GameState.kid_gender, resolve_name)
 
 
 func _menu_beat() -> Dictionary:

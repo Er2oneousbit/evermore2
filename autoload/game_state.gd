@@ -20,6 +20,11 @@ extends Node
 var kid_name := ""
 var dog_name := ""
 
+## The kid is a "boy" or a "girl" (the player's choice; owner, 2026-10-09). It
+## picks the sprite sheet and portrait and fills the {he}/{son}/{boy|girl}
+## tokens in text (GenderedText). Change it with set_kid_gender().
+var kid_gender := "boy"
+
 ## Key from names.json for the place the player is in, e.g. "place_ruffleberg_lot".
 ## Each AsciiRealm sets it from its REALM_NAME_KEY when it loads.
 var current_realm := "realm_test_yard"
@@ -53,6 +58,18 @@ var _flags: Dictionary = {}
 ## Display name for the kid (player choice, or the default from names.json).
 func get_kid_name() -> String:
 	return kid_name if not kid_name.is_empty() else Names.text("kid_default")
+
+
+## Choose the kid's gender ("boy" or "girl"; anything else is refused, false).
+## The actor and the portrait follow EventBus.kid_gender_changed.
+func set_kid_gender(gender: String) -> bool:
+	if gender not in GenderedText.GENDERS:
+		Debug.log_warn("GameState: unknown kid gender '%s'" % gender)
+		return false
+	if gender != kid_gender:
+		kid_gender = gender
+		EventBus.kid_gender_changed.emit(gender)
+	return true
 
 
 ## Display name for the dog (player choice, or the shelter's name for him).

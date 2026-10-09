@@ -4,6 +4,9 @@ The story, the realms and the real content come later.
 
 ## New in this update
 
+* **Play as a girl or a boy**: the start menu's "Play as" picks the kid's look,
+  and the dialogue (he/she, son/daughter) follows
+
 * **A start menu**: pick the prologue, the street, the test yard or the
   combat arena, the start time and Normal or Hard. Reaching the gate in the
   prologue brings you back to it

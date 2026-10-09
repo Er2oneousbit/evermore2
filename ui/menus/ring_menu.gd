@@ -635,12 +635,16 @@ func _fill_party(e: Dictionary, hints: PackedStringArray) -> void:
 			var st := Party.stance_of(member) if is_instance_valid(member) else "offensive"
 			var t: Array = STANCE_TEXT.get(st, [st, ""])
 			_title.text = "%s: %s" % [_party_label(k), t[0]]
-			_desc.text = "When you aren't driving him, he %s." % t[1]
+			# The kid is a boy or a girl ({him}/{he} follow the choice); the dog is a he.
+			var who := "{him}, {he}" if k == "kid_stance" else "him, he"
+			_desc.text = Names.expand("When you aren't driving %s %s." % [who, t[1]])
 		"stay":
 			var p := Party.partner()
 			_title.text = "Stay put: %s" % ("On" if Party.staying else "Off")
-			_desc.text = ("%s holds his spot until you call him back." % _name_of(Equipment.who_of(p))) if p \
-					else "Nobody to leave behind."
+			var holder := Equipment.who_of(p) if p else ""
+			_desc.text = Names.expand("%s holds %s spot until you call %s back." % [
+					_name_of(holder), "{his}" if holder == "kid" else "his",
+					"{him}" if holder == "kid" else "him"]) if p else "Nobody to leave behind."
 	hints.append("Up/Down: change")
 
 

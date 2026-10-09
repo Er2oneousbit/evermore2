@@ -20,6 +20,9 @@ extends Resource
 @export var name_key := ""
 ## Sprite sheet (a Universal LPC 832x3456 sheet for people).
 @export var sheet: Texture2D
+## The kid only: the sheet shown when the player chose a girl
+## (GameState.kid_gender == "girl"); empty = `sheet` for everyone.
+@export var sheet_girl: Texture2D
 ## Part of the sheet shown as the portrait (pixels). The default is the face
 ## of an LPC character's idle-facing-down frame (row 24, column 0).
 @export var portrait_region := Rect2(16, 24 * 64 + 4, 32, 32)
@@ -49,6 +52,6 @@ func portrait(emotion := "") -> Texture2D:
 	if sheet == null:
 		return null
 	var at := AtlasTexture.new()
-	at.atlas = sheet
+	at.atlas = sheet_girl if name_key == "kid" and GameState.kid_gender == "girl" and sheet_girl else sheet
 	at.region = portrait_region
 	return at

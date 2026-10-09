@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 # Format: systems/dialogue/dialogue_script.gd (header). Speakers are
 # data/characters/<ID>.tres; {kid} and {dog} are the names the player picked;
+# the kid is a boy or a girl, so lines about the kid use {he}, {son}, {boy|girl}...;
 # any other {key} comes from data/names.json (proper nouns live there).
 # Scene commands handled by realms/podunk/ruffleberg_lot.gd:
 #   @time <morning|day|golden|night> [seconds]     @end_slice
@@ -90,7 +91,7 @@ MAYA: Whatever happens, I'll be right here by the fence. Text me.
 
 == dex
 [prologue.dared] -> dex_again
-DEX: Look who showed up. And he brought a dog. Cute.
+DEX: Look who showed up. And {he} brought a dog. Cute.
 KID: He followed me. He does that.
 DEX: Here's the deal. You go in, you go down to the basement, you bring something back.
 DEX: Anything. A spoon. A creepy doll. A ghost, if it fits in your pocket.
@@ -101,7 +102,7 @@ DEX: Or you're a baby forever. Like, legally.
 
 == dex_easy
 KID: Easy. I've done scarier drops in {game_battle_royale}.
-DEX: That's a video game, man.
+DEX: That's a video game, {man|girl}.
 KID: Ranked is scarier than a house.
 -> dex_end
 
@@ -123,7 +124,7 @@ DEX: Gate's that way. Clock's ticking.
 : The last of the sun slides down behind the trees.
 
 == dex_again
-DEX: Gate's that way, baby. I mean, buddy.
+DEX: Gate's that way, baby. I mean, {buddy|girl}.
 
 == gate
 [!prologue.dared] -> gate_not_yet

@@ -17,7 +17,8 @@ HOW TO START
 Windows
   Evermore2.exe              Opens a menu: pick the prologue, the street,
                              the test yard or the combat arena, the start
-                             time and Normal/Hard
+                             time, Normal/Hard, and whether you play as a
+                             girl or a boy (the dialogue follows)
   Combat arena.bat           The combat arena: a big countryside (100 x 56
                              tiles) with giant rats, rats that go home at
                              dusk and bats that roost in the oaks

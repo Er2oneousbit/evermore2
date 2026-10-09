@@ -86,6 +86,10 @@ signal notice(text: String)
 @warning_ignore("unused_signal")
 signal quick_slots_changed()
 
+## The player picked "boy" or "girl" for the kid (the actor swaps its sheet).
+@warning_ignore("unused_signal")
+signal kid_gender_changed(gender: String)
+
 ## A story/progress flag was set via GameState.set_flag().
 @warning_ignore("unused_signal")
 signal flag_changed(flag: String, value: Variant)

@@ -5,8 +5,10 @@
 #        direction, the LPC sprite animations, and the phone flashlight
 #        (PointLight2D) that points where the kid faces.
 #
-# ART:   $Sprite is an LpcSprite showing assets/characters/kid/kid_lpc.png,
-#        built with the Universal LPC generator (tools/lpc/README.md explains
+# ART:   $Sprite is an LpcSprite showing assets/characters/kid/kid_lpc.png (the
+#        boy) or assets/characters/kid_girl/kid_girl_lpc.png (the girl): the
+#        player picks (GameState.kid_gender; EventBus.kid_gender_changed swaps
+#        the sheet live, HdView follows the texture). Built with the Universal LPC generator (tools/lpc/README.md explains
 #        how to rebuild it with a different outfit).
 #        He walks; hold Run (Shift / gamepad LB) to run, which drains his
 #        attack charge (systems/party/running.gd). A partly tilted stick
@@ -89,6 +91,11 @@ extends CharacterBody2D
 
 ## Flashlight brightness per time of day. A phone light is invisible at noon,
 ## so in daylight it would only wash out the scene. Unknown names use night.
+## The kid's sheet per gender (GameState.kid_gender).
+const SHEETS := {
+	"boy": preload("res://assets/characters/kid/kid_lpc.png"),
+	"girl": preload("res://assets/characters/kid_girl/kid_girl_lpc.png"),
+}
 const LIGHT_ENERGY_BY_TIME := {"morning": 0.0, "day": 0.0, "golden": 0.35, "night": 1.3}
 ## Seconds to fade the flashlight when the time of day changes.
 const LIGHT_FADE := 0.6
@@ -157,6 +164,8 @@ func _ready() -> void:
 	add_to_group("kid")
 	add_to_group("hd_actor")
 	_flashlight.enabled = light_on
+	_apply_gender(GameState.kid_gender)
+	EventBus.kid_gender_changed.connect(_apply_gender)
 	EventBus.time_of_day_changed.connect(_on_time_of_day_changed)
 	_build_weapon_layers()
 	equip(weapon)
@@ -172,6 +181,11 @@ func _ready() -> void:
 	follower = Follower.new(self, $CollisionShape2D, blocking_mask)
 	brain = PartnerBrain.new(self)
 	Party.register(self)
+
+
+## Show the sheet for the chosen gender.
+func _apply_gender(gender: String) -> void:
+	_sprite.texture = SHEETS.get(gender, SHEETS["boy"])
 
 
 ## Two layers around his body sprite: the back one drawn before it, the front
