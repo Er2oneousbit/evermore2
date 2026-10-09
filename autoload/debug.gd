@@ -39,7 +39,7 @@ Usage:  godot --path <project folder> -- [options]
   --debug        Start with the debug overlay visible (toggle any time with F3)
   --verbose      Print extra VERBOSE log lines (AI state changes, spawns, etc.)
   --hard         Play on Hard (enemies tougher, prices higher)
-  --arena        Start in the combat arena (giant rats), skipping the debug menu
+  --arena        Start in the combat arena (big map: rats, bats, day and night), skipping the debug menu
   --yard         Start in the test yard (the clock runs: morning, day, golden hour, night),
                  skipping the debug menu (no map option: the game opens on that menu)
                  (the three demo maps are joined by paths: the street's road east to

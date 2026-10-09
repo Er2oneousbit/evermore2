@@ -188,7 +188,7 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
 * **Difficulty** levers are one table in `autoload/difficulty.gd`. Code asks for
   numbers (`Difficulty.enemy_hp(base)`), never "is this Hard?". Start on Hard
   with `godot --path . -- --hard`.
-* **The arena** for trying it: `godot --path . res://realms/test/combat_arena_hd.tscn`.
+* **The arena** (100 x 56 tiles, rats, bats, day and night) for trying it: `godot --path . res://realms/test/combat_arena_hd.tscn`.
 * **Effects** (damage numbers, slash trails) go through `Fx`, which projects
   world positions through whichever camera is live, so they sit right in both
   the 2D and the HD-2D view. Anything timed (hit-stop, typing, guards) counts

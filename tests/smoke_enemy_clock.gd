@@ -1,9 +1,9 @@
 # =============================================================================
 # smoke_enemy_clock.gd  -  Headless checks for the day/night enemy swap
 # -----------------------------------------------------------------------------
-# WHAT:  On the test yard (rats = day, burrow in/out; bats = night, drop from
-#        the oaks), with the clock pinned by hand:
-#          1. by day: two rats out, four bats hang in oaks (not hittable, no
+# WHAT:  In the combat arena (rats = day, burrow in/out; bats = night, drop from
+#        the oaks; the yard has no enemies any more), with the clock pinned by hand:
+#          1. by day: every "x" rat out, every roost holds a bat hanging in oaks (not hittable, no
 #             aggro); a killed rat respawns through its burrow entrance
 #          2. dusk (jump to night): an idle rat on camera walks to a hole and
 #             is removed only once invisible (sunk) or off camera, never
@@ -22,7 +22,7 @@
 # =============================================================================
 extends Node
 
-const YARD := "res://realms/big_yard/prototype_yard.tscn"
+const YARD := "res://realms/test/combat_arena.tscn"
 var RAT: EnemyData = load("res://data/enemies/rat.tres")
 
 var _failures: PackedStringArray = []
@@ -30,6 +30,8 @@ var _yard: Node2D
 var _kid: Kid
 var _dog: Dog
 var _dn: DayNightDirector
+var _n_rats := 0  # "x" cells in the arena layout
+var _n_bats := 0  # ENEMY_ROOSTS entries
 var _heard: Array = []  # [sound, director time]
 
 
@@ -47,6 +49,8 @@ func _run() -> void:
 	_kid = _yard.get_node("World/Kid")
 	_dog = _yard.get_node("World/Dog")
 	_dn = _yard.get_node("DayNight")
+	_n_rats = "".join(_yard.layout).count("x")
+	_n_bats = _yard.cfg("ENEMY_ROOSTS").size()
 	await _frames(5)
 	Clock.hold("day", 0.0)  # pinned: the clock moves only when the test says
 	await _frames(5)
@@ -89,9 +93,22 @@ func _put_kid(at: Vector2) -> void:
 
 
 func _test_by_day() -> void:
-	_check(_rats().size() == 2, "two rats out by day, found %d" % _rats().size())
+	# The arena is big (the owner plays at 3440x1440: ~27x11 tiles visible) and
+	# holds the whole demo: always-there rats, day rats with burrows, oak roosts.
+	var layout: Array = _yard.layout
+	_check(layout[0].length() >= 90 and layout.size() >= 50, "the arena is at least 90x50 tiles (%dx%d)" % [layout[0].length(), layout.size()])
+	_check("".join(layout).count("r") >= 4, "the arena has always-there giant rats")
+	for r: Dictionary in _yard.cfg("ENEMY_ROOSTS"):
+		var c: Vector2i = r["cell"]
+		_check(layout[c.y][c.x] in "Tt", "the roost at %s is in an oak" % c)
+	var far := 0
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if (e as Enemy).global_position.distance_to(_kid.global_position) > 640.0:
+			far += 1
+	_check(far >= 20, "most enemies start far from the kid so they wake as he approaches (%d far)" % far)
+	_check(_n_rats >= 10 and _rats().size() == _n_rats, "%d rats out by day, found %d" % [_n_rats, _rats().size()])
 	var bats := _bats()
-	_check(bats.size() == 4, "four bats in the oaks, found %d" % bats.size())
+	_check(_n_bats >= 6 and bats.size() == _n_bats, "%d bats in the oaks, found %d" % [_n_bats, bats.size()])
 	for b: Enemy in bats:
 		_check(b.state == Enemy.State.ROOST, "%s hangs by day (state %d)" % [b.name, b.state])
 		_check(b.height >= b.data.hang_height - 0.5, "%s hangs under the canopy (height %.1f)" % [b.name, b.height])
@@ -112,9 +129,9 @@ func _test_by_day() -> void:
 	var before := _dn.arrival_log.size()
 	victim.get_node("Hurtbox").receive(HitInfo.make(999.0, _kid.global_position, victim.global_position, 0.0, "player", _kid))
 	await _wait(1.0)
-	_check(_rats().size() == 1, "the killed rat is gone for now")
+	_check(_rats().size() == _n_rats - 1, "the killed rat is gone for now")
 	await _wait(RAT.respawn_seconds + 2.5)
-	_check(_rats().size() == 2, "by day a killed rat respawns (%d rats)" % _rats().size())
+	_check(_rats().size() == _n_rats, "by day a killed rat respawns (%d rats)" % _rats().size())
 	var burrows := _dn.arrival_log.slice(before).filter(func(a: Dictionary) -> bool: return a["how"] == "burrow")
 	_check(burrows.size() == 1, "...squeezing out of its burrow (%s)" % [_dn.arrival_log.slice(before)])
 	await _wait(1.5)
@@ -124,7 +141,12 @@ func _test_dusk() -> void:
 	var rats := _rats()
 	var idle_rat: Enemy = rats[0]
 	var fight_rat: Enemy = rats[1]
-	# The kid fights one rat; the other idles in plain view 200 px away.
+	# The kid fights one rat; the other idles in plain view 200 px away. Both
+	# are brought to the open plaza by the entrance road, next to two burrows:
+	# rats walk straight at their hole, and a fence in between would (rightly)
+	# make the leave fail, which is not what this checks.
+	fight_rat.global_position = Vector2(1750, 1540)
+	fight_rat.home = fight_rat.global_position
 	_put_kid(fight_rat.global_position + Vector2(-100, 0))
 	idle_rat.global_position = _kid.global_position + Vector2(-210, 10)
 	idle_rat.home = idle_rat.global_position
@@ -170,7 +192,7 @@ func _test_dusk() -> void:
 
 	# The bats: dropped out of the trees one at a time, after dark, with a cue.
 	var drops := _dn.arrival_log.slice(arrivals_before).filter(func(a: Dictionary) -> bool: return a["how"] == "drop")
-	_check(drops.size() == 4, "all four bats dropped (%d)" % drops.size())
+	_check(drops.size() == _n_bats, "all %d bats dropped (%d)" % [_n_bats, drops.size()])
 	if drops.size() >= 2:
 		var times: Array = drops.map(func(a: Dictionary) -> float: return a["t"])
 		times.sort()
@@ -190,8 +212,8 @@ func _test_dusk() -> void:
 		if b.state in [Enemy.State.IDLE, Enemy.State.CHASE, Enemy.State.WINDUP, Enemy.State.ATTACK, Enemy.State.RECOVER, Enemy.State.HURT]:
 			flying += 1
 			_check(b.get_node("Hurtbox").is_in_group("hurtbox"), "a flying bat can be hit")
-	_check(flying == 4, "four bats are flying (%d)" % flying)
-	_check(bat_names.size() == 4, "the same four bats")
+	_check(flying == _n_bats, "%d bats are flying (%d)" % [_n_bats, flying])
+	_check(bat_names.size() == _n_bats, "the same bats")
 	min_bats_flying = flying
 	if min_bats_flying == 0:
 		return
@@ -203,22 +225,24 @@ func _test_dawn() -> void:
 	var t_dawn := _dn._now
 	# A bat that is fighting at dawn stays up until it is calm: not tested here;
 	# the rat's version above covers the rule. Everyone else goes home.
-	_put_kid(Vector2(1330, 640))
+	_put_kid(Vector2(1616, 1560))  # the spawn plaza: nothing near
 	Clock.jump("morning", 0.0)
 	await _wait(40.0)
 	var bats := _bats()
-	_check(bats.size() == 4, "no bat was removed at dawn (%d left)" % bats.size())
+	_check(bats.size() == _n_bats, "no bat was removed at dawn (%d left)" % bats.size())
 	for b: Enemy in bats:
 		_check(b.state == Enemy.State.ROOST, "%s is back hanging in its oak (state %d)" % [b.name, b.state])
 	for r: Dictionary in _dn.removal_log.slice(removals_before):
 		_check(not (r["on_camera"] and r["via"] == "off_camera"), "removed in plain view at dawn: %s" % [r])
 	var back := _dn.arrival_log.slice(arrivals_before).filter(func(a: Dictionary) -> bool: return a["how"] == "burrow")
-	_check(back.size() == 2, "both rats came back out of their burrows (%s)" % [_dn.arrival_log.slice(arrivals_before)])
-	if back.size() == 2:
-		_check(absf(back[1]["t"] - back[0]["t"]) >= DayNightDirector.MIN_GAP - 0.01,
-				"the rats came back one at a time (%.2f s apart)" % absf(back[1]["t"] - back[0]["t"]))
-		_check(back[0]["t"] - t_dawn >= DayNightDirector.DAWN_DELAY - 0.01, "not before the dawn delay")
-	_check(_rats().size() == 2, "two rats out again by day")
+	_check(back.size() == _n_rats, "all %d rats came back out of their burrows (%d)" % [_n_rats, back.size()])
+	if back.size() >= 2:
+		var ts: Array = back.map(func(a: Dictionary) -> float: return a["t"])
+		ts.sort()
+		for i in range(1, ts.size()):
+			_check(ts[i] - ts[i - 1] >= DayNightDirector.MIN_GAP - 0.01, "the rats came back one at a time (%.2f s apart)" % (ts[i] - ts[i - 1]))
+		_check(ts[0] - t_dawn >= DayNightDirector.DAWN_DELAY - 0.01, "not before the dawn delay")
+	_check(_rats().size() == _n_rats, "every rat is out again by day")
 
 
 # -----------------------------------------------------------------------------

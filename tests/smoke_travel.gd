@@ -169,7 +169,7 @@ func _test_yard_to_arena() -> void:
 	_check(Party.kid.health.hp == hp_before, "kid HP carried again (%d -> %d)" % [hp_before, Party.kid.health.hp])
 	_check(GameState.item_count("rusty_sword") == 1, "the arena doesn't hand out the kit a second time (%d swords)" % GameState.item_count("rusty_sword"))
 	# Arena -> yard, walking south down the little path.
-	Party.kid.global_position = Vector2(14.5 * TILE, 12.6 * TILE)
+	Party.kid.global_position = Vector2(50.0 * TILE, 53.6 * TILE)  # the big arena: the road south is 2 tiles wide at x 49-50
 	await _walk_until_travel("move_down", 120)
 	await Travel.finished
 	_travels += 1

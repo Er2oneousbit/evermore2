@@ -229,9 +229,11 @@ func _queue_group(group: Array, kind: String, start: float, cue: bool) -> void:
 		order[i] = order[j]
 		order[j] = t
 	var step := maxf(MIN_GAP, STAGGER_SECONDS / float(order.size()))
+	# The jitter must not eat the MIN_GAP: with many enemies (the big arena has
+	# 14 rats) step is MIN_GAP itself and 30% jitter made some pairs 0.5 s apart.
 	for i in order.size():
 		var s: Dictionary = order[i]
-		var at := _now + maxf(start, CUE_LEAD + 0.1 if cue else 0.0) + float(i) * step + rng.randf_range(0.0, step * 0.3)
+		var at := _now + maxf(start, CUE_LEAD + 0.1 if cue else 0.0) + float(i) * step + rng.randf_range(0.0, minf(step * 0.3, step - MIN_GAP))
 		if kind == "arrive":
 			s["pending"] = true
 			_queue_arrival(s, at)

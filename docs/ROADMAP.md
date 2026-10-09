@@ -75,6 +75,17 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: a big combat arena
+
+Owner (3440x1440, about 27x11 tiles on screen): "remove the mobs from the shop map and make the combat arena a lot larger so things go off screen."
+
+* **The yard has no enemies**: rats, burrows and roosting bats are gone; shops, clock, hidden items, the dog's nose and the exits stay.
+* **The arena is 100 x 56 tiles** (was 30 x 15, about 6x the screen): open fields, oak groves, three ponds, dirt crossroads and a loop road, a fenced pen, fence lanes, bush hedges, rocks, shrubs, tall grass. The road south to the yard stays (entry cell moved to (49, 52)). Layout generated once, committed as ASCII.
+* **The day/night demo lives here**: 8 always-there giant rats (`r`), 14 rats on the day schedule (`x`, their cells are burrows, plus holes under hedge bushes and two by the entrance road) and 9 bats in oaks. `ENEMY_CLOCK` follow_clock, `CLOCK_MODE` free (day and night happen in the arena; nothing broke). Most enemies start 20+ tiles from the spawn and wake by distance.
+* **Director fix**: with many enemies the stagger jitter could pull two arrivals 0.5 s apart (MIN_GAP is 0.7); jitter is now capped by `step - MIN_GAP`.
+* **Measured**: HdView build (headless) 417 ms for the arena vs 167 ms for the yard; 1627 sprite props vs 713, 12.2k nodes vs 4.9k; live at 2560x1440 the F-less FPS read 74-75 (display cap) on day and night shots.
+* **Tests**: smoke_enemy_clock runs in the arena (counts from the layout, plus size >= 90x50, rats, oak roosts, most enemies far from the kid); smoke_clock checks the yard has no enemies and runs night misses and the dog's nose in the arena; smoke_travel walks out of the arena's south road; smoke_combat counts the arena's enemies. Sabotages: reverting the jitter cap fails smoke_enemy_clock, adding a roost to the yard fails smoke_clock. Full suite green. Screenshot tour: `EVERMORE_TOUR_MAP=arena`.
+
 ## Done: tree tops no longer wipe
 
 * Owner, from a screen recording: the tree tops had "a sort of wiping up and

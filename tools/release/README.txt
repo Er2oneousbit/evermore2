@@ -18,10 +18,12 @@ Windows
   Evermore2.exe              Opens a menu: pick the prologue, the street,
                              the test yard or the combat arena, the start
                              time and Normal/Hard
-  Combat arena.bat           The combat arena: five giant rats
+  Combat arena.bat           The combat arena: a big countryside (100 x 56
+                             tiles) with giant rats, rats that go home at
+                             dusk and bats that roost in the oaks
   Combat arena (Hard).bat    The same on Hard
-  Test yard.bat              The test yard: shops, rats by day, bats by
-                             night, and a clock that runs
+  Test yard.bat              The test yard: shops, hidden items and a
+                             clock that runs (no enemies here)
 
   The game isn't code-signed, so Windows may say "Windows protected your
   PC". Click "More info", then "Run anyway".
@@ -111,8 +113,9 @@ Walking between maps: the street's road (east) leads to the test yard, and
 the yard's shop street (north) to the combat arena. Your health, charge and
 items come with you.
 
-Day and night: in the test yard a day lasts 24 minutes (F9 speeds it up).
-The corner store closes at night; the all-night stand doesn't. At night the
-kid misses more outside his flashlight beam, the dog smells enemies (they
-glow while you drive him), rats go home and bats drop out of the oaks.
+Day and night: in the test yard and the combat arena a day lasts 24 minutes
+(F9 speeds it up). The corner store closes at night; the all-night stand
+doesn't. At night the kid misses more outside his flashlight beam, the dog
+smells enemies (they glow while you drive him), and in the arena rats go
+home and bats drop out of the oaks.
 Watch for a bat's squeak and dip before it dives: step aside.
