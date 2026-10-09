@@ -105,15 +105,40 @@ func _test_placement_and_ai_dig() -> void:
 	GameState.dog_stance = "search"
 	var went := false
 	var dug := false
+	var dsprite: AnimalSprite = dog.get_node("Sprite")
+	var rest_offset := dsprite.offset
+	var wrong_anim := 0
+	var dig_frames := {}     # sheet columns the 2D sprite showed while digging
+	var hd_cols := {}        # columns the HD Sprite3D copy showed
+	var offsets := {}        # body positions (the scrape)
+	var hd_offsets := {}
 	for i in 360:
 		await _frames(1)
 		went = went or dog.nose.mode == Nose.Mode.GO
 		dug = dug or dog.is_digging()
+		if dog.is_digging():
+			if dsprite.current != &"dig":
+				wrong_anim += 1
+			dig_frames[dsprite.frame_coords.x] = true
+			offsets[dsprite.offset] = true
+			var d3: Sprite3D = hd._mirrored.get(dog.get_instance_id())
+			if d3:
+				hd_cols[d3.frame_coords.x] = true
+				hd_offsets[d3.offset] = true
 		if not is_instance_valid(key):
 			break
 	_check(went, "on Search the dog goes for the buried item")
 	_check(_sounds.has("dog_bark"), "he barks when he gets there")
 	_check(dug and _sounds.has("dig"), "and digs it up")
+	# The dig reads as digging (owner: "there is no dog digging animation"):
+	# the dig animation plays the whole time, in head-low frames only, the body
+	# rocks into the hole, and the HD-2D sprite copy shows the same.
+	_check(wrong_anim == 0 and not dig_frames.is_empty(), "the dog plays 'dig' the whole time he digs (%d frames off)" % wrong_anim)
+	_check(dig_frames.size() >= 3 and dig_frames.keys().all(func(c: int) -> bool: return c >= 5), "dig cycles 3+ head-low frames: %s" % [dig_frames.keys()])
+	_check(offsets.size() >= 3, "the body rocks while digging (%d positions)" % offsets.size())
+	_check(hd_cols.size() >= 3 and hd_cols.keys().all(func(c: int) -> bool: return c >= 5), "HD-2D copy shows the dig frames: %s" % [hd_cols.keys()])
+	_check(hd_offsets.size() >= 3, "HD-2D copy shows the rocking body (%d positions)" % hd_offsets.size())
+	_check(dsprite.offset == rest_offset, "the body settles back after the dig (%s vs %s)" % [dsprite.offset, rest_offset])
 	_check(not is_instance_valid(key), "the hidden item is gone once dug up")
 	var pickup := _pickup_of("old_key")
 	_check(pickup != null, "the key pops out as a pickup")
