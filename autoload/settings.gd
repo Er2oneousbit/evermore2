@@ -241,8 +241,8 @@ func _apply(key: String) -> void:
 			if DisplayServer.get_name() == "headless":
 				return
 			var mode := DisplayServer.WINDOW_MODE_WINDOWED
-			if has_resolution_arg(OS.get_cmdline_args()):
-				pass  # an explicit --resolution means an exact-size window
+			if wants_exact_window(OS.get_cmdline_args(), OS.get_cmdline_user_args()):
+				pass  # tests, screenshots and -- --windowed keep their exact-size window
 			elif v == "borderless":
 				mode = DisplayServer.WINDOW_MODE_FULLSCREEN
 			elif v == "fullscreen":
@@ -293,9 +293,16 @@ static func resolve_window_size(choice: String, usable: Vector2i) -> Vector2i:
 	return want
 
 
-static func has_resolution_arg(args: Array) -> bool:
+## True for test and screenshot runs (a res://tests/ scene on the command
+## line) or `-- --windowed`: keep the exact-size window instead of going
+## borderless. Godot strips its own options (--resolution, --path) from
+## OS.get_cmdline_args(), so checking for --resolution there never matched and
+## every screenshot came out fullscreen at the monitor's size.
+static func wants_exact_window(args: Array, user_args: Array) -> bool:
+	if "--windowed" in user_args:
+		return true
 	for a: String in args:
-		if a == "--resolution" or a.begins_with("--resolution="):
+		if a.begins_with("res://tests/"):
 			return true
 	return false
 
@@ -305,8 +312,8 @@ func _apply_window_size() -> void:
 		return
 	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
 		return
-	# An explicit --resolution on the command line wins (tests, screenshots).
-	if has_resolution_arg(OS.get_cmdline_args()):
+	# Tests and screenshots keep the size their --resolution asked for.
+	if wants_exact_window(OS.get_cmdline_args(), OS.get_cmdline_user_args()):
 		return
 	var screen := DisplayServer.window_get_current_screen()
 	var usable := DisplayServer.screen_get_usable_rect(screen)
