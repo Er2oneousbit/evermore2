@@ -103,6 +103,7 @@ JRPG Music Pack #1 [Exploration]
   https://opengameart.org/content/jrpg-pack-1-exploration
   music/yard.ogg  <-  Exploration1 - Grasslands.ogg
   music/tropical.ogg  <-  Exploration6 - Tropical Island.ogg
+  music/title.ogg  <-  Exploration4 - Prairie Nights.ogg
 
 JRPG Music Pack #5 [Action]
   by Juhani Junkala (SubspaceAudio)
