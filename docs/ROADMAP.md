@@ -93,6 +93,8 @@ Owner: "The shops look cheesy, they need to appear to have some depth even if th
 * Tests (`smoke_hd` section 1b): both shops build walls, roofs, awning, counter, sign and shutter nodes that cast shadows with nearest-filtered textures; the shutter is visible only while closed and the lamp lit only at night while open; the kid walking up stops at the counter and the talk target is the keeper (open) or the shutter (closed). Sabotaged: shutter always visible (3 failures), footprint back to 14 px (2 failures). Screenshots by day, golden and night judged from the tour.
 * Polish pass (owner: "not sure these are any better"; it read as a toy box): roof pitch 1.0 to 0.7 m (under a quarter of the height) with finer generated shingles, fascia boards and a ridge cap; light trim-wood corner posts, base boards and lintel; a low counter (0.72 m) so the keeper shows from the waist up, with a planked front, base board and goods (LPC item icons) on top; red/white and blue/white striped scalloped awnings hung shorter so they stop hiding the counter; a crate with a sack and a barrel beside each stall (outside the 2D footprint); a hanging lantern (small shadowless OmniLight3D, lit only at night while open, dark on the closed store); slatted wooden shutters, goods put away when closed. New textures come from the `shops` step of `build_art.py`. `smoke_hd` now checks the goods, crate, barrel, sack, fascia, ridge cap, lantern light rules and goods visibility. Sabotaged: lantern lit in daytime (failures on both shops). Day and night screenshots judged from the tour.
 
+* Awnings removed (owner, 2026-10-09: they hid the front keeper's face)
+
 ## Done: playtest fixes (movement, club, dog bite, sniffing)
 
 Owner's playtest notes, 2026-10-09. Measured first, then fixed:
