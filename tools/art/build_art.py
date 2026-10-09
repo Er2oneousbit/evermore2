@@ -14,6 +14,7 @@ WHAT:  Takes the ORIGINAL art packs (downloaded from OpenGameArt, cached in
          assets/characters/enemies/*/                     enemy sheets (the rat)
          assets/items/lpc_items.png                       32x32 item icons
          assets/weapons/*_fg.png, *_bg.png                weapons in hand while swinging
+         assets/characters/*/*_lpc.png                    nose + mouth on front frames (faces step, tools/art/faces.py)
          credits/<pack>/...                               license + credit files
 
        The outputs are committed to git, so nobody NEEDS to run this to play.
@@ -28,7 +29,7 @@ USAGE:
   python3 tools/art/build_art.py --offline  build from the cache only
   python3 tools/art/build_art.py --list     list packs, licenses, cache status
   python3 tools/art/build_art.py --only props,dog   rebuild some steps only
-  Steps: tileset, props, shops, hd, dog, enemies, bat, items, weapons, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
+  Steps: tileset, props, shops, hd, dog, enemies, bat, items, weapons, faces, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
 
 Written with help from Claude (Anthropic) via Claude Code.
 Made with love from your friendly hacker - er2oneousbit
@@ -647,6 +648,16 @@ def build_dog():
     shadow.save(out_path("assets", "characters", "dog", "dog_lpc_shadow.png"))
 
 
+def build_faces():
+    """Nose + mouth on every front-facing character frame. The logic lives in
+    faces.py (it also runs on its own); it edits the committed sheets in place
+    and is idempotent."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import faces
+    log("Faces: painting nose and mouth on front frames")
+    faces.run(log, verbose=VERBOSE)
+
+
 def build_credits():
     log("Credits: copying license/credit files")
     four = pack_dir("four_season")
@@ -717,7 +728,7 @@ def build_credits():
 
 
 STEPS = {"tileset": build_tileset, "props": build_props, "shops": build_shops, "hd": build_hd_textures, "dog": build_dog,
-         "enemies": build_enemies, "bat": build_bat, "items": build_items, "weapons": build_weapons, "credits": build_credits}
+         "enemies": build_enemies, "bat": build_bat, "items": build_items, "weapons": build_weapons, "faces": build_faces, "credits": build_credits}
 
 
 def main():
@@ -742,7 +753,8 @@ def main():
     unknown = [s for s in steps if s not in STEPS]
     if unknown:
         sys.exit(f"ERROR: unknown step(s) {unknown}. Choose from: {', '.join(STEPS)}")
-    ensure_packs(args.offline)
+    if set(steps) - {"faces"}:   # faces only edits committed sheets, no packs needed
+        ensure_packs(args.offline)
     for s in steps:
         STEPS[s]()
     log("Done. Re-open Godot (or run --import) so it picks up the new files.")

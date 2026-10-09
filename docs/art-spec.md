@@ -156,6 +156,7 @@ shows up as magenta and fails it).
 | **Never hand-edit an imported asset.** Crops, recolors, compositions go in `tools/art/build_art.py` | Rebuildable, reviewable, and the credit trail stays intact |
 | **Credit in the same commit** (CREDITS.md + `credits/`) | License requirement |
 | Characters come from the LPC generator (`tools/lpc/`), recipes in `characters.json` | One command rebuilds a character after an outfit change |
+| After a character rebuild run `python tools/art/faces.py`: it paints a 2 px nose and mouth on front-facing frames only (hand-drawn: the generator's nose layer is share-alike) | The original hero has a tiny mouth facing the camera and none from the side |
 | Gaps (no LPC squirrel exists, for example) get drawn **in LPC style**: 32 px grid, dark outline, 3-4 shades, light from top-left | So hand-made art sits next to library art without clashing |
 
 ### Draw order (z_index, every realm)
