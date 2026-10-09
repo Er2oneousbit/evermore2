@@ -31,8 +31,8 @@ Carltron waking) into the first realm.
    finding the dog, the first boss, sniff mode.
 
 Alongside: equipment perks that do something, more formulas (with the realms'
-ingredients and alchemists), the dog's look (notched floppy ear, one ear up, the orange shelter
-tag), and a real HUD in place of the placeholder text.
+ingredients and alchemists), the dog's look (notched floppy ear, one ear up,
+the orange shelter tag).
 
 ## Later
 
@@ -68,6 +68,36 @@ tag), and a real HUD in place of the placeholder text.
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: a real HUD
+
+* The text HUD is gone. Each of the duo has a **card** in a bottom corner
+  (the kid left, the dog right):
+  * the name, with "> " and a gold border on the one you drive; the
+    partner's card shows his stance and "Stay"
+  * a **health bar** that goes green, yellow, red, with the numbers beside
+    it; a hit leaves a pale **ghost** of the lost health that drains away
+    after a moment, so you see how much that hit took, and the bar flashes
+  * his charge bar underneath (pips, winded blink)
+  * knocked out: the card dims and says **KO, back in 8**, counting down
+* The quick slots stay top left, the found / notice lines top middle, the
+  "[E] Talk to Maya" prompt bottom middle; the cards, prompt and quick slots
+  tuck away while people talk
+* Found while testing: if a scene changed while someone was knocked out,
+  the revive code read the freed member afterwards (a script error the
+  tests didn't fail on). Fixed, and **the test runners now fail any run that
+  prints a SCRIPT ERROR**, even if the test printed PASS (every test was
+  clean)
+* Tests: `smoke_party` HUD section (the driven marker, stance and Stay, the
+  ghost appearing and draining, KO with the countdown, both cards inside the
+  frame, apart, kid left). Each was proven by breaking it (5 sabotages). All
+  14 runs pass
+* Review fixes before merging: the taller cards could cover the kid on the
+  bottom row in the classic 2D view (the 2D camera now stops a card's height
+  past the bottom edge, and HdView's margin comes from the card's size); a
+  heal used in the ring menu didn't show on the card until the menu closed
+  (the cards keep drawing while paused). `smoke_hd` checks the bottom row
+  against the cards' real top edge
 
 ## Done: the Items, Alchemy and Party rings, and quick slots
 

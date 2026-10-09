@@ -41,6 +41,8 @@ var dog: Node2D
 var leader: Node2D
 ## Stay put is on for the partner.
 var staying := false
+## Revive countdowns per knocked-out member (instance id -> SceneTreeTimer).
+var _revive_timers := {}
 
 
 func _ready() -> void:
@@ -231,9 +233,22 @@ func _on_member_died(member: Node2D) -> void:
 	# The one you were driving went down: carry on with the other.
 	if member == leader:
 		_set_leader(partner())
-	await get_tree().create_timer(REVIVE_SECONDS, false).timeout
+	# The id, not the member: he may be freed by the time the timer ends (a
+	# scene change while he's down).
+	var id := member.get_instance_id()
+	var timer := get_tree().create_timer(REVIVE_SECONDS, false)
+	_revive_timers[id] = timer
+	await timer.timeout
+	_revive_timers.erase(id)
 	if is_instance_valid(member) and is_down(member) and not _all_down():
 		member.revive(REVIVE_FRACTION)
+
+
+## Seconds until a knocked-out member gets back up (0 = not waiting). The HUD
+## counts it down.
+func revive_left(member: Node2D) -> float:
+	var t: SceneTreeTimer = _revive_timers.get(member.get_instance_id()) if is_instance_valid(member) else null
+	return t.time_left if t else 0.0
 
 
 func _all_down() -> bool:

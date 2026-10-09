@@ -30,7 +30,9 @@ run() {  # run <label> <scene> [extra godot args...]
   local out
   out=$(timeout 300 "$GODOT" --headless --path "$PROJECT_DIR" --audio-driver Dummy --quit-after "$MAX_FRAMES" "$@" "$scene" 2>&1)
   local code=$?
-  if [ $code -eq 0 ] && echo "$out" | grep -q '\[TEST\] PASS'; then
+  # A script error fails the run even if the test printed PASS: errors in
+  # code a test doesn't check (a freed node after a scene change) hide there.
+  if [ $code -eq 0 ] && echo "$out" | grep -q '\[TEST\] PASS' && ! echo "$out" | grep -q 'SCRIPT ERROR'; then
     echo "PASS  $(echo "$out" | grep -o '\[TEST\] PASS.*' | sed 's/\[TEST\] PASS *//')"
   else
     echo "FAIL (exit $code)"

@@ -87,6 +87,8 @@ EVERMORE_SHOT_DIR=/tmp/shots godot --path . --resolution 1280x720 res://tests/sc
 
 On Windows PowerShell, set variables first: `$env:EVERMORE_SHOT_DIR="C:\temp\shots"`.
 
+A run that prints a `SCRIPT ERROR` fails, even if the test printed PASS.
+
 The headless renderer draws nothing, so tests check logic and structure; how
 things *look* is checked with the screenshot tour. A fix comes with a test that
 fails without it (each existing check was proven that way; see

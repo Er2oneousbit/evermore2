@@ -605,4 +605,6 @@ func _set_camera_limits() -> void:
 	if cam == null:
 		Debug.log_warn("Kid has no GameCamera child; camera bounds not set")
 		return
-	cam.set_world_bounds(map_rect())
+	# A little past the bottom edge (the apron has trees there): the HUD cards
+	# cover the bottom of the screen, and the last row must stay above them.
+	cam.set_world_bounds(map_rect().grow_individual(0, 0, 0, HdView.HUD_CLEAR_PX))
