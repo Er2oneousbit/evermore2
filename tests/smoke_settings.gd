@@ -257,8 +257,10 @@ func _test_window_size() -> void:
 	_check(Settings.option("window_size").get("default") == "auto", "window size defaults to auto")
 	_check(Settings.get_value("window_size") == "auto", "window size starts on auto")
 	_check(Settings.option("window_mode").get("default") == "borderless", "the window defaults to borderless fullscreen")
-	_check(Settings.has_resolution_arg(["--path", ".", "--resolution", "1280x720"]), "--resolution is detected (forces windowed)")
-	_check(not Settings.has_resolution_arg(["--path", "."]), "no --resolution, no override")
+	# What Godot really hands over: its own options (--path, --resolution) are stripped.
+	_check(Settings.wants_exact_window(["res://tests/screenshot_tour.tscn"], []), "a test scene keeps its exact-size window")
+	_check(Settings.wants_exact_window([], ["--windowed"]), "-- --windowed keeps the window")
+	_check(not Settings.wants_exact_window([], ["--yard"]), "a normal run goes borderless")
 	var S := Settings
 	_check(S.auto_window_size(Vector2i(1920, 1040)) == Vector2i(1280, 720), "auto: 1080p screen -> 1280x720")
 	_check(S.auto_window_size(Vector2i(2560, 1400)) == Vector2i(1920, 1080), "auto: 1440p screen -> 1920x1080")

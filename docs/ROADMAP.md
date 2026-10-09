@@ -160,7 +160,7 @@ the other settings, applied at startup; an explicit `--resolution` and headless
 runs are untouched. The game now also **opens borderless fullscreen** at the
 monitor's native resolution by default (`window_mode` default "borderless"; players
 who saved "windowed" keep it; no hotkey); Window size applies when windowed. An
-explicit `--resolution` forces a windowed, exact-size window. `smoke_settings` checks the size math and the default.
+test and screenshot runs (a `res://tests/` scene) and `-- --windowed` keep a windowed, exact-size window. (First version checked for `--resolution`, but Godot strips its own options from the arguments the game sees, so screenshots came out fullscreen; fixed the same day.) `smoke_settings` checks the size math and the default.
 
 ## Done: a running clock, two shops, night effects
 
