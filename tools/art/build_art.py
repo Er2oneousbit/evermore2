@@ -295,10 +295,11 @@ def build_props():
 
     # --- Rocks (grey-brown set) ----------------------------------------------
     rocks = src(OBJ, "Rocks, Grasslands.png")
-    plant("rock_big", rocks, (0, 0, 64, 64), solid=(46, 14), shadow=(60, 14))
-    plant("rock_wide", rocks, (64, 64, 64, 32), solid=(44, 10), shadow=(56, 12))
-    plant("rock_small_a", rocks, (128, 64, 32, 32), solid=(18, 8), shadow=(24, 8))
-    plant("rock_small_b", rocks, (128, 96, 32, 32), solid=(18, 8), shadow=(24, 8))
+    # Rocks never sway (sway=0): plant() defaults to a plant's 0.6.
+    plant("rock_big", rocks, (0, 0, 64, 64), sway=0.0, solid=(46, 14), shadow=(60, 14))
+    plant("rock_wide", rocks, (64, 64, 64, 32), sway=0.0, solid=(44, 10), shadow=(56, 12))
+    plant("rock_small_a", rocks, (128, 64, 32, 32), sway=0.0, solid=(18, 8), shadow=(24, 8))
+    plant("rock_small_b", rocks, (128, 96, 32, 32), sway=0.0, solid=(18, 8), shadow=(24, 8))
     plant("pebble", rocks, (160, 96, 32, 32), decal=True)
 
     # --- Mushrooms -------------------------------------------------------------
@@ -315,18 +316,20 @@ def build_props():
         write_prop(name, img, (16, 24), decal=True, frames=2, frame_fps=1.6)
     for name, y in [("reeds_a", 0), ("reeds_b", 32), ("reeds_c", 64)]:
         img = crop(aquatic, (64, y, 64, 32))
-        write_prop(name, img, (16, 26), frames=2, frame_fps=1.2)
+        write_prop(name, img, (16, 26), frames=2, frame_fps=1.2, sway=1.2, sway_speed=0.5, rooted=0.1)
 
-    # --- Flat ground decals: scattered wildflowers and grass tufts -----------
+    # --- Wildflowers and grass tufts: standing sprites that sway in the wind
+    # like the grass (a flat decal is baked into the ground texture in HD-2D, so
+    # it could never move). Rooted near the ground.
     wild = src(OBJ, "Flowers - Wildflowers (Summer).png")
     n = 0
     for y in range(0, 160, 32):
         for x in range(0, 128, 32):
-            plant(f"wildflowers_{n:02d}", wild, (x, y, 32, 32), decal=True)
+            plant(f"wildflowers_{n:02d}", wild, (x, y, 32, 32), sway=0.9, rooted=0.15)
             n += 1
     tufts = src(OBJ, "Grass Tuffs (Blending).png")
     for i, x in enumerate(range(0, 192, 32)):
-        plant(f"tuft_{'abcdef'[i]}", tufts, (x, 0, 32, 32), decal=True)
+        plant(f"tuft_{'abcdef'[i]}", tufts, (x, 0, 32, 32), sway=0.8, rooted=0.1)
 
 
 def build_shops():

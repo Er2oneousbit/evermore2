@@ -11,7 +11,4 @@ footprint = Vector2(46, 14)
 footprint_offset = Vector2(0, -7)
 shadow_size = Vector2(60, 14)
 shadow_alpha = 0.45
-sway_strength = 0.6
-sway_speed = 0.5
-sway_rooted = 0.25
 occluder_size = Vector2(46, 14)
