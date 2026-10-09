@@ -161,7 +161,7 @@ func _check_shops(hd: HdView, kid: Kid, stalls: Array[Prop]) -> void:
 	var shops_node := hd.get_node("Shops")
 	for b: ShopBuilding3D in buildings:
 		_check(b.get_parent() == shops_node, "shop building outside the Shops holder")
-		for part in ["BackWall", "SideWallL", "SideWallR", "RoofL", "RoofR", "Awning", "Counter", "Sign", "Shutter"]:
+		for part in ["BackWall", "SideWallL", "SideWallR", "RoofL", "RoofR", "FasciaL", "FasciaR", "RidgeCap", "PostL", "PostR", "Awning", "Counter", "Sign", "Shutter"]:
 			var mi := b.get_node_or_null(part) as MeshInstance3D
 			_check(mi != null, "%s lacks a 3D %s" % [b.name, part])
 			if mi == null:
@@ -171,6 +171,12 @@ func _check_shops(hd: HdView, kid: Kid, stalls: Array[Prop]) -> void:
 			var tex := (mi.material_override as StandardMaterial3D).albedo_texture
 			_check((mi.material_override as StandardMaterial3D).texture_filter == BaseMaterial3D.TEXTURE_FILTER_NEAREST
 					and tex != null, "%s %s must use a nearest-filtered texture" % [b.name, part])
+		# Polish pass: goods on the counter, a crate and a barrel, a lantern.
+		for part in ["Good0", "Good1", "Good2", "Good3", "Crate", "Barrel", "Sack"]:
+			_check(b.find_child(part, true, false) is MeshInstance3D, "%s lacks %s" % [b.name, part])
+		var lt := b.get_node_or_null("Lantern/Light") as OmniLight3D
+		_check(lt != null and not lt.shadow_enabled and lt.omni_range <= 6.0, "%s: lantern light missing, casts shadows or is too wide" % b.name)
+		_check(b.roof_height_share() < 0.3, "%s roof is %.2f of the height (should stay low)" % [b.name, b.roof_height_share()])
 		_check(b.shop != null, "%s isn't tied to its Shop" % b.name)
 	# Kid walking up from the street stops at the counter, in reach of both.
 	for st in stalls:
@@ -194,8 +200,9 @@ func _check_shops(hd: HdView, kid: Kid, stalls: Array[Prop]) -> void:
 			_check(building.get_node("Shutter").visible == not shop.is_open(),
 					"%s at %s: shutter panel visible=%s but open=%s" % [shop.shop_id, state,
 					building.get_node("Shutter").visible, shop.is_open()])
-			var lit := (building.get_node("Lamp") as OmniLight3D).light_energy > 0.0
-			_check(lit == (state == "night" and shop.is_open()), "%s at %s: lamp lit=%s, open=%s" % [shop.shop_id, state, lit, shop.is_open()])
+			_check((building.get_node("Goods") as Node3D).visible == shop.is_open(), "%s at %s: goods visible=%s but open=%s" % [shop.shop_id, state, building.get_node("Goods").visible, shop.is_open()])
+			var lit := (building.get_node("Lantern/Light") as OmniLight3D).light_energy > 0.0
+			_check(lit == (state == "night" and shop.is_open()), "%s at %s: lantern lit=%s, open=%s" % [shop.shop_id, state, lit, shop.is_open()])
 			kid.global_position = st.global_position + Vector2(0, 90)
 			kid.velocity = Vector2.ZERO
 			kid.facing = Vector2.UP

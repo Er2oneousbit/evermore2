@@ -416,6 +416,125 @@ def build_shops():
         sign.save(tex(f"shop_sign_{tag}.png"))
     vlog("shop 3D textures: wall, counter, roof, awning, sign x2")
 
+    # Polish pass: clean shingles, striped scalloped awning cloth, trim wood,
+    # shutter slats and the goods/crate/barrel sprites. Generated here (palette
+    # from the LPC siding and awnings) so nothing is hand-edited.
+    import random
+    items_sheet = Image.open(src(("items", "ItemsAndEffects"), "items1.png")).convert("RGBA")
+
+    def shade(c, f):
+        return tuple(max(0, min(255, int(v * f))) for v in c[:3]) + (255,)
+
+    def shingles(base, seed):
+        rnd = random.Random(seed)
+        im = Image.new("RGBA", (32, 32))
+        for row in range(8):
+            for k in range(-1, 5):
+                x0 = k * 8 + (4 if row % 2 else 0)
+                col = shade(base, 0.9 + 0.2 * rnd.random())
+                for y in range(row * 4, row * 4 + 4):
+                    for x in range(x0, x0 + 8):
+                        c = col
+                        if y == row * 4 + 3:
+                            c = shade(base, 0.55)      # shadow under the course
+                        elif y == row * 4:
+                            c = shade(base, 1.12)      # lit upper edge
+                        elif x == x0 + 7:
+                            c = shade(base, 0.7)       # joint
+                        im.putpixel((x % 32, y), c)
+        return im
+
+    def trim_wood(base, seed):
+        rnd = random.Random(seed)
+        im = Image.new("RGBA", (32, 32), base + (255,))
+        for _ in range(26):                             # short grain flecks, either direction
+            x, y, n = rnd.randrange(32), rnd.randrange(32), rnd.randrange(3, 8)
+            col = shade(base, 0.82 if rnd.random() < 0.7 else 1.1)
+            for i in range(n):
+                im.putpixel(((x + i) % 32, y), col)
+        return im
+
+    def awning_cloth(c1, c2):
+        im = Image.new("RGBA", (32, 24))
+        for x in range(32):
+            band = (x // 8) % 2
+            col = c1 if band == 0 else c2
+            dx = (x % 8) - 3.5
+            bottom = 23 - int(3.0 * (dx / 3.5) ** 2 + 0.5)    # scalloped front edge
+            for y in range(0, bottom + 1):
+                c = col
+                if y < 2:
+                    c = shade(col, 1.08)
+                if y > bottom - 2:
+                    c = shade(col, 0.72)
+                if y == bottom:
+                    c = shade(col, 0.5)
+                if x % 8 == 7:
+                    c = shade(c, 0.85)                       # fold between stripes
+                im.putpixel((x, y), c)
+        return im
+
+    def slats(base, seed):
+        rnd = random.Random(seed)
+        im = Image.new("RGBA", (32, 32))
+        for row in range(8):
+            col = shade(base, 0.9 + 0.2 * rnd.random())
+            for y in range(row * 4, row * 4 + 4):
+                for x in range(32):
+                    c = col
+                    if y == row * 4 + 3:
+                        c = shade(base, 0.4)
+                    elif y == row * 4:
+                        c = shade(base, 1.15)
+                    im.putpixel((x, y), c)
+        for x in (5, 26):                                   # nail studs
+            for row in range(8):
+                im.putpixel((x, row * 4 + 1), shade(base, 0.55))
+        return im
+
+    def crate():
+        im = Image.new("RGBA", (32, 32))
+        wood, dark = (150, 104, 62), (92, 60, 36)
+        for y in range(32):
+            for x in range(32):
+                c = shade(wood, 0.9 + 0.1 * ((y // 5) % 2)) if y % 5 else shade(wood, 0.6)
+                edge = x < 3 or x > 28 or y < 3 or y > 28
+                diag = abs(x - y) < 2 or abs(x + y - 31) < 2
+                im.putpixel((x, y), shade(dark, 1.1) if edge or diag else c)
+        return im
+
+    def icon(cell, bottom=True):
+        """One 32x32 item icon, trimmed, centered, standing on the cell's floor."""
+        col, row = cell
+        ic = items_sheet.crop((col * 32, row * 32, col * 32 + 32, row * 32 + 32))
+        ic = ic.crop(ic.getbbox())
+        out = Image.new("RGBA", (32, 32))
+        out.alpha_composite(ic, ((32 - ic.width) // 2, 32 - ic.height))
+        return out
+
+    # item sheet cells: (col, row)
+    APPLE, BREAD, CHEESE, CARROT = (8, 5), (7, 6), (6, 6), (4, 6)
+    RED, BLUE, GREEN, SACK, BARREL = (3, 5), (4, 5), (5, 5), (4, 2), (11, 5)
+    styles = {"a": dict(roof=(150, 82, 52), trim=(220, 196, 150), c1=(184, 50, 46), c2=(232, 226, 212),
+                        shut=(124, 86, 54), goods=(BREAD, CHEESE, APPLE, CARROT)),
+              "b": dict(roof=(88, 102, 128), trim=(142, 100, 64), c1=(48, 92, 170), c2=(228, 232, 238),
+                        shut=(90, 104, 120), goods=(RED, BLUE, GREEN, APPLE))}
+    for tag, st in styles.items():
+        shingles(st["roof"], 11 if tag == "a" else 12).save(tex(f"shop_roof_{tag}.png"))
+        trim_wood(st["trim"], 21 if tag == "a" else 22).save(tex(f"shop_trim_{tag}.png"))
+        awning_cloth(st["c1"], st["c2"]).save(tex(f"shop_awning_{tag}.png"))
+        slats(st["shut"], 31 if tag == "a" else 32).save(tex(f"shop_shutter_{tag}.png"))
+        strip = Image.new("RGBA", (32 * 4, 32))
+        for i, cell in enumerate(st["goods"]):
+            strip.alpha_composite(icon(cell), (32 * i, 0))
+        strip.save(tex(f"shop_goods_{tag}.png"))
+    crate().save(tex("shop_crate.png"))
+    side = Image.new("RGBA", (64, 32))                      # extras beside the stall: barrel, sack
+    side.alpha_composite(icon(BARREL), (0, 0))
+    side.alpha_composite(icon(SACK), (32, 0))
+    side.save(tex("shop_extras.png"))
+    vlog("shop polish: shingles, trim, striped awning, shutter slats, goods, crate, extras")
+
 
 def build_hd_textures():
     """Textures for the HD-2D view's real 3D geometry (fence posts and rails),
