@@ -64,6 +64,7 @@ func _init() -> void:
 	feet_y = FEET_Y
 	dir_rows = [0, 1, 2, 3]  # LPC rows: up, left, down, right
 	anims = ANIMS
+	phase_groups = [[&"walk", &"run"]]  # both are 8-frame cycles
 
 
 ## How long one full pass of `anim` takes at the given speed scale (s).

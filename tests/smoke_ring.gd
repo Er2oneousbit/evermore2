@@ -324,6 +324,30 @@ func _test_weapon_in_hand() -> void:
 	await _frames(2)
 	if f3:
 		_check(f3.visible and f3.frame_coords == front.frame_coords, "and in HD-2D too")
+	# The tip of the club vanished: the art is 192 px frames on a 64 px body,
+	# and the swing reaches below his feet. Nothing may crop it: the drawn
+	# region is the sheet's whole frame, in 2D and HD-2D, and art that dips
+	# below the feet row draws on the ground-clamped material (or it sinks
+	# into the ground plane).
+	var fpx: int = stick.weapon.overlay_frame
+	for l: Sprite2D in [front, back]:
+		_check(not l.region_enabled and l.get_rect().size == Vector2(fpx, fpx),
+				"2D: the weapon layer draws the sheet's whole %d px frame (%s)" % [fpx, l.get_rect().size])
+	if f3 and b3:
+		for l3: Sprite3D in [f3, b3]:
+			_check(l3.get_item_rect().size == Vector2(fpx, fpx), "HD-2D: the weapon quad covers the whole frame (%s)" % l3.get_item_rect().size)
+	var lowest := 0
+	for tex: Texture2D in [stick.weapon.overlay_fg, stick.weapon.overlay_bg]:
+		var img := tex.get_image()
+		for fx in tex.get_width() / fpx:
+			for fy in 4:
+				lowest = maxi(lowest, img.get_region(Rect2i(fx * fpx, fy * fpx, fpx, fpx)).get_used_rect().end.y)
+	var feet_row := LpcSprite.FEET_Y + (fpx - LpcSprite.FRAME) / 2
+	_check(lowest > feet_row, "(setup) the club reaches %d px below his feet row" % (lowest - feet_row))
+	if f3 and b3 and lowest > feet_row:
+		for l3: Sprite3D in [f3, b3]:
+			_check((l3.material_override as ShaderMaterial).shader.resource_path.ends_with("hd_actor_ground.gdshader"),
+					"HD-2D: art below the feet draws ground-clamped, not sunk into the ground")
 	for i in 60:
 		await get_tree().physics_frame
 		if not kid.is_attacking():

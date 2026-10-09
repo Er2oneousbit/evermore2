@@ -2,10 +2,12 @@
 # nose.gd  -  The dog's nose: finding hidden items
 # -----------------------------------------------------------------------------
 # WHAT:  Two ways the dog finds things:
-#          Search stance (AI)  when nothing's after him, he notices a hidden
-#                     item near him and the leader, trots over, stops, points
-#                     and barks, then digs it up (buried) or keeps pointing at
-#                     the bush it's under (tucked) until the kid comes for it
+#          Any stance (AI)  when it's calm (nothing awake and after the party),
+#                     he notices a hidden item near him and the leader, trots
+#                     over, stops, points and barks, then digs it up (buried)
+#                     or keeps pointing at the bush it's under (tucked) until
+#                     the kid comes for it. Search stance reaches farther,
+#                     looks more often, and skips fights to do it
 #          sniff (you drive him; C / gamepad B)  scent trails, colored wisps,
 #                     lead from him to the nearest few things he can smell:
 #                     hidden and lying items (gold), ingredients (green),
@@ -21,10 +23,16 @@
 class_name Nose
 extends RefCounted
 
-## Search stance: he notices items within this distance of himself...
-const NOTICE_RADIUS := 170.0
+## Calm, any stance: he notices items within this distance of himself...
+const NOTICE_RADIUS := 130.0
 ## ...that are also within this distance of the leader.
-const NEAR_LEADER := 180.0
+const NEAR_LEADER := 140.0
+## Search stance: farther, and he looks around more often.
+const NOTICE_RADIUS_SEARCH := 220.0
+const NEAR_LEADER_SEARCH := 230.0
+const SCAN_SECONDS_SEARCH := 0.15
+## Calm means no awake enemy within this distance of him or the leader.
+const CALM_RADIUS := 260.0
 ## Sniff button: how far the scent trails reach, how many, and for how long.
 const SNIFF_RANGE := 320.0
 const TRAILS := 3
@@ -52,6 +60,7 @@ var dog: CharacterBody2D
 var find: HiddenItem
 var mode := Mode.NONE
 
+var _eager := false
 var _t := 0.0
 var _scan := 0.0
 var _best_dist := INF
@@ -70,9 +79,14 @@ func busy() -> bool:
 	return mode != Mode.NONE and not (mode == Mode.DIG and not dog.is_digging())
 
 
-## Search stance, nothing to fight: the velocity he wants, or null when he has
-## nothing to sniff out (then he just follows).
-func think(delta: float, leader: Node2D) -> Variant:
+## The velocity he wants, or null when he has nothing to sniff out (then he
+## just follows). `eager` = Search stance (farther, quicker, ignores fights);
+## otherwise he only works while it's calm.
+func think(delta: float, leader: Node2D, eager := false) -> Variant:
+	_eager = eager
+	if not eager and not calm(leader):
+		cancel()
+		return null
 	for id in _skip.keys():
 		_skip[id] -= delta
 		if _skip[id] <= 0.0:
@@ -83,7 +97,7 @@ func think(delta: float, leader: Node2D) -> Variant:
 		Mode.NONE:
 			_scan -= delta
 			if _scan <= 0.0:
-				_scan = SCAN_SECONDS
+				_scan = SCAN_SECONDS_SEARCH if eager else SCAN_SECONDS
 				_pick(leader)
 			return null if mode == Mode.NONE else Vector2.ZERO
 		Mode.GO:
@@ -117,6 +131,19 @@ func think(delta: float, leader: Node2D) -> Variant:
 
 ## Stop whatever he was doing (stance change, Stay put, a fight, a switch).
 ## A dig already under way finishes (the item still pops out).
+## True when no awake enemy is near him or the leader (nothing to fight).
+func calm(leader: Node2D) -> bool:
+	for n in dog.get_tree().get_nodes_in_group("enemy"):
+		var e := n as Node2D
+		if not PartnerBrain._alive(e) or not e.is_active():
+			continue
+		if e.global_position.distance_to(dog.global_position) < CALM_RADIUS:
+			return false
+		if is_instance_valid(leader) and e.global_position.distance_to(leader.global_position) < CALM_RADIUS:
+			return false
+	return true
+
+
 func cancel() -> void:
 	if mode != Mode.NONE and not dog.is_digging():
 		_done()
@@ -134,7 +161,9 @@ func _pick(leader: Node2D) -> void:
 		if h.kind == "tucked" and h.pointed:
 			continue  # already shown to the kid
 		var d := dog.global_position.distance_to(h.global_position)
-		if d > NOTICE_RADIUS or h.global_position.distance_to(leader.global_position) > NEAR_LEADER:
+		var notice := NOTICE_RADIUS_SEARCH if _eager else NOTICE_RADIUS
+		var near := NEAR_LEADER_SEARCH if _eager else NEAR_LEADER
+		if d > notice or h.global_position.distance_to(leader.global_position) > near:
 			continue
 		if d < best_d:
 			best_d = d

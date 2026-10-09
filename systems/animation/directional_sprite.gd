@@ -18,6 +18,15 @@
 # DIRECTIONS: facing_to_dir() maps any vector (8-way or analog) to the nearest
 #        of 4. Horizontal wins ties, so diagonals show the side view.
 #
+# HYSTERESIS: with `dir_bias` above 1 the sprite keeps its current axis
+#        (side view or front/back view) until the other axis wins by that
+#        factor, so a diagonal stick or a wobbling thumb doesn't flicker
+#        between up and right every frame.
+#
+# PHASE: animations listed together in `phase_groups` (walk and run) share
+#        their cycle: switching between them keeps the frame, so the feet
+#        don't jump back to the first frame when the pace changes.
+#
 # SHADOW: set `shadow_texture` to a sheet with the same layout (frame-aligned
 #        shadows) and a child sprite mirrors every frame on the shadow layer.
 #
@@ -42,6 +51,9 @@ const SHADOW_Z := -10
 ## Optional frame-aligned shadow sheet (same layout as `texture`).
 @export var shadow_texture: Texture2D
 @export_range(0.0, 1.0) var shadow_alpha := 0.5
+## 1 = nearest of 4 (horizontal wins ties). Above 1 = keep the current axis
+## until the other one wins by this factor (see HYSTERESIS above).
+@export var dir_bias := 1.0
 
 var current: StringName = &""
 var dir: Dir = Dir.DOWN
@@ -52,6 +64,8 @@ var sheet_grid := Vector2i(1, 1)
 var feet_y := 60
 var dir_rows: Array[int] = [0, 1, 2, 3]
 var anims: Dictionary = {}
+## Arrays of animation names that share a cycle (frame carries over on a switch).
+var phase_groups: Array = []
 
 var _frame_index := 0
 var _time := 0.0
@@ -90,11 +104,15 @@ func play(anim: StringName, facing := Vector2.ZERO, restart := false) -> void:
 		Debug.log_warn("%s: unknown animation '%s'" % [get_script().get_global_name(), anim])
 		return
 	if facing != Vector2.ZERO:
-		dir = facing_to_dir(facing)
+		dir = pick_dir(facing)
 	if anim != current or restart:
+		var keep := not restart and _same_phase(current, anim)
 		current = anim
-		_frame_index = 0
-		_time = 0.0
+		if keep:
+			_frame_index = mini(_frame_index, anims[anim]["frames"].size() - 1)
+		else:
+			_frame_index = 0
+			_time = 0.0
 		_finished = false
 	_apply_frame()
 
@@ -107,6 +125,27 @@ func frame_index() -> int:
 ## True while a non-looping animation still has frames left to show.
 func is_playing_once() -> bool:
 	return not anims.get(current, {}).get("loop", true) and not _finished
+
+
+## The direction to show for `v` given the current one and `dir_bias`.
+func pick_dir(v: Vector2) -> Dir:
+	if dir_bias <= 1.0:
+		return facing_to_dir(v)
+	var ax := absf(v.x)
+	var ay := absf(v.y)
+	var horizontal := dir == Dir.LEFT or dir == Dir.RIGHT
+	if horizontal and ay <= ax * dir_bias:
+		return Dir.RIGHT if v.x > 0.0 else Dir.LEFT
+	if not horizontal and ax <= ay * dir_bias:
+		return Dir.DOWN if v.y > 0.0 else Dir.UP
+	return facing_to_dir(v)
+
+
+func _same_phase(a: StringName, b: StringName) -> bool:
+	for g: Array in phase_groups:
+		if g.has(a) and g.has(b):
+			return true
+	return false
 
 
 static func facing_to_dir(v: Vector2) -> Dir:

@@ -118,6 +118,9 @@ func _run() -> void:
 	_check(_kid.light_on != light_before, "flashlight toggle did nothing")
 	await _shot("04_night_flashlight_off")
 
+	# --- 4. How the kid moves (owner's playtest, 2026-10-09) -------------------
+	await _test_kid_feel()
+
 	# --- Report ---------------------------------------------------------------
 	if _failures.is_empty():
 		print("[TEST] PASS  smoke_follow  (route: max gap %.1f px, %d state changes, %d warps)"
@@ -127,6 +130,82 @@ func _run() -> void:
 		for f in _failures:
 			printerr("[TEST] FAIL  ", f)
 		get_tree().quit(1)
+
+
+# -----------------------------------------------------------------------------
+# The kid's movement: +10% speed, steady facing, smooth reversals
+# -----------------------------------------------------------------------------
+func _test_kid_feel() -> void:
+	# +10% on every speed (walk 85, run 140, follow walk 120, follow sprint 165).
+	_check(is_equal_approx(_kid.move_speed, 93.5) and is_equal_approx(_kid.run_speed, 154.0),
+			"kid walk/run are 93.5 / 154 (+10%%), got %s / %s" % [_kid.move_speed, _kid.run_speed])
+	_check(is_equal_approx(_kid.walk_speed, 132.0) and is_equal_approx(_kid.sprint_speed, 181.5),
+			"kid follow speeds are 132 / 181.5 (+10%%), got %s / %s" % [_kid.walk_speed, _kid.sprint_speed])
+	_check(_dog.sprint_speed > _kid.run_speed and _dog.sprint_speed > _kid.sprint_speed,
+			"the dog's sprint (%.0f) still beats the kid's run (%.0f)" % [_dog.sprint_speed, _kid.run_speed])
+	var sprite: LpcSprite = _kid.get_node("Sprite")
+	# Out in the open, nobody else about.
+	_kid.global_position = Vector2(3 * TILE + 16, 5 * TILE + 16)
+	_kid.velocity = Vector2.ZERO
+	_dog.global_position = _kid.global_position + Vector2(-60, 0)
+	await _wait(0.3)
+	_release_all()
+
+	# A diagonal held with a wobbling thumb must not flicker between
+	# right and down (measured before the fix: it changed every frame).
+	var flips := 0
+	var last := sprite.dir
+	for i in 60:
+		var wobble := 0.1 if i % 2 == 0 else -0.1
+		Input.action_press("move_right", 0.8)
+		Input.action_press("move_down", 0.8 + wobble)
+		await get_tree().physics_frame
+		if sprite.dir != last:
+			flips += 1
+			last = sprite.dir
+	_release_all()
+	_check(flips <= 1, "facing doesn't flicker on a wobbling diagonal (%d changes in 60 frames)" % flips)
+	await _wait(0.5)
+
+	# A 180-degree reversal brakes over a few frames; it never snaps.
+	_kid.global_position = Vector2(8 * TILE + 16, 5 * TILE + 16)
+	_kid.velocity = Vector2.ZERO
+	Input.action_press("move_right", 1.0)
+	await _wait(0.5)
+	var top := _kid.velocity.x
+	_check(absf(top - _kid.move_speed) < 4.0, "walking right at his walk speed (%.1f)" % top)
+	Input.action_release("move_right")
+	Input.action_press("move_left", 1.0)
+	var vx: Array[float] = []
+	for i in 30:
+		await get_tree().physics_frame
+		vx.append(_kid.velocity.x)
+	_release_all()
+	var zero_at := -1
+	for i in vx.size():
+		if vx[i] <= 0.0:
+			zero_at = i
+			break
+	_check(vx[0] > top * 0.6, "the first frame of a reversal keeps most of his speed (%.1f of %.1f)" % [vx[0], top])
+	_check(zero_at >= 3, "a reversal takes at least 3 frames to cross zero (took %d)" % zero_at)
+	_check(zero_at != -1 and zero_at <= 14, "...but is still quick (%d frames)" % zero_at)
+	var steady := true
+	for i in range(1, maxi(zero_at, 1)):
+		steady = steady and vx[i] < vx[i - 1]
+	_check(steady, "and the speed falls every frame (no jump back up)")
+	_check(vx[vx.size() - 1] < -top * 0.9, "then he's up to speed the other way (%.1f)" % vx[vx.size() - 1])
+	_kid.velocity = Vector2.ZERO
+
+	# Walk <-> run keeps the stride (no jump back to the first frame).
+	_kid.set_physics_process(false)  # or his own code puts idle back each frame
+	sprite.play(&"walk", Vector2.RIGHT, true)
+	for i in 21:
+		await get_tree().physics_frame
+	var before := sprite.frame_index()
+	sprite.play(&"run", Vector2.RIGHT)
+	_check(before > 0 and sprite.frame_index() == before, "walk to run keeps the frame (%d then %d)" % [before, sprite.frame_index()])
+	sprite.play(&"idle", Vector2.RIGHT)
+	_kid.set_physics_process(true)
 
 
 # -----------------------------------------------------------------------------

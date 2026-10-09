@@ -32,11 +32,15 @@ const ANIMS := {
 	&"dig":   {"row": 0, "frames": [6, 7, 5, 7], "fps": 11.0, "loop": true},
 	# The dog's bite: head low, then a stretched lunge (frame 1) where it lands.
 	&"bite":  {"row": 0, "frames": [4, 1, 1, 0], "fps": 14.0, "loop": false},
+	# The bite's beats, held by the dog's attack code: head low, then stretched.
+	&"crouch": {"row": 0, "frames": [4], "fps": 1.0, "loop": true},
+	&"leap":   {"row": 0, "frames": [1], "fps": 1.0, "loop": true},
 }
 
 
 func _init() -> void:
 	anims = ANIMS
+	phase_groups = [[&"walk", &"run"]]
 	dir_rows = [3, 1, 0, 2]  # UP, LEFT, DOWN, RIGHT -> sheet rows (down, left, right, up)
 
 

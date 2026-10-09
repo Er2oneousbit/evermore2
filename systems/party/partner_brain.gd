@@ -65,13 +65,15 @@ func think(delta: float, stance: String, staying: bool, on_screen: bool) -> Vect
 	var to := aim - (body.global_position + SWING_ORIGIN)
 	var dist := to.length()
 	var reach: float = body.weapon.reach
+	# The dog leaps, so he starts his bite from farther out than his teeth reach.
+	var engage_reach: float = body.leap_range if "leap_range" in body else reach
 	if dist > 0.5:
 		body.facing = to / dist
 	if staying or stance != "offensive":
 		# Holding back: swing only at what's already within reach.
 		if dist > reach:
 			return Vector2.ZERO if staying else follower.steer(delta, on_screen)
-	elif dist > reach * CLOSE_IN:
+	elif dist > engage_reach * CLOSE_IN:
 		return to / dist * body.walk_speed
 	# In reach: swing once the charge is where the stance wants it.
 	var need: int = body.weapon.max_level if stance == "defensive" else 1

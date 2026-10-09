@@ -81,8 +81,19 @@ const State = Follower.State
 @export var run_charge_drain := 0.125
 ## His bite (data/weapons/*.tres).
 @export var weapon: WeaponData = preload("res://data/weapons/dog_bite.tres")
-## Forward burst at the start of a bite (px/s).
-@export var lunge_speed := 150.0
+## The bite is a leap (like the original game): crouch, spring at the enemy,
+## bite on contact, spring back a little.
+## Crouch before the spring (s).
+@export var windup_seconds := 0.14
+## Leap speed (px/s) and the farthest he'll go for one (3 tiles).
+@export var leap_speed := 260.0
+@export var leap_range := 96.0
+## Height of the hop's arc in the HD view (px; the shadow stays on the ground).
+@export var hop_height := 14.0
+## Jaws: how far in front of his feet the teeth are, and the recoil after a bite.
+@export var jaw_reach := 12.0
+@export var recoil_speed := 120.0
+@export var recoil_seconds := 0.18
 ## Movement speed (px/s) that matches the walk cycle at 1x playback; raise it
 ## if the paws look like they slide, lower it if they moonwalk.
 @export var walk_anim_speed := 70.0
@@ -120,6 +131,14 @@ var _attacking := false
 var _swing_mult := 1.0
 var _swing_level := 1
 var _swing_landed := false
+## The leap's phase, time left in it, direction, distance left and total.
+enum Atk { NONE, WINDUP, LEAP, RECOIL }
+var _atk := Atk.NONE
+var _atk_t := 0.0
+var _leap_dir := Vector2.RIGHT
+var _leap_left := 0.0
+var _leap_total := 1.0
+var _sprite_offset_y := 0.0
 ## Seconds he's stood still in Search stance (he sniffs around after a bit).
 var _idle_time := 0.0
 ## Ground covered between paw sounds (px), and what's left until the next.
@@ -159,7 +178,7 @@ func _ready() -> void:
 	health.died.connect(_on_died)
 	_apply_equipment("dog")
 	EventBus.equipment_changed.connect(_apply_equipment)
-	_sprite.animation_finished.connect(_on_animation_finished)
+	_sprite_offset_y = _sprite.offset.y
 	_resolve_target()
 	Party.register(self)
 
@@ -193,10 +212,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if _attacking:
-		velocity = velocity.move_toward(Vector2.ZERO, acceleration * 0.25 * delta)
-		move_and_slide()
-		if not _swing_landed and _sprite.frame_index() >= weapon.hit_frame:
-			_land_bite()
+		_attack_step(delta)
 		return
 
 	var want := Vector2.ZERO
@@ -212,10 +228,12 @@ func _physics_process(delta: float) -> void:
 		var stance := Party.stance_of(self)
 		var staying := Party.is_staying(self)
 		want = brain.think(delta, stance, staying, _on_screen.is_on_screen())
-		# Nothing's after him on Search: his nose may have found something.
-		# Not mid-conversation: nothing gets dug up while people talk.
-		if brain.target == null and stance == "search" and not staying and not Dialogue.is_active():
-			var sniffing: Variant = nose.think(delta, follower.target)
+		# Any stance: when it's calm his nose may find something (Search looks
+		# harder and skips fights). Not mid-conversation: nothing gets dug up
+		# while people talk.
+		var search := stance == "search"
+		if (brain.target == null or search) and not staying and not Dialogue.is_active():
+			var sniffing: Variant = nose.think(delta, follower.target, search)
 			if sniffing != null:
 				want = sniffing
 		else:
@@ -255,7 +273,8 @@ func _apply_equipment(who: String) -> void:
 		health.armor = Equipment.defense("dog")
 
 
-## Bite now, with whatever charge has built up. False if he can't.
+## Bite now, with whatever charge has built up: he crouches, then leaps at the
+## enemy in front of him (or hops forward if there's none). False if he can't.
 func attack() -> bool:
 	if _attacking or downed or is_digging() or Dialogue.is_active():
 		return false
@@ -264,12 +283,102 @@ func attack() -> bool:
 	_swing_level = spent[1]
 	_swing_landed = false
 	_attacking = true
-	velocity = facing * lunge_speed
-	# Snarl and snap: timed so the teeth close on the hit frame.
-	Audio.play_at("dog_bite", global_position)
-	_sprite.speed_scale = weapon.swing_speed
-	_sprite.play(weapon.swing_anim, facing, true)
+	var dist := _pick_leap_target()
+	_leap_dir = facing.normalized() if facing != Vector2.ZERO else Vector2.RIGHT
+	_leap_total = dist
+	_leap_left = dist
+	_atk = Atk.WINDUP
+	_atk_t = windup_seconds
+	_sprite.speed_scale = 1.0
+	_sprite.play(&"crouch", _leap_dir, true)
 	return true
+
+
+## Aim at the nearest live enemy within leap range in front of him (turns him
+## to face it); returns how far to leap so the jaws just reach it, or a short
+## hop forward when nothing's there.
+func _pick_leap_target() -> float:
+	var origin := global_position + Vector2(0, -6)
+	var fwd := facing.normalized() if facing != Vector2.ZERO else Vector2.RIGHT
+	var best: Hurtbox = null
+	var best_d := INF
+	for n in get_tree().get_nodes_in_group("hurtbox"):
+		var hb := n as Hurtbox
+		if hb == null or hb.team == "player" or not hb.is_inside_tree():
+			continue
+		if hb.health and hb.health.is_dead():
+			continue
+		var to := hb.global_position - origin
+		var d := to.length()
+		if d > leap_range + hb.radius or d >= best_d:
+			continue
+		if d > hb.radius and absf(fwd.angle_to(to)) > deg_to_rad(40.0):
+			continue
+		best_d = d
+		best = hb
+	if best == null:
+		return 36.0
+	facing = (best.global_position - origin).normalized()
+	return clampf(best_d - best.radius * 0.5 - jaw_reach, 4.0, leap_range)
+
+
+## The attack's three beats: crouch, leap (the bite lands when the teeth touch
+## something, or at the end of the leap), recoil.
+func _attack_step(delta: float) -> void:
+	_atk_t -= delta
+	match _atk:
+		Atk.WINDUP:
+			velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
+			move_and_slide()
+			if _atk_t <= 0.0:
+				_atk = Atk.LEAP
+				_sprite.play(&"leap", _leap_dir, true)
+				Audio.play_at("dog_bite", global_position)  # the snarl as he springs
+		Atk.LEAP:
+			var step := minf(leap_speed * delta, _leap_left)
+			velocity = _leap_dir * (step / delta)
+			var before := global_position
+			move_and_slide()
+			var moved := before.distance_to(global_position)
+			_leap_left -= moved
+			var t := 1.0 - _leap_left / maxf(_leap_total, 1.0)
+			_set_hop(4.0 * t * (1.0 - t) * hop_height)
+			var blocked := moved < step * 0.5  # a fence or wall: the leap ends
+			if not _swing_landed and _jaws_touch():
+				_land_bite()
+			if _leap_left <= 0.5 or blocked or _swing_landed:
+				if not _swing_landed:
+					_land_bite()  # the last reach of the jaws
+				_atk = Atk.RECOIL
+				_atk_t = recoil_seconds
+				_set_hop(0.0)
+				velocity = -_leap_dir * recoil_speed
+				_sprite.play(&"crouch", _leap_dir, true)
+		Atk.RECOIL:
+			velocity = velocity.move_toward(Vector2.ZERO, recoil_speed / recoil_seconds * 1.6 * delta)
+			move_and_slide()
+			if _atk_t <= 0.0:
+				_end_attack()
+
+
+func _jaws() -> Vector2:
+	return global_position + Vector2(0, -6) + _leap_dir * jaw_reach
+
+
+## True when his teeth are touching an enemy's hurtbox.
+func _jaws_touch() -> bool:
+	return not Combat.hits_in_arc(get_tree(), _jaws(), _leap_dir, 2.0, 360.0, "player").is_empty()
+
+
+func _set_hop(h: float) -> void:
+	_sprite.offset.y = _sprite_offset_y - h
+
+
+func _end_attack() -> void:
+	_attacking = false
+	_atk = Atk.NONE
+	_set_hop(0.0)
+	_sprite.speed_scale = 1.0
 
 
 func is_attacking() -> bool:
@@ -296,6 +405,8 @@ func revive(fraction := 0.3) -> void:
 func _on_died() -> void:
 	downed = true
 	_attacking = false
+	_atk = Atk.NONE
+	_set_hop(0.0)
 	_dig_left = 0.0
 	_dig_find = null
 	_sniff_left = 0.0
@@ -305,16 +416,11 @@ func _on_died() -> void:
 	_sprite.play(&"sniff", facing, true)
 
 
-func _on_animation_finished(anim: StringName) -> void:
-	if anim == weapon.swing_anim:
-		_attacking = false
-
-
+## The teeth close at his jaws: no arc effect, the hitbox is right there.
 func _land_bite() -> void:
 	_swing_landed = true
-	Fx.slash(global_position, facing, weapon.reach, weapon.arc_deg, _swing_level)
-	Combat.strike(get_tree(), global_position + Vector2(0, -6), facing, weapon.reach,
-			weapon.arc_deg, "player", _make_hit, _swing_level)
+	Combat.strike(get_tree(), _jaws(), _leap_dir, weapon.reach * 0.5, 360.0,
+			"player", _make_hit, _swing_level)
 
 
 func _make_hit(hb: Hurtbox) -> HitInfo:

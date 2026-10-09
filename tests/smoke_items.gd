@@ -31,6 +31,7 @@
 # =============================================================================
 extends Node
 
+const RAT := preload("res://data/enemies/rat.tres")
 const YARD_HD := "res://realms/big_yard/yard_hd.tscn"
 const TILE := 32
 ## The yard's hidden items (realms/big_yard/prototype_yard.gd HIDDEN_ITEMS).
@@ -160,15 +161,51 @@ func _test_stance_and_leash() -> void:
 	var kid: Kid = s.get_node("Yard/World/Kid")
 	var dog: Dog = s.get_node("Yard/World/Dog")
 	var carrot := _hidden_at(CARROT_CELL)
-	# Offensive: he follows, nose up.
+	# Offensive, calm: he notices it too (owner 2026-10-09: any stance), but
+	# not while a rat is awake and about.
 	GameState.dog_stance = "offensive"
 	_place(kid, carrot.global_position + Vector2(-20, 40), Vector2.UP)
 	_place(dog, carrot.global_position + Vector2(-60, 40))
+	var rat := Enemy.create(RAT, kid.global_position + Vector2(0, -190))
+	s.get_node("Yard/World").add_child(rat)
+	rat.set_physics_process(false)
+	rat.state = Enemy.State.RECOVER  # awake and holding still
 	var busy := false
 	for i in 120:
 		await _frames(1)
 		busy = busy or dog.nose.busy()
-	_check(not busy and is_instance_valid(carrot), "on Offensive the dog ignores hidden items")
+	_check(not busy and is_instance_valid(carrot), "Offensive with a rat awake nearby: the dog leaves hidden items alone")
+	rat.queue_free()
+	var pointed := false
+	var barked := _sounds.size()
+	for i in 240:
+		await _frames(1)
+		pointed = pointed or dog.nose.mode == Nose.Mode.POINT
+		if not is_instance_valid(carrot):
+			break
+	_check(pointed and _sounds.slice(barked).has("dog_bark"), "Offensive and calm: he trots over, points and barks")
+	_check(dog.nose.mode == Nose.Mode.NONE or dog.is_digging() or not is_instance_valid(carrot), "and digs it up")
+	s.queue_free()
+	await _frames(2)
+	s = await _load()
+	kid = s.get_node("Yard/World/Kid")
+	dog = s.get_node("Yard/World/Dog")
+	carrot = _hidden_at(CARROT_CELL)
+	# Calm Offensive reaches less far than Search: 170 px from the dog is out
+	# of his notice, in range of Search's.
+	dog.set_physics_process(false)  # drive his nose by hand: he'd walk closer
+	_place(kid, carrot.global_position + Vector2(-20, 40), Vector2.UP)
+	_place(dog, carrot.global_position + Vector2(-170, 0))
+	dog.nose.think(1.0, kid, false)
+	_check(dog.nose.mode == Nose.Mode.NONE, "calm, any stance: he notices items only near him (%d px), not 170 away" % int(Nose.NOTICE_RADIUS))
+	dog.nose.think(1.0, kid, true)
+	_check(dog.nose.mode == Nose.Mode.GO, "Search reaches farther (%d px): the same item gets noticed" % int(Nose.NOTICE_RADIUS_SEARCH))
+	s.queue_free()
+	await _frames(2)
+	s = await _load()
+	kid = s.get_node("Yard/World/Kid")
+	dog = s.get_node("Yard/World/Dog")
+	carrot = _hidden_at(CARROT_CELL)
 	# Search, but the kid is far off: the leash wins.
 	GameState.dog_stance = "search"
 	_place(kid, carrot.global_position + Vector2(-260, 40), Vector2.UP)

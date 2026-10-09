@@ -48,6 +48,7 @@ func _run() -> void:
 	await _test_knockouts()
 	await _test_stances()
 	await _test_bite()
+	await _test_leap()
 	await _test_hud()
 	await _test_talking()
 	await _test_hd()
@@ -239,6 +240,83 @@ func _test_bite() -> void:
 	await _wait(0.5)
 	var dealt := hp - rat.health.hp
 	_check(dealt == roundi(BITE.damage), "attack is the dog's bite when you drive him (%d), did %d" % [roundi(BITE.damage), dealt])
+	arena.queue_free()
+	await _frames(2)
+
+
+## The bite is a leap (owner's playtest 2026-10-09): crouch, spring at the enemy,
+## bite on contact, spring back. No slash arc; walls stop the leap.
+func _test_leap() -> void:
+	var arena := await _load(ARENA)
+	var kid: Kid = arena.get_node("World/Kid")
+	var dog: Dog = arena.get_node("World/Dog")
+	_clear_enemies()
+	kid.set_physics_process(false)
+	Party.switch_control()
+	var base_y: float = dog.get_node("Sprite").offset.y
+	# A rat 80 px ahead: he leaps at it and bites it, with no arc effect.
+	var rat := _add_rat(arena, dog.global_position + Vector2(80, 0))
+	await _frames(2)
+	rat.set_physics_process(false)
+	dog.facing = Vector2.RIGHT
+	dog.charge.value = 1.0
+	var start := dog.global_position
+	var hp := rat.health.hp
+	var effects := Fx.live_effects
+	var max_effects := 0
+	var peak := 0.0
+	var hit_x := INF
+	var phases := {}
+	_tap("attack")
+	for i in 90:
+		await get_tree().physics_frame
+		phases[dog._atk] = true
+		max_effects = maxi(max_effects, Fx.live_effects)
+		peak = maxf(peak, base_y - dog.get_node("Sprite").offset.y)
+		if hit_x == INF and rat.health.hp < hp:
+			hit_x = dog.global_position.x - start.x
+	_check(phases.has(Dog.Atk.WINDUP) and phases.has(Dog.Atk.LEAP) and phases.has(Dog.Atk.RECOIL), "the bite has a crouch, a leap and a recoil")
+	_check(hit_x != INF and hit_x > 40.0, "he moved toward the rat before the bite landed (%.0f px)" % hit_x)
+	_check(hp - rat.health.hp == roundi(BITE.damage), "the bite damages on contact (%d)" % (hp - rat.health.hp))
+	_check(max_effects == effects, "no slash arc effect for the dog (%d live effects)" % max_effects)
+	_check(peak > dog.hop_height * 0.6, "the leap hops in height (%.1f px up)" % peak)
+	_check(is_equal_approx(dog.get_node("Sprite").offset.y, base_y), "and he lands back on the ground")
+	_check(start.distance_to(dog.global_position) < dog.leap_range, "a leap is a few tiles at most (%.0f px)" % start.distance_to(dog.global_position))
+	_check(not dog.is_attacking(), "the attack ends")
+	rat.queue_free()
+	# Nothing in front: a short hop, nobody hurt.
+	await _frames(2)
+	dog.charge.value = 1.0
+	var p0 := dog.global_position
+	_tap("attack")
+	await _wait(0.8)
+	_check(dog.global_position.distance_to(p0) > 10.0 and dog.global_position.distance_to(p0) < 60.0, "with nothing there he hops a little (%.0f px)" % dog.global_position.distance_to(p0))
+	# A fence in between: he can't leap through it, the rat behind is untouched.
+	var wall := StaticBody2D.new()
+	wall.collision_layer = 1
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(6, 120)
+	shape.shape = rect
+	wall.add_child(shape)
+	arena.get_node("World").add_child(wall)
+	dog.global_position = Vector2(kid.global_position.x, kid.global_position.y + 90)
+	dog.velocity = Vector2.ZERO
+	wall.global_position = dog.global_position + Vector2(36, 0)
+	var rat2 := _add_rat(arena, dog.global_position + Vector2(80, 0))
+	await _frames(2)
+	rat2.set_physics_process(false)
+	var hp2 := rat2.health.hp
+	dog.facing = Vector2.RIGHT
+	dog.charge.value = 1.0
+	var wall_x := wall.global_position.x - 3.0
+	var max_x := -INF
+	_tap("attack")
+	for i in 60:
+		await get_tree().physics_frame
+		max_x = maxf(max_x, dog.global_position.x)
+	_check(max_x < wall_x + 1.0, "he doesn't leap through a fence (got to x %.0f, fence at %.0f)" % [max_x, wall_x])
+	_check(rat2.health.hp == hp2, "the rat behind the fence isn't bitten")
 	arena.queue_free()
 	await _frames(2)
 

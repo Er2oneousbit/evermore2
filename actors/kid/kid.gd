@@ -37,20 +37,29 @@ extends CharacterBody2D
 
 # --- Tuning (pixels are base-resolution pixels: 640x360 screen, 32 px tiles) --
 ## Walking speed when you drive him (px/s).
-@export var move_speed := 85.0
-## Running speed (holding Run, while his charge lasts). 140 = 4.4 tiles/s.
-@export var run_speed := 140.0
+@export var move_speed := 93.5
+## Running speed (holding Run, while his charge lasts). 154 = 4.8 tiles/s.
+@export var run_speed := 154.0
 ## Attack charge running costs, in levels per second (0.5 = 100% in 2 s).
 @export var run_charge_drain := 0.5
 ## How fast the kid reaches top speed. Higher = snappier.
 @export var acceleration := 1500.0
 ## How fast the kid stops when input is released. Higher = less sliding.
 @export var friction := 2000.0
+## How fast his heading swings toward the stick (deg/s). A turn bends the
+## velocity round instead of slowing to a crawl and speeding up again.
+@export var turn_rate_deg := 720.0
+## Pushing against his motion (more than REVERSE_DEG off) brakes at this rate
+## (px/s^2): a reversal takes a few frames, not one, but stays responsive.
+@export var brake := 1300.0
+## Facing keeps its side/front axis until the other axis wins by this factor
+## (a diagonal doesn't flicker between up and right).
+@export var facing_bias := 1.35
 ## Movement speed (px/s) that matches the run cycle at 1x playback. Tweak this
 ## if the feet look like they slide (raise it) or moonwalk (lower it).
-@export var run_anim_speed := 95.0
+@export var run_anim_speed := 104.5
 ## Same for the walk cycle.
-@export var walk_anim_speed := 64.0
+@export var walk_anim_speed := 70.4
 ## How far in front of the kid the flashlight's center sits.
 @export var light_offset := 30.0
 ## The equipped weapon (data/weapons/*.tres).
@@ -69,8 +78,8 @@ extends CharacterBody2D
 @export var hard_warp_distance := 3200.0
 ## Following the dog: he walks at his own top speed and sprints a little past
 ## it (the dog is quicker), so he can keep up.
-@export var walk_speed := 120.0
-@export var sprint_speed := 165.0
+@export var walk_speed := 132.0
+@export var sprint_speed := 181.5
 @export var crumb_spacing := 10.0
 @export var max_crumbs := 120
 @export var crumb_reached_radius := 6.0
@@ -99,6 +108,9 @@ const BEAM_NEAR_PX := 13.0  # = HdView.BEAM_NEAR_M
 var miss_rng := RandomNumberGenerator.new()
 ## Night misses so far (tests, debugging).
 var misses := 0
+
+## A push this far from his current motion is a reversal (brake first).
+const REVERSE_DEG := 120.0
 
 ## Last non-zero movement direction. Other systems (attacks, interaction,
 ## the flashlight) read this to know which way the kid is looking.
@@ -151,6 +163,7 @@ func _ready() -> void:
 	_apply_equipment("kid")
 	EventBus.equipment_changed.connect(_apply_equipment)
 	_sprite.animation_finished.connect(_on_animation_finished)
+	_sprite.dir_bias = facing_bias
 	health.died.connect(_on_died)
 	_on_screen = VisibleOnScreenNotifier2D.new()
 	_on_screen.name = "OnScreen"
@@ -394,19 +407,33 @@ func _physics_process(delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		facing = input_dir.normalized()
-		velocity = velocity.move_toward(want, acceleration * delta)
+		velocity = _steer(want, delta)
 	elif not controlled:
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 
 	move_and_slide()
-	_update_animation()
+	_update_animation(input_dir != Vector2.ZERO)
 	_footsteps(delta)
 	_update_weapon_layers()
 
 	# Flashlight sits slightly ahead of the kid, at chest height.
 	_flashlight.position = facing * light_offset + Vector2(0, LIGHT_HEIGHT)
+
+
+## Velocity toward `want` (px/s): speed ramps by `acceleration`; a change of
+## heading rotates the velocity at `turn_rate_deg` (keeping his speed through a
+## corner); a reversal brakes first, then accelerates the other way.
+func _steer(want: Vector2, delta: float) -> Vector2:
+	var v := velocity
+	if v.length() > 12.0:
+		var ang := v.angle_to(want)
+		if absf(ang) > deg_to_rad(REVERSE_DEG):
+			return v.move_toward(Vector2.ZERO, brake * delta)
+		var step := deg_to_rad(turn_rate_deg) * delta
+		v = v.rotated(clampf(ang, -step, step))
+	return v.move_toward(want, acceleration * delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -444,8 +471,14 @@ func _footsteps(delta: float) -> void:
 ## Picks idle / walk / run from the actual speed (anything past a walk is the
 ## run cycle: running, or the AI hurrying to keep up), and keeps playback
 ## speed in step with movement so feet plant instead of sliding.
-func _update_animation() -> void:
+func _update_animation(pushing := false) -> void:
 	var speed := velocity.length()
+	if speed < 6.0 and pushing and (_sprite.current == &"walk" or _sprite.current == &"run"):
+		# Turning round (or starting off a wall): stay in the walk cycle
+		# instead of blinking to idle and restarting the stride.
+		_sprite.speed_scale = 0.5
+		_sprite.play(_sprite.current, facing)
+		return
 	if speed < 6.0:
 		_sprite.speed_scale = 1.0
 		_sprite.play(&"idle", facing)
