@@ -14,6 +14,7 @@
 #
 # RULES THAT KEEP IT FAIR:
 #   * Never wakes sleeping enemies: only enemies already active count.
+#   * Ignores flyers hovering high (bats circling) until they dive or come close.
 #   * Never strays more than LEASH px from the leader: past that it drops the
 #     fight and catches up (so it can't be kited across the map).
 #
@@ -35,6 +36,9 @@ const GUARD_FACTOR := 1.3
 ## Close in until the target is within reach x this (a bit inside, so the
 ## swing's arc reliably covers it).
 const CLOSE_IN := 0.8
+## Flyers higher than this (px) are ignored unless within reach: a bat circling
+## at 18 isn't chased, one in its swoop (about 4) is fought.
+const LOW_FLYER_HEIGHT := 10.0
 ## How often (s) it looks for a better target.
 const RETARGET_SECONDS := 0.25
 ## Swings start a little above the feet (same as Kid/Dog strike origins).
@@ -98,6 +102,10 @@ func _pick_target(stance: String, staying: bool, leader: Node2D) -> Node2D:
 		if stance == "search" and e.get("target") != body:
 			continue  # nose down: only what's attacking him
 		var d := (body.global_position + SWING_ORIGIN).distance_to(_aim_point(e))
+		# A flyer circling high is out of a sword's league: leave it until it
+		# dives (height drops to ~4 in its telegraph) or comes within reach.
+		if float(e.get("height")) > LOW_FLYER_HEIGHT and d > reach * GUARD_FACTOR:
+			continue
 		if guard:
 			if d > reach * GUARD_FACTOR:
 				continue

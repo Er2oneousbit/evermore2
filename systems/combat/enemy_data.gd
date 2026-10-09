@@ -85,6 +85,11 @@ extends Resource
 ## Flies: ignores walls and props, hovers `fly_height` px above the ground.
 @export var flies := false
 @export var fly_height := 16.0
+## Flyers in a fight: how far out they circle their target, and how fast they
+## dive (px/s). The telegraph and rest between dives are windup_seconds and
+## attack_cooldown.
+@export var orbit_radius := 70.0
+@export var swoop_speed := 170.0
 ## A killed one comes back this many seconds later while its time lasts (0 = never).
 @export var respawn_seconds := 0.0
 ## Hangs from its tree by day (a roost) instead of leaving: see Enemy.State.ROOST.
