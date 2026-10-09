@@ -9,8 +9,8 @@
 #          3. Prop: base point lands on the origin (also when flipped),
 #             footprint/occluder/sway get built only when asked for
 #          4. Idle never plays the sheet's breathing frame (it opens a strip of
-#             belly between shirt and trousers on every character); breathing
-#             is a 1 px bob of the whole sprite instead
+#             belly between shirt and trousers on every character); idle is one
+#             still frame, no bob (owner removed breathing)
 #          5. Sway data: rocks never sway; reeds, tufts and wildflowers do
 #
 # RUN:   godot --headless --path . --fixed-fps 60 res://tests/smoke_visuals.tscn
@@ -244,8 +244,7 @@ func _test_idle_belly() -> void:
 			sabotage_seen += 1
 	_check(sabotage_seen >= 4, "the belly detector only saw the gap on %d of 6 breathing frames" % sabotage_seen)
 
-	# The bob: idle alternates the sprite 0 / -1 px, and any other animation
-	# puts it back exactly.
+	# Idle stands still: one frame, the offset never changes.
 	var s := LpcSprite.new()
 	s.texture = KID_SHEET
 	s.autoplay = &""
@@ -257,7 +256,10 @@ func _test_idle_belly() -> void:
 		s._process(1.0 / 30.0)
 		seen[s.offset.y - base_y] = true
 		_check(s.frame_coords.x == 0, "idle showed sheet column %d" % s.frame_coords.x)
-	_check(seen.has(0.0) and seen.has(-1.0) and seen.size() == 2, "idle should bob 0 / -1 px, saw %s" % [seen.keys()])
+	_check(seen.size() == 1 and seen.has(0.0), "idle must not move the sprite, saw offsets %s" % [seen.keys()])
+	for anim: StringName in [&"idle", &"combat_idle"]:
+		_check(LpcSprite.ANIMS[anim]["frames"].size() == 1 and not LpcSprite.ANIMS[anim].has("bob"),
+				"%s must be a single still frame" % anim)
 	s.play(&"walk", Vector2.DOWN)
 	_check(s.offset.y == base_y, "walk must restore the offset (%.1f vs %.1f)" % [s.offset.y, base_y])
 	s.queue_free()

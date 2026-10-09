@@ -139,6 +139,7 @@ func _run() -> void:
 	for e in get_tree().get_nodes_in_group("enemy"):
 		e.queue_free()
 	var arena_kid: Kid = arena.get_node("Yard/World/Kid")
+	_check_prop_depths(arena.get_node("HdView"))
 	await _check_edges(arena.get_node("Yard"), arena_kid, "arena (short map), HD-2D")
 	arena.queue_free()
 	await _frames(2)
@@ -150,6 +151,33 @@ func _run() -> void:
 		for f in _failures:
 			printerr("[TEST] FAIL  ", f)
 		get_tree().quit(1)
+
+
+## No two upright prop quads whose canopies overlap on screen may share a
+## depth (z-fighting: the arena's oak groves flickered as the camera moved), and
+## every prop still stands behind the dog (props < dog < kid is unchanged).
+func _check_prop_depths(hd: HdView) -> void:
+	var props := hd.get_node("Props").get_children()
+	var ties := 0
+	for i in props.size():
+		var a := props[i] as MeshInstance3D
+		if a.rotation.x != 0.0:
+			continue  # lily pads lie flat
+		var ba := a.mesh.get_aabb()
+		for j in range(i + 1, props.size()):
+			var b := props[j] as MeshInstance3D
+			if b.rotation.x != 0.0 or absf(a.position.z - b.position.z) > 0.0005:
+				continue
+			var bb := b.mesh.get_aabb()
+			var ax0 := a.position.x + ba.position.x * absf(a.scale.x)
+			var bx0 := b.position.x + bb.position.x * absf(b.scale.x)
+			if minf(ax0 + ba.size.x * absf(a.scale.x), bx0 + bb.size.x * absf(b.scale.x)) - maxf(ax0, bx0) > 0.05:
+				ties += 1
+	_check(props.size() > 500, "arena should have hundreds of prop quads, got %d" % props.size())
+	_check(ties == 0, "%d pairs of overlapping prop quads share a depth (z-fighting)" % ties)
+	var spread := HdView.PROP_ROW_STEP * float(HdView.PROP_ROW_SLOTS)
+	_check(spread < (HdView.DOG_DEPTH_BIAS - HdView.PROP_DEPTH_BIAS) * 0.5,
+			"prop row offsets (%.3f m) must stay well under the prop/dog gap" % spread)
 
 
 ## Each stall is a 3D building: walls, roof, counter, sign, casting

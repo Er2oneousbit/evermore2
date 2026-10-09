@@ -38,13 +38,14 @@ const FEET_Y := 62
 ## animations use row + Dir. `frames` lists the columns to play, in order.
 ## `one_dir` = the sheet only has one row for it (hurt, climb).
 const ANIMS := {
-	# Breathing is a 1 px bob of the whole sprite (`bob`: y px per frame). The
-	# sheet's own breathing frame (column 1) lifts the shirt off the trousers
-	# and shows a strip of belly on every character, so it is never played.
-	&"idle":       {"row": 22, "frames": [0, 0], "bob": [0, -1], "fps": 1.25, "loop": true},
+	# Idle is one still frame (owner, 2026-10-09: no breathing). The sheet's own
+	# breathing frame (column 1) lifts the shirt off the trousers and shows a
+	# strip of belly on every character, and the 1 px bob that replaced it was
+	# removed too. ROADMAP: a better idle animation.
+	&"idle":       {"row": 22, "frames": [0], "fps": 1.25, "loop": true},
 	&"walk":       {"row": 8,  "frames": [1, 2, 3, 4, 5, 6, 7, 8], "fps": 10.0, "loop": true},
 	&"run":        {"row": 38, "frames": [0, 1, 2, 3, 4, 5, 6, 7], "fps": 12.0, "loop": true},
-	&"combat_idle": {"row": 42, "frames": [0, 0], "bob": [0, -1], "fps": 1.5, "loop": true},
+	&"combat_idle": {"row": 42, "frames": [0], "fps": 1.5, "loop": true},
 	&"slash":      {"row": 12, "frames": [0, 1, 2, 3, 4, 5], "fps": 14.0, "loop": false},
 	# The slash played backwards: a backhand. The LPC club is drawn for it.
 	&"slash_reverse": {"row": 12, "frames": [5, 4, 3, 2, 1, 0], "fps": 14.0, "loop": false},

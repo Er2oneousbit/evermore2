@@ -36,6 +36,7 @@ the orange shelter tag).
 
 ## Later
 
+* A better idle animation for the kid and NPCs (the LPC breathing frame opened a gap between shirt and trousers; the 1 px bob replacement was removed by the owner)
 * Better foliage/tree sway (owner: the rigid one-block sway still looks bad): e.g. a few hand-made sway frames per tree, or a smooth sub-pixel sway with the new texel filtering
 * Find character and animal art with 8 directions (diagonals) for the kid and the dog: LPC only has 4; the owner wants 45-degree poses if a matching set exists
 * Night-only enemies and items (the hook is there: `ENEMY_CLOCK` / `"clock"` per spawner)
@@ -76,6 +77,25 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: no more flickering groves; idle stands still
+
+- **Flickering oaks** (owner: "a lot of flickering with these trees when they
+  are moving"): z-fighting. Prop quads on the same row, or a pixel off it, got
+  the same depth, so neighbouring canopies were coplanar. Measured in the
+  combat arena: 205 pairs of overlapping upright quads at equal depth (2543
+  props). Each prop in a row now steps 1 mm further back in order of x
+  (`HdView.PROP_ROW_STEP`, 14 slots, 1.4 cm at most, against a 4 cm
+  prop-to-dog gap), so props < dog < kid is unchanged: 0 pairs left (the
+  remaining one in the measurement was two flat lily pads, which lie flat and
+  were excluded). `smoke_hd` fails with the step at 0 (204 pairs). The sway
+  and texel filter were not the cause: the sway moves whole texel rows and
+  alpha comes from the same filtered texel, no shimmer found.
+- **Idle**: breathing removed (owner). Idle and combat idle are one still frame
+  (column 0), no offset change; the unused per-frame `bob` code in
+  `DirectionalSprite` is gone (the dog's dig has its own `DIG_BOB`).
+  `smoke_visuals` checks one frame and a constant offset. A better idle is on
+  the Later list.
 
 ## Done: playtest fixes 2 (dig, shop flicker, idle, sway)
 

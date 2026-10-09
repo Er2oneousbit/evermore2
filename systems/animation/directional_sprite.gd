@@ -71,8 +71,6 @@ var _frame_index := 0
 var _time := 0.0
 var _finished := false
 var _shadow: Sprite2D
-## The vertical bob (px) currently added to `offset` by an animation's "bob".
-var _bob_applied := 0.0
 
 
 func _ready() -> void:
@@ -180,14 +178,5 @@ func _apply_frame() -> void:
 	var a: Dictionary = anims[current]
 	var row: int = a["row"] + (0 if a.get("one_dir", false) else dir_rows[int(dir)])
 	frame_coords = Vector2i(a["frames"][_frame_index], row)
-	# Optional per-frame vertical bob (px, whole sprite). Applied as a delta so
-	# actors that set `offset` themselves (hops, falls) keep working.
-	var bobs: Array = a.get("bob", [])
-	var want := float(bobs[_frame_index]) if _frame_index < bobs.size() else 0.0
-	if want != _bob_applied:
-		offset.y += want - _bob_applied
-		_bob_applied = want
-		if _shadow:
-			_shadow.offset = offset
 	if _shadow:
 		_shadow.frame_coords = frame_coords
