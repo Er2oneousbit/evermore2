@@ -28,8 +28,10 @@ const ANIMS := {
 	&"walk":  {"row": 0, "frames": [0, 1, 2, 3], "fps": 8.0, "loop": true},
 	&"run":   {"row": 0, "frames": [0, 1, 2, 3], "fps": 13.0, "loop": true},
 	&"sniff": {"row": 0, "frames": [4, 5, 6, 7], "fps": 6.0, "loop": false},
-	# Nose down, pawing at the ground (hidden items).
-	&"dig":   {"row": 0, "frames": [6, 7, 5, 7], "fps": 11.0, "loop": true},
+	# Nose down, pawing at the ground (hidden items). Sheet frames 5-7 are all
+	# head-low with little difference, so the dog rocks the body per frame
+	# (Dog.DIG_BOB) to make the scrape read; 7 = head lowest.
+	&"dig":   {"row": 0, "frames": [6, 7, 7, 5], "fps": 12.0, "loop": true},
 	# The dog's bite: head low, then a stretched lunge (frame 1) where it lands.
 	&"bite":  {"row": 0, "frames": [4, 1, 1, 0], "fps": 14.0, "loop": false},
 	# The bite's beats, held by the dog's attack code: head low, then stretched.

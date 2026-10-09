@@ -9,3 +9,6 @@ texture = ExtResource("2_tex")
 base = Vector2(16, 26)
 frames = 2
 frame_fps = 1.2
+sway_strength = 1.2
+sway_speed = 0.5
+sway_rooted = 0.1

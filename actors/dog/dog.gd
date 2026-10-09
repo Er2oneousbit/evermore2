@@ -100,7 +100,12 @@ const State = Follower.State
 
 ## How long a dig takes (s), and how often it kicks up dirt.
 const DIG_SECONDS := 1.4
-const DIRT_EVERY := 0.22
+const DIRT_EVERY := 0.12
+## The scrape, per frame of the "dig" animation: (forward px along facing, down
+## px). The sheet only has head-low poses with barely any change between its
+## frames, so the body rocks into the hole and back with the head, which is
+## what makes the paws read as scraping.
+const DIG_BOB: Array[Vector2] = [Vector2(0, 0), Vector2(3, 1), Vector2(1, 2), Vector2(-1, 0)]
 ## The sniff button holds him still this long (nose down).
 const SNIFF_SECONDS := 0.9
 
@@ -139,6 +144,7 @@ var _leap_dir := Vector2.RIGHT
 var _leap_left := 0.0
 var _leap_total := 1.0
 var _sprite_offset_y := 0.0
+var _sprite_offset_x := 0.0
 ## Seconds he's stood still in Search stance (he sniffs around after a bit).
 var _idle_time := 0.0
 ## Ground covered between paw sounds (px), and what's left until the next.
@@ -179,6 +185,7 @@ func _ready() -> void:
 	_apply_equipment("dog")
 	EventBus.equipment_changed.connect(_apply_equipment)
 	_sprite_offset_y = _sprite.offset.y
+	_sprite_offset_x = _sprite.offset.x
 	_resolve_target()
 	Party.register(self)
 
@@ -209,6 +216,7 @@ func _physics_process(delta: float) -> void:
 			_sniff_left -= delta
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
 		move_and_slide()
+		_update_animation(delta)  # keeps the dig playing (see there)
 		return
 
 	if _attacking:
@@ -371,7 +379,7 @@ func _jaws_touch() -> bool:
 
 
 func _set_hop(h: float) -> void:
-	_sprite.offset.y = _sprite_offset_y - h
+	_sprite.offset = Vector2(_sprite_offset_x, _sprite_offset_y - h)
 
 
 func _end_attack() -> void:
@@ -461,6 +469,22 @@ func dig(spot: HiddenItem) -> bool:
 	return true
 
 
+## Where the body sits on this frame of the scrape (forward follows facing).
+func dig_bob() -> Vector2:
+	var b := DIG_BOB[_sprite.frame_index() % DIG_BOB.size()]
+	var fwd := Vector2.RIGHT
+	match _sprite.dir:
+		DirectionalSprite.Dir.LEFT: fwd = Vector2.LEFT
+		DirectionalSprite.Dir.UP: fwd = Vector2.UP
+		DirectionalSprite.Dir.DOWN: fwd = Vector2.DOWN
+	return fwd * b.x + Vector2(0, b.y)
+
+
+func _apply_dig_bob() -> void:
+	var b := dig_bob()
+	_sprite.offset = Vector2(_sprite_offset_x + b.x, _sprite_offset_y + b.y)
+
+
 func is_digging() -> bool:
 	return _dig_left > 0.0
 
@@ -472,8 +496,10 @@ func _dig_step(delta: float) -> void:
 		_dirt_left = DIRT_EVERY
 		Fx.dirt(_dig_find.global_position)
 	if _dig_left > 0.0:
+		_apply_dig_bob()
 		return
 	_dig_left = 0.0
+	_set_hop(0.0)
 	if is_instance_valid(_dig_find):
 		_dig_find.reveal(_pop_toward(_dig_find.global_position))
 	_dig_find = null
@@ -540,6 +566,13 @@ func _resolve_target() -> void:
 ## Playback speed follows actual speed so the paws plant instead of skating.
 func _update_animation(delta: float) -> void:
 	if downed or _attacking:
+		return
+	# A dig that starts inside the AI's think step ran on into this function in
+	# the same frame, which played "idle" over it, and the digging early return
+	# never touched the animation again: the dog dug standing still.
+	if is_digging():
+		_sprite.speed_scale = 1.0
+		_sprite.play(&"dig", facing)
 		return
 	var speed := velocity.length()
 	if speed < 8.0:

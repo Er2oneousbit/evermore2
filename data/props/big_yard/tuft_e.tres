@@ -7,4 +7,6 @@
 script = ExtResource("1_script")
 texture = ExtResource("2_tex")
 base = Vector2(5, 6)
-ground_decal = true
+sway_strength = 0.8
+sway_speed = 0.5
+sway_rooted = 0.1
