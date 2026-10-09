@@ -206,6 +206,10 @@ MUSIC = {
     "lot": ("jrpg_calm", "Calm2 - Childhood Friends.ogg"),           # the dare
     "yard": ("jrpg_exploration", "Exploration1 - Grasslands.ogg"),    # the test yard
     "arena": ("jrpg_action", "Action3 - Preparing For Battle.ogg"),   # the combat arena
+    # Music follows the time of day outdoors (autoload/audio.gd MUSIC_SETS):
+    # day = yard + tropical (upbeat), night = lot + innocence (quiet).
+    "tropical": ("jrpg_exploration", "Exploration6 - Tropical Island.ogg"),
+    "innocence": ("jrpg_calm", "Calm6 - Innocence.ogg"),
 }
 
 

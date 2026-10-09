@@ -42,7 +42,7 @@ Usage:  godot --path <project folder> -- [options]
   --yard         Start in the test yard (F2 cycles day, golden hour, night)
 
 In-game debug keys (always available in prototypes):
-  F2   Cycle time of day (day / golden hour / night)
+  F2   Cycle time of day (day / golden hour / night); outdoor music and ambience follow
   F3   Toggle debug overlay (FPS, positions, dog AI state, breadcrumb trail)
   F4   Warp the dog to the kid (unstick the dog)
   F6   Toggle HD-2D view / classic 2D view

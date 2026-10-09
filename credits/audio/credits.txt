@@ -95,12 +95,14 @@ JRPG Music Pack #4 [Calm]
   https://opengameart.org/content/jrpg-pack-4-calm
   music/home.ogg  <-  Calm1 - A Place I Call Home.ogg
   music/lot.ogg  <-  Calm2 - Childhood Friends.ogg
+  music/innocence.ogg  <-  Calm6 - Innocence.ogg
 
 JRPG Music Pack #1 [Exploration]
   by Juhani Junkala (SubspaceAudio)
   license: CC0
   https://opengameart.org/content/jrpg-pack-1-exploration
   music/yard.ogg  <-  Exploration1 - Grasslands.ogg
+  music/tropical.ogg  <-  Exploration6 - Tropical Island.ogg
 
 JRPG Music Pack #5 [Action]
   by Juhani Junkala (SubspaceAudio)

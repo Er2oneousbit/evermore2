@@ -10,6 +10,8 @@
 #           dog's paws, bite, yelp and bark, the kid's whistle, the switch chime
 #        4. Music: each map plays its track (looping), the prologue starts on
 #           "home" for dinner, crossfades and stops work
+#           Music by time: with a set active, day/night/day/night/day rotates
+#           two tracks each; golden keeps the day track; play_music clears it
 #        5. Menus and dialogue: pause opens/moves/closes with ticks, the text
 #           box blips while typing
 #        7. Voices: talking to Maya, she says hello in her voice; an emotion
@@ -48,6 +50,7 @@ func _run() -> void:
 	await _test_duo()
 	await _test_footsteps()
 	await _test_music()
+	await _test_music_by_time()
 	await _test_menus_and_text()
 	await _test_ambience()
 	await _test_voices()
@@ -219,6 +222,31 @@ func _test_music() -> void:
 	Dialogue._finish()
 	lot.queue_free()
 	await _frames(2)
+
+
+func _test_music_by_time() -> void:
+	# Day plays one of its two tracks; each trip into a time rotates its list.
+	Audio.play_music("", 0.0)
+	EventBus.time_of_day_changed.emit("day")
+	Audio.set_music_set("outdoor", 0.0)
+	_check(Audio.music_set == "outdoor" and Audio.music_name == "yard", "the set starts the day track (%s)" % Audio.music_name)
+	var seen: Array[String] = []
+	for t: String in ["night", "day", "night", "day"]:
+		EventBus.time_of_day_changed.emit(t)
+		seen.append(Audio.music_name)
+	_check(seen == ["lot", "tropical", "innocence", "yard"], "day/night rotates the two tracks of each (%s)" % str(seen))
+	EventBus.time_of_day_changed.emit("golden")
+	_check(Audio.music_name == "yard", "golden hour keeps the day track (%s)" % Audio.music_name)
+	var stream := Audio.music_player().stream as AudioStreamOggVorbis
+	_check(stream != null and stream.loop and stream.resource_path.ends_with("yard.ogg"), "set tracks load and loop")
+	Audio.play_music("home", 0.0)
+	_check(Audio.music_set == "", "play_music clears the set")
+	EventBus.time_of_day_changed.emit("night")
+	_check(Audio.music_name == "home", "the dinner track ignores the time of day (%s)" % Audio.music_name)
+	Audio.set_music_set("")
+	Audio.stop_music(0.0)
+	EventBus.time_of_day_changed.emit("day")
+	await _frames(1)
 
 
 func _test_menus_and_text() -> void:

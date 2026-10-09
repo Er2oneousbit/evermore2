@@ -95,7 +95,7 @@ func _play_intro() -> void:
 	await Dialogue.ended
 	Audio.stop_music(1.5)
 	await _show_card("Later that night.", 1.8)
-	Audio.play_music("lot", 2.5)
+	Audio.set_music_set("outdoor", 2.5)  # follows the time of day; starts at golden hour
 	Audio.set_ambience("outdoor")
 	var fade := create_tween()
 	fade.tween_property(_black, "modulate:a", 0.0, 1.5)

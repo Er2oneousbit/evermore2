@@ -69,6 +69,24 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: music follows the time of day
+
+Outdoor music now follows day, golden hour and night like the ambience does.
+`Audio.MUSIC_SETS` maps a place to a track list per time; `Audio.set_music_set("outdoor")`
+turns it on, and a `time_of_day_changed` crossfades to that time's list. Each trip into a time
+plays the next track of its list, so F2 day, night, day plays the other day track (golden shares
+the day list and keeps playing). A plain `play_music()` clears the set (dinner stays "home").
+
+* Day: "Grasslands" (Exploration1) and "Tropical Island" (Exploration6). Night: "Childhood
+  Friends" (Calm2) and "Innocence" (Calm6). All Juhani Junkala's JRPG packs, CC0; two new files
+  built by `tools/audio/build_audio.py`, credits updated.
+* The prologue street starts at golden hour, so it opens on "Grasslands" (it used "Childhood
+  Friends"); Dex's dare still sets night, which now brings the night track. The test yard uses
+  the set (new realm const `MUSIC_SET`).
+* Test: `smoke_audio` (day, night, day, night, day gives yard, lot, tropical, innocence, yard;
+  golden keeps the day track; `play_music` clears the set). Sabotaged (rotation broken, time
+  hookup removed): both fail.
+
 ## Done: a real HUD
 
 * The text HUD is gone. Each of the duo has a **card** in a bottom corner
