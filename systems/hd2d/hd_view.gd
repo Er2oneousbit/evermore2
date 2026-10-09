@@ -149,8 +149,9 @@ const GRAPHICS_KEYS := ["shadows", "light_shafts", "reflections", "ambient_occlu
 var _scan_timer := 0.0
 const SCAN_SECONDS := 0.2
 ## The HUD's height at the bottom of the screen (canvas px): the camera keeps
-## the map's south edge above it.
-const HUD_CLEAR_PX := 26.0
+## the map's south edge above it. From the cards themselves, so a taller HUD
+## can't quietly cover the bottom row again (it did once: 26 px vs 37).
+const HUD_CLEAR_PX := MemberCard.SIZE.y + 8.0
 var _ground: MeshInstance3D
 var _water: MeshInstance3D
 var _clouds: MeshInstance3D

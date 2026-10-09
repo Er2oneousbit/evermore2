@@ -64,7 +64,10 @@ foreach ($t in $tests) {
     Write-Host ("{0,-22} " -f $t.Label) -NoNewline
     $godotArgs = @("--headless", "--path", $projectDir, "--audio-driver", "Dummy", "--quit-after", $maxFrames) + $t.Args + @($t.Scene)
     $output = & $Godot @godotArgs 2>&1 | Out-String
-    if ($LASTEXITCODE -eq 0 -and $output -match '\[TEST\] PASS(.*)') {
+    # A script error fails the run even if the test printed PASS: errors in
+    # code a test doesn't check (a freed node after a scene change) hide there.
+    $scriptErrors = $output -match 'SCRIPT ERROR'
+    if ($LASTEXITCODE -eq 0 -and -not $scriptErrors -and $output -match '\[TEST\] PASS(.*)') {
         Write-Host "PASS $($Matches[1].Trim())" -ForegroundColor Green
     }
     elseif ($output -match 'SCRIPT ERROR') {

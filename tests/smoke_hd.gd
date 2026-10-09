@@ -153,9 +153,11 @@ func _check_edges(realm: AsciiRealm, kid: Kid, label: String) -> void:
 		await _wait(2.5)  # the camera eases over
 		var feet := Fx.world_to_screen(kid.global_position)
 		var head := Fx.world_to_screen(kid.global_position, 46.0)
-		_check(feet.y <= vis.y - HdView.HUD_CLEAR_PX and head.y >= 0.0,
-				"%s: the kid on row %d must be on screen above the HUD (feet at y=%.0f, head %.0f, screen %.0f tall)"
-				% [label, row, feet.y, head.y, vis.y])
+		# Measured against the cards' real top edge, not HdView's own margin.
+		var hud_top := vis.y - MemberCard.SIZE.y - 4.0
+		_check(feet.y <= hud_top and head.y >= 0.0,
+				"%s: the kid on row %d must be on screen above the HUD cards (feet at y=%.0f, cards from %.0f, head %.0f)"
+				% [label, row, feet.y, hud_top, head.y])
 
 
 func _tap(action: String) -> void:

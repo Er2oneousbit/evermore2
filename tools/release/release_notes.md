@@ -31,6 +31,9 @@ The story, the realms and the real content come later.
   tucked under bushes and rocks, or lying in nooks. The dog on Search finds
   them by himself, points, barks and digs; drive him and sniff to see scent
   trails. A count of how many you've found is in the pause menu
+* **A real HUD**: a card for each of the duo with a health bar (a pale
+  ghost shows what the last hit took), the charge bar, the partner's stance,
+  and a KO countdown
 * **Normal and Hard**: the Hard launcher makes the rats tougher
 * **Sound and music**: swings, hits, the rat's warning squeak before it
   bites (listen for it), the dog's barks and bites, footsteps that change on

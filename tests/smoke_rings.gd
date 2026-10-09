@@ -98,6 +98,8 @@ func _test_items(arena: Node) -> void:
 	_tap("interact")
 	await _frames(2)
 	_check(kid.health.hp == 10 + ItemData.find("apple").use_power, "confirm uses the apple on him (HP %d)" % kid.health.hp)
+	var card: MemberCard = arena.get_node("HUD/SafeFrame/KidCard")
+	_check(card.can_process(), "his HUD card keeps updating while the menu pauses the game (the heal shows at once)")
 	_check(GameState.item_count("apple") == apples - 1, "one fewer apple (%d)" % GameState.item_count("apple"))
 	_select("old_key")
 	_tap("interact")

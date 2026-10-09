@@ -248,15 +248,15 @@ func _test_hud() -> void:
 	var kid: Kid = arena.get_node("World/Kid")
 	var dog: Dog = arena.get_node("World/Dog")
 	_clear_enemies()
-	var kid_label: Label = arena.get_node("HUD/SafeFrame/KidStatus")
-	var dog_label: Label = arena.get_node("HUD/SafeFrame/DogStatus")
+	var kid_label: MemberCard = arena.get_node("HUD/SafeFrame/KidCard")
+	var dog_label: MemberCard = arena.get_node("HUD/SafeFrame/DogCard")
 	var arrow: PartnerArrow = arena.get_node("HUD/SafeFrame/PartnerArrow")
 	Party.set_stance(dog, "search")
 	Party.set_staying(true)
 	await _frames(2)
-	_check(kid_label.text.begins_with("> "), "the kid's label is marked as driven: '%s'" % kid_label.text)
-	_check(dog_label.text.contains("Search") and dog_label.text.contains("Stay"),
-			"the partner's label shows his stance and Stay: '%s'" % dog_label.text)
+	_check(kid_label.summary().begins_with("> "), "the kid's card is marked as driven: '%s'" % kid_label.summary())
+	_check(dog_label.summary().contains("Search") and dog_label.summary().contains("Stay"),
+			"the partner's card shows his stance and Stay: '%s'" % dog_label.summary())
 	_check(not arrow.visible, "no arrow while the partner is on screen")
 	dog.global_position = kid.global_position + Vector2(600, 0)
 	await _frames(3)
@@ -269,7 +269,26 @@ func _test_hud() -> void:
 	Party.set_staying(false)
 	Party.switch_control()
 	await _frames(2)
-	_check(dog_label.text.begins_with("> ") and not kid_label.text.begins_with("> "), "the marker moves with a switch")
+	_check(dog_label.summary().begins_with("> ") and not kid_label.summary().begins_with("> "), "the marker moves with a switch")
+	Party.switch_control()
+	await _frames(2)
+	# The health bar: a hit leaves a ghost of what it took, which drains away.
+	var hud := arena.get_node("HUD")
+	kid.get_node("Hurtbox").receive(HitInfo.make(10.0, kid.global_position, kid.global_position, 0.0, "enemy", null))
+	await _frames(3)
+	var live := float(kid.health.hp) / kid.health.max_hp
+	_check(kid_label.ghost_fraction() > live + 0.05, "a hit leaves a ghost of the lost health (%.2f over %.2f)" % [kid_label.ghost_fraction(), live])
+	await _wait(MemberCard.GHOST_HOLD + 1.5)
+	_check(absf(kid_label.ghost_fraction() - live) < 0.01, "then it drains away (%.2f)" % kid_label.ghost_fraction())
+	# Knocked out: KO and the revive countdown.
+	_ko(dog)
+	await _frames(3)
+	_check(dog_label.summary().contains("KO") and Party.revive_left(dog) > 0.0, "a knocked-out partner's card says KO, with a countdown (%.1f s)" % Party.revive_left(dog))
+	# The cards sit in the frame's bottom corners, apart.
+	var frame: Rect2 = hud.get_safe_frame().get_global_rect()
+	_check(frame.encloses(kid_label.get_global_rect()) and frame.encloses(dog_label.get_global_rect()), "both cards are inside the HUD frame")
+	_check(not kid_label.get_global_rect().intersects(dog_label.get_global_rect()), "and don't overlap")
+	_check(kid_label.get_global_rect().position.x < dog_label.get_global_rect().position.x, "the kid on the left, the dog on the right")
 	arena.queue_free()
 	await _frames(2)
 
@@ -326,7 +345,7 @@ func _test_running() -> void:
 	var arena := await _load(ARENA)
 	var kid: Kid = arena.get_node("World/Kid")
 	var dog: Dog = arena.get_node("World/Dog")
-	var bar: ChargeBar = arena.get_node("HUD/SafeFrame/ChargeBar")
+	var bar: ChargeBar = arena.get_node("HUD/SafeFrame/KidCard/ChargeBar")
 	_clear_enemies()
 	dog.set_physics_process(false)  # only the kid's pace is measured first
 	var sprite: DirectionalSprite = kid.get_node("Sprite")
