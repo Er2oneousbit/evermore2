@@ -79,6 +79,7 @@ pwsh tests/run_all.ps1 -Godot C:\path\to\Godot_v4.7.2-stable_win64_console.exe  
 godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/smoke_follow.tscn   # dog follow AI
 godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/smoke_visuals.tscn  # animation, Atmosphere, props
 godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/smoke_hd.tscn       # HD-2D view mirrors the 2D game
+godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/smoke_realm_trees.tscn # no trees on or beside paths
 godot --headless --path . --audio-driver Dummy res://tests/smoke_aspect.tscn                  # scaling math, 18 monitors
 
 # Live any-monitor check at one size, or the 13-resolution matrix (needs a display; Xvfb on Linux)

@@ -58,6 +58,14 @@ class_name AsciiRealm
 extends Node2D
 
 const TILE := 32
+## No tree (PropData.tree) stands on a path (dirt, or a map exit's road) or
+## near one: a canopy is ~3 cells wide and ~3 cells tall, drawn over the road
+## it hangs above (owner, 2026-10-09: "no trees on paths/roads"). Cells around
+## the base cell, in cells: this far to each side, this far north (where the
+## canopy hangs) and this far south (trunk right beside the road).
+const TREE_PATH_SIDE := 1
+const TREE_PATH_NORTH := 2
+const TREE_PATH_SOUTH := 1
 const NPC_SCENE := preload("res://actors/npc/npc.tscn")
 
 ## Settings a realm doesn't declare. Keys match the constant names.
@@ -467,7 +475,14 @@ func _build_cells() -> void:
 			elif props.has(ch):
 				var options: Array = props[ch]
 				var at := cell_base if big.contains(ch) else cell_base + _jitter(h)
-				_place(options[(h >> 8) % options.size()], at, (h >> 2) & 1 == 1 and not no_flip.contains(ch))
+				var prop_name: String = options[(h >> 8) % options.size()]
+				var chosen := _prop(prop_name)
+				if chosen != null and chosen.tree and tree_blocked(Vector2i(x, y)):
+					# Fix the LAYOUT: smoke_realm_trees fails while any tree is dropped here.
+					Debug.log_warn("%s: tree '%s' at (%d,%d) is on or near a path, dropped" % [name, ch, x, y])
+					_counts["trees_dropped"] = int(_counts.get("trees_dropped", 0)) + 1
+					continue
+				_place(prop_name, at, (h >> 2) & 1 == 1 and not no_flip.contains(ch))
 
 
 func _spawn_npc(spec: Dictionary, at: Vector2) -> void:
@@ -705,6 +720,33 @@ func _exit_path_cells() -> Dictionary:
 	return out
 
 
+## Every path cell: the realm's dirt (any char whose terrain is "Dirt", exit
+## cells included) and the roads its exits run over beyond the edge.
+func path_cells() -> Dictionary:
+	if _tree_path_cache.is_empty():
+		var terrain: Dictionary = cfg("TERRAIN_BY_CHAR")
+		for y in layout.size():
+			for x in layout[y].length():
+				if terrain.get(layout[y][x], "") == "Dirt":
+					_tree_path_cache[Vector2i(x, y)] = true
+		for c: Vector2i in _exit_path_set():
+			_tree_path_cache[c] = true
+	return _tree_path_cache
+
+
+var _tree_path_cache: Dictionary = {}
+
+
+## Would a tree whose base stands in this cell sit on or too near a path?
+func tree_blocked(cell: Vector2i) -> bool:
+	var paths := path_cells()
+	for dy in range(-TREE_PATH_NORTH, TREE_PATH_SOUTH + 1):
+		for dx in range(-TREE_PATH_SIDE, TREE_PATH_SIDE + 1):
+			if paths.has(cell + Vector2i(dx, dy)):
+				return true
+	return false
+
+
 ## Is an apron point on (or right beside) an exit's path? Trees stay off it.
 func _on_exit_path(p: Vector2) -> bool:
 	var cell := Vector2i(floori(p.x / TILE), floori(p.y / TILE))
@@ -843,8 +885,10 @@ func _build_apron() -> void:
 			# plants go: a tree there would hang its canopy over the playable
 			# map (Y-sorted after the kid, so it would hide him).
 			if not map.grow(18).has_point(p) and not _on_exit_path(p):
-				var options := shrubs if near.has_point(p) else trees
-				_place(options[h % options.size()], p + _jitter(h) * 2.0, (h >> 4) & 1 == 1, true)
+				var at := p + _jitter(h) * 2.0
+				var cell := Vector2i(floori(at.x / TILE), floori(at.y / TILE))
+				var options := shrubs if near.has_point(p) or tree_blocked(cell) else trees
+				_place(options[h % options.size()], at, (h >> 4) & 1 == 1, true)
 			x += step
 		y += 44.0
 		row += 1

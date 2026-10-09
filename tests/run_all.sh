@@ -46,6 +46,7 @@ run "follow @60fps"  res://tests/smoke_follow.tscn --fixed-fps 60
 run "follow @120fps" res://tests/smoke_follow.tscn --fixed-fps 120
 run "visuals"        res://tests/smoke_visuals.tscn --fixed-fps 60
 run "hd-2d view"     res://tests/smoke_hd.tscn --fixed-fps 60
+run "trees off paths" res://tests/smoke_realm_trees.tscn --fixed-fps 60
 run "dialogue"       res://tests/smoke_dialogue.tscn --fixed-fps 60
 run "combat"         res://tests/smoke_combat.tscn --fixed-fps 60
 run "party"          res://tests/smoke_party.tscn --fixed-fps 60

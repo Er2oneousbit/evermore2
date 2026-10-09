@@ -28,6 +28,9 @@ extends Resource
 ## Flat ground art (scattered wildflowers, pebbles, grass tufts): drawn on the
 ## ground layer under everything instead of Y-sorted with actors.
 @export var ground_decal := false
+## A tall tree (oak): its canopy hangs over the ground around the base, so
+## AsciiRealm never plants one on or near a path (see AsciiRealm.tree_blocked).
+@export var tree := false
 
 @export_group("Animation")
 ## Frames laid side by side in the texture/region (lily pads, reeds...).

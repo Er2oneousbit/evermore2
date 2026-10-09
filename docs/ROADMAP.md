@@ -91,6 +91,14 @@ the orange shelter tag).
   were excluded). `smoke_hd` fails with the step at 0 (204 pairs). The sway
   and texel filter were not the cause: the sway moves whole texel rows and
   alpha comes from the same filtered texel, no shimmer found.
+- **No trees on roads** (owner): `PropData.tree` marks the oaks, and
+  `AsciiRealm.tree_blocked()` keeps every tree off paths: no path cell (dirt or
+  an exit's road) within 1 cell to either side, 2 above (where the canopy
+  hangs) or 1 below the base cell. LAYOUT trees that break it are dropped with
+  a warning (13 in the arena and 2 on the street were moved to shrubs by
+  hand), and apron trees there become shrubs: the yard's apron had oaks
+  2 cells from the road. `smoke_realm_trees` (new) measures all three realms
+  from the raw layout and fails when sabotaged (4 apron trees on the road).
 - **Idle**: breathing removed (owner). Idle and combat idle are one still frame
   (column 0), no offset change; the unused per-frame `bob` code in
   `DirectionalSprite` is gone (the dog's dig has its own `DIG_BOB`).
