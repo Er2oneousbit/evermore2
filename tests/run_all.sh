@@ -5,7 +5,7 @@
 # USAGE:  tests/run_all.sh [path/to/godot]        (or set GODOT=...)
 # RUNS:   smoke_follow at 30, 60 and 120 RENDER fps (physics stays at 60 Hz;
 #         this proves nothing depends on the render frame rate, e.g. a 144 Hz
-#         monitor), smoke_visuals, smoke_hd, smoke_dialogue, smoke_combat, smoke_party, smoke_settings, smoke_audio, smoke_items, smoke_ring, smoke_rings, smoke_clock, smoke_aspect. No display needed. For the live ultrawide checks use run_aspect_matrix.sh.
+#         monitor), smoke_visuals, smoke_hd, smoke_dialogue, smoke_combat, smoke_party, smoke_settings, smoke_audio, smoke_items, smoke_ring, smoke_rings, smoke_clock, smoke_enemy_clock, smoke_aspect. No display needed. For the live ultrawide checks use run_aspect_matrix.sh.
 # EXIT:   0 if everything passed, 1 otherwise.
 #
 # Written with help from Claude (Anthropic) via Claude Code.
@@ -55,6 +55,7 @@ run "items"          res://tests/smoke_items.tscn --fixed-fps 60
 run "ring menu"      res://tests/smoke_ring.tscn --fixed-fps 60
 run "rings, slots"   res://tests/smoke_rings.tscn --fixed-fps 60
 run "clock, shops"   res://tests/smoke_clock.tscn --fixed-fps 60
+run "day/night foes" res://tests/smoke_enemy_clock.tscn --fixed-fps 60
 run "aspect (math)"  res://tests/smoke_aspect.tscn
 
 [ $fail -eq 0 ] && echo "ALL TESTS PASSED" || echo "SOME TESTS FAILED"

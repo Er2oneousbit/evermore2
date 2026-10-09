@@ -20,7 +20,7 @@
 #   f  flower              m  mushrooms                  w  wildflower patch
 #   ,  bare grass (no decal: under and above the stalls)
 #   A  corner store stall  N  all-night stall            1 / 2  their keepers
-#   x  giant rat
+#   x  giant rat (day: burrows at dusk)    bats hang in oaks (ENEMY_ROOSTS)
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -59,8 +59,20 @@ const REALM_NAME_KEY := "realm_test_yard"
 const MUSIC_SET := "outdoor"  # the day and night tracks follow the clock
 ## The clock runs on its own here (a tech demo of the day going by).
 const CLOCK_MODE := "free"
-## The rats ignore the clock (the hook for night-only enemies, unused yet).
-const ENEMY_CLOCK := "unchanged"
+## Enemies follow the clock (systems/enemies/day_night.gd): the rats are out by
+## day and scurry into holes at dusk; bats hang in the oaks by day and fly by
+## night. Burrows: where each rat starts, plus holes under two bushes.
+const ENEMY_CLOCK := "follow_clock"
+const ENEMY_ROOSTS := [
+	{"enemy": "bat", "cell": Vector2i(2, 2)},
+	{"enemy": "bat", "cell": Vector2i(19, 4)},
+	{"enemy": "bat", "cell": Vector2i(28, 9)},
+	{"enemy": "bat", "cell": Vector2i(35, 2)},
+]
+const ENEMY_EXITS := [
+	{"cell": Vector2i(37, 5), "kind": "burrow"},
+	{"cell": Vector2i(26, 21), "kind": "burrow"},
+]
 const DIALOGUE := "res://data/dialogue/yard.dlg"
 ## Terrain under each character; anything not listed is grass.
 const TERRAIN_BY_CHAR := {":": "Dirt", "*": "Dirt", "~": "Shallow Water", ",": "Grass"}

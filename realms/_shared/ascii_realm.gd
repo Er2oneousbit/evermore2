@@ -100,9 +100,18 @@ const DEFAULTS := {
 	## runs) or "hold" (frozen at start_time; the scene moves it with @time).
 	"CLOCK_MODE": "free",
 	## Do this realm's enemies follow the clock ("follow_clock") or ignore it
-	## ("unchanged")? A hook only: nothing reacts to follow_clock yet (no
-	## night-only enemies so far). A spawner can override it, see ENEMIES_BY_CHAR.
+	## ("unchanged")? Follow_clock enemies are run by a DayNightDirector
+	## (systems/enemies/day_night.gd): each enemy type's EnemyData `active`,
+	## `leaves_by` and `arrives_by` say when it is out and how it comes and
+	## goes. A spawner can override it, see ENEMIES_BY_CHAR.
 	"ENEMY_CLOCK": "unchanged",
+	## Tree cells where roosting enemies (bats) hang by day:
+	## [{"enemy": "bat", "cell": Vector2i(2, 2)}]. The cell should hold an oak.
+	"ENEMY_ROOSTS": [],
+	## Where enemies leave the map: [{"cell": Vector2i(x, y), "kind": "burrow"}]
+	## (a hole) or {"kind": "edge", "out": Vector2.RIGHT} (a gap they walk out
+	## through). The spawners' own cells are burrows already.
+	"ENEMY_EXITS": [],
 	## char -> shop spec (systems/shops/shop.gd): {"id": "corner_store",
 	## "keeper": "GROCER", "rule": "follow_clock", "item": "apple", "greet": "shop_a",
 	## "again": "shop_a_again", "closed": "shop_a_closed"}. The char's cell is
@@ -136,6 +145,7 @@ var layout: Array = []
 var _cfg: Dictionary = {}
 var _tiler: WangAutotiler
 var _prop_cache: Dictionary = {}
+var _day_night: DayNightDirector
 var _counts := {"props": 0, "decals": 0, "solids": 0, "npcs": 0, "triggers": 0, "enemies": 0, "hidden": 0}
 
 
@@ -150,6 +160,7 @@ func _ready() -> void:
 	_build_terrain()
 	_build_fences()
 	_build_cells()
+	_build_roosts_and_exits()
 	_build_hidden()
 	_grant_start_items()
 	_dress_pond()
@@ -429,11 +440,50 @@ func _spawn_enemy(spec: Variant, at: Vector2) -> void:
 	if data == null:
 		Debug.log_error("Missing enemy data/enemies/%s.tres" % id)
 		return
-	var e := Enemy.create(data, at)
-	e.clock_rule = spec.get("clock", cfg("ENEMY_CLOCK")) if spec is Dictionary else cfg("ENEMY_CLOCK")
+	var rule: String = spec.get("clock", cfg("ENEMY_CLOCK")) if spec is Dictionary else cfg("ENEMY_CLOCK")
 	_counts["enemies"] += 1
+	if rule == "follow_clock":
+		# The director owns its spawning, leaving and respawning.
+		_director().register({"id": id, "data": data, "home": at})
+		return
+	var e := Enemy.create(data, at)
+	e.clock_rule = rule
 	e.name = "%s_%d" % [id.capitalize(), _counts["enemies"]]
 	_world.add_child(e)
+
+
+## The realm's DayNightDirector, made on first use.
+func _director() -> DayNightDirector:
+	if _day_night == null:
+		_day_night = DayNightDirector.new()
+		_day_night.name = "DayNight"
+		_day_night.world = _world
+		add_child(_day_night)
+	return _day_night
+
+
+## ENEMY_ROOSTS (bats hanging in oaks) and ENEMY_EXITS (holes, gaps) for the
+## director. Only realms with follow_clock enemies need either.
+func _build_roosts_and_exits() -> void:
+	for r: Dictionary in cfg("ENEMY_ROOSTS"):
+		var id: String = r["enemy"]
+		var data := load("res://data/enemies/%s.tres" % id) as EnemyData
+		if data == null:
+			Debug.log_error("Missing enemy data/enemies/%s.tres" % id)
+			continue
+		var cell: Vector2i = r["cell"]
+		var rule: String = r.get("clock", cfg("ENEMY_CLOCK"))
+		if rule != "follow_clock":
+			continue
+		_counts["enemies"] += 1
+		_director().register({"id": id, "data": data, "roost": true,
+				"home": Vector2(cell.x * TILE + TILE * 0.5, cell.y * TILE + TILE - 4)})
+	if _day_night == null:
+		return
+	for x: Dictionary in cfg("ENEMY_EXITS"):
+		var c: Vector2i = x["cell"]
+		_day_night.add_exit(Vector2(c.x * TILE + TILE * 0.5, c.y * TILE + TILE - 4), x.get("kind", "burrow"),
+				x.get("out", Vector2.ZERO))
 
 
 func _spawn_shop(spec: Dictionary, at: Vector2) -> void:

@@ -13,6 +13,8 @@
 #                                                   morning works too)
 #             EVERMORE_TOUR_SPOTS="start,pond"      (default: all spots)
 #             EVERMORE_TOUR_VIEW="2d"               (default: hd = the HD-2D view)
+#             EVERMORE_TOUR_WAIT=9                  (seconds to wait before each shot,
+#                                                   default 0.5; the day/night enemy swap takes ~10)
 #   Windows PowerShell: $env:EVERMORE_SHOT_DIR="C:\temp\shots" before running.
 #
 # Written with help from Claude (Anthropic) via Claude Code.
@@ -29,6 +31,7 @@ const SPOTS := {
 	"pond":   [Vector2i(25, 8), Vector2.RIGHT],
 	"pen":    [Vector2i(9, 13), Vector2.DOWN],
 	"garden": [Vector2i(31, 17), Vector2.LEFT],
+	"oak":    [Vector2i(4, 6), Vector2.UP],  # under a bat roost (ENEMY_ROOSTS)
 	"shops":  [Vector2i(47, 9), Vector2.UP],  # the street: both stalls in view
 }
 
@@ -56,6 +59,7 @@ func _run() -> void:
 	var cam: GameCamera = kid.get_node("Camera2D")
 	var times := _list("EVERMORE_TOUR_TIMES", ["day", "golden", "night"])
 	var spots := _list("EVERMORE_TOUR_SPOTS", SPOTS.keys())
+	var wait := float(OS.get_environment("EVERMORE_TOUR_WAIT")) if OS.has_environment("EVERMORE_TOUR_WAIT") else 0.5
 	await _frames(20 if hd_mode else 10)
 	for spot: String in spots:
 		var info: Array = SPOTS[spot]
@@ -73,7 +77,7 @@ func _run() -> void:
 				await _frames(1)
 				hd.snap_camera()
 			_hold(walk)
-			await _frames(30)
+			await _frames(int(wait * 60.0))
 			await _frames(1)
 			await _shot("%s_%s" % [spot, t])
 			_release()

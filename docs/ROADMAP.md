@@ -47,6 +47,7 @@ the orange shelter tag).
 
 | Date | Decision |
 |---|---|
+| 2026-10-09 | **Smooth day/night enemy swap, bats in the trees** (owner). Day enemies stop respawning at dusk and leave (a hole, the edge, out of view), night enemies come in; never popping in or out in plain view. Bats hang in the oaks by day, drop out at dusk, fly back at dawn |
 | 2026-10-09 | **Time of day: a clock that scripts can set or hold** (owner: "can we have it both?"). A scene can start the clock at a time, stop it for as long as the scene needs, or let it run as normal (outside villages, where the script doesn't care) |
 | 2026-10-08 | **Alchemy: ingredients per cast, formulas level with use** (owner). Each cast uses up its ingredients and earns the formula experience; enough casts level it up and it gets stronger. Only the kid casts |
 | 2026-10-08 | **Quick slots on the D-pad** (owner): four slots, D-pad on the gamepad, 1-4 on the keyboard; the gamepad moves with the left stick only |
@@ -70,6 +71,38 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: day and night enemies
+
+The v0.4.0 `ENEMY_CLOCK` hook now does something. In the test yard (rats and
+bats follow the clock) the cast changes with the time of day, always behind a
+reason:
+
+* Each enemy type says when it is out (`active`: day / night / always; morning
+  and golden hour are day), how it goes (`leaves_by`: burrow / edge / fade /
+  roost) and how it arrives (`arrives_by`: offscreen / burrow / drop / rise /
+  fade), plus a `sound_cue`, `flies` and `respawn_seconds` (EnemyData).
+* A `DayNightDirector` (systems/enemies/day_night.gd) runs it. Dusk: day enemies
+  stop respawning, idle ones scurry to the nearest exit and are removed only
+  once invisible (sunk into the hole) or outside the camera view plus a margin;
+  anything fighting (aggro'd or hit in the last 6 s) stays. Dawn is the reverse.
+  The swap is staggered over the 6 s fade plus 4 s, at least 0.7 s apart; night
+  enemies wait 3 s into the dusk; a cue (rustle / wing flap) plays a second
+  before a visible entrance.
+* Bats (new, from the OGA "Bat (Rework)" sheet, OGA-BY 3.0, credited): four hang
+  upside down in yard oaks by day (not hittable, an occasional twitch), drop at
+  dusk, flutter, weave toward you and swoop (weak: 8 HP, 3 damage), and fly back
+  and hang up at dawn.
+* Measured: new `smoke_enemy_clock` passes (idle rat sank into its hole and was
+  removed invisible, the fighting rat stayed, no rat respawn at night, four bats
+  dropped one at a time, rats came back at dawn). Full suite passes. Three
+  sabotages, each fails the test: removal guard (removed in plain view), stagger
+  (gap 0.00 s), combat-stays (the fighting rat left). Screenshots: bats in oaks
+  by day, a bat in flight at night.
+* Found on the way: the AI partner went after hanging bats (`Enemy.is_active()`
+  now excludes ENTER / LEAVE / ROOST); `smoke_follow` caught it.
+* Not done: `rise` and `fade` entrances and `edge` exits exist but no map uses
+  them yet; no hidden-in-the-leaves bat variant; bats share the rat's sounds.
 
 ## Released: v0.4.0 (2026-10-09)
 

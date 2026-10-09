@@ -67,3 +67,27 @@ extends Resource
 ## Hittable circle radius and body (collision) size.
 @export var hurt_radius := 11.0
 @export var body_size := Vector2(18, 8)
+
+@export_group("Day and night")
+## When it is out: "always", "day" (morning, day and golden hour) or "night".
+## Only realms whose enemies follow the clock (ENEMY_CLOCK) act on it.
+@export_enum("always", "day", "night") var active := "always"
+## How it goes away when its time is over: "burrow" (scurries to a hole),
+## "edge" (walks off past the map edge), "fade" (poof: magic types only),
+## "roost" (flies back to its tree and hangs there).
+@export_enum("burrow", "edge", "fade", "roost") var leaves_by := "burrow"
+## How it shows up: "offscreen" (appears out of view and wanders in), "burrow"
+## (squeezes out of a hole), "drop" (falls from a tree), "rise" (up out of the
+## ground with dirt), "fade" (poof: magic types only).
+@export_enum("offscreen", "burrow", "drop", "rise", "fade") var arrives_by := "offscreen"
+## Sound played about a second before a visible entrance ("" = none).
+@export var sound_cue := ""
+## Flies: ignores walls and props, hovers `fly_height` px above the ground.
+@export var flies := false
+@export var fly_height := 16.0
+## A killed one comes back this many seconds later while its time lasts (0 = never).
+@export var respawn_seconds := 0.0
+## Hangs from its tree by day (a roost) instead of leaving: see Enemy.State.ROOST.
+@export var roosts := false
+## How high it hangs under the canopy (px).
+@export var hang_height := 46.0

@@ -57,6 +57,7 @@ $tests = @(
     @{ Label = "ring menu";      Scene = "res://tests/smoke_ring.tscn";     Args = @("--fixed-fps", "60") },
     @{ Label = "rings, slots";   Scene = "res://tests/smoke_rings.tscn";    Args = @("--fixed-fps", "60") },
     @{ Label = "clock, shops";   Scene = "res://tests/smoke_clock.tscn";    Args = @("--fixed-fps", "60") },
+    @{ Label = "day/night foes"; Scene = "res://tests/smoke_enemy_clock.tscn"; Args = @("--fixed-fps", "60") },
     @{ Label = "aspect (math)";  Scene = "res://tests/smoke_aspect.tscn";  Args = @() }
 )
 

@@ -53,6 +53,10 @@ const SOUNDS := {
 	# A snarl and a snap of teeth (layered by the pipeline); played as the bite
 	# starts, the snap lands on the hit frame.
 	"dog_bite":   {"files": ["dog_bite_1", "dog_bite_2", "dog_bite_3"], "db": -4.0, "pitch": 0.06},
+	# Cues a second before an enemy shows itself (day/night swap): grass moving,
+	# and a wing flap (the swing's whoosh, sped up).
+	"rustle":     {"files": ["step_grass_2", "step_grass_4", "step_grass_6"], "db": -11.0, "pitch": 0.2, "base": 0.8},
+	"wing_flap":  {"files": ["swing_1", "swing_3"], "db": -15.0, "pitch": 0.15, "base": 1.8},
 	"rat_squeak": {"files": ["rat_squeak"], "db": -13.0, "pitch": 0.08},
 	"rat_pain":   {"files": ["rat_pain"], "db": -12.0, "pitch": 0.1},
 	"rat_death":  {"files": ["rat_death"], "db": -11.0, "pitch": 0.06},
