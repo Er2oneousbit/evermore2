@@ -65,6 +65,11 @@ comparison. Nothing in gameplay code knows which view is on.
 
 ### Mood per time of day (`HdView.PRESETS`)
 
+Four moods, in clock order: **morning** (soft and cool: pale sun at 36°,
+cool ambient, a light pale-blue mist, a little less saturation, still
+brighter than golden), **day**, **golden** and **night**. The clock fades
+between them over several seconds.
+
 | Knob | What it does |
 |---|---|
 | `sun_color/energy/elev/yaw` | The key light. The sun sits in front (camera side), so shadows fall straight back, north (owner, 2026-10-08). Shadows stay light (`shadow_opacity` ~0.5) and short (sun 68° by day, 42° at golden hour): they must never hide a character |

@@ -85,7 +85,7 @@ const MUSIC := {
 ## A list shared by two times (day and golden) keeps playing across them.
 const _OUTDOOR_DAY := ["yard", "tropical"]
 const MUSIC_SETS := {
-	"outdoor": {"day": _OUTDOOR_DAY, "golden": _OUTDOOR_DAY, "night": ["lot", "innocence"]},
+	"outdoor": {"morning": _OUTDOOR_DAY, "day": _OUTDOOR_DAY, "golden": _OUTDOOR_DAY, "night": ["lot", "innocence"]},
 }
 
 const VOICE_DIR := "res://assets/audio/voice/"
@@ -120,7 +120,7 @@ const AMBIENCE_DIR := "res://assets/audio/ambience/"
 const AMBIENCE := {"day": ["day", -6.0], "night": ["night", -11.0]}
 ## A kind of place -> which loop for each time of day ("" = none).
 const AMBIENCE_SETS := {
-	"outdoor": {"day": "day", "golden": "day", "night": "night"},
+	"outdoor": {"morning": "day", "day": "day", "golden": "day", "night": "night"},
 }
 ## Outdoors by day, a bird calls every so often (seconds, random in between),
 ## from somewhere around the camera (px).

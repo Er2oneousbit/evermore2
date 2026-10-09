@@ -52,10 +52,12 @@ All log output also goes to `user://logs/godot.log`
 
 | Key | Does |
 |---|---|
-| F2 | Cycle time of day: day / golden hour / night |
+| F2 | Next time of day: morning / day / golden hour / night (with a fade) |
 | F3 | Debug overlay: version, FPS, view size and scale, HD-2D or 2D, renderer, positions, dog AI state, breadcrumb trail |
 | F4 | Warp the dog to the kid (unstick him) |
 | F6 | Toggle the HD-2D view / classic 2D view |
+| F7 | Stop / restart the game clock (a day is 24 minutes at x1; F3 shows phase, minutes, mode, speed) |
+| F9 | Clock speed: x1 / x10 / x60 |
 
 ## Tests
 

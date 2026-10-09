@@ -22,8 +22,12 @@
 # =============================================================================
 extends Node
 
+## A damage number or "Miss" popped up (tests listen).
+signal popped(text: String)
+
 const LAYER := 5
 const NUMBER_COLORS := {"enemy": Color(1.0, 0.97, 0.85), "player": Color(1.0, 0.4, 0.38), "heal": Color(0.5, 1.0, 0.55)}
+const MISS_COLOR := Color(0.78, 0.8, 0.86)
 const LEVEL_TINTS := [Color(0.85, 0.85, 0.85), Color(1, 1, 1), Color(0.55, 0.9, 1.0), Color(1.0, 0.82, 0.35)]
 
 var _layer: CanvasLayer
@@ -56,11 +60,24 @@ func world_to_screen(p: Vector2, height_px := 0.0) -> Vector2:
 func damage_number(world_pos: Vector2, amount: int, kind := "enemy", level := 1) -> void:
 	if not Settings.get_value("damage_numbers"):
 		return
-	var l := Label.new()
-	l.text = str(amount)
 	var big := kind == "enemy" and level >= 2
-	l.add_theme_font_size_override("font_size", 12 if big else 10)
-	l.add_theme_color_override("font_color", NUMBER_COLORS.get(kind, Color.WHITE) * (LEVEL_TINTS[clampi(level, 0, 3)] if kind == "enemy" else Color.WHITE))
+	_pop_text(world_pos, str(amount), 12 if big else 10,
+			NUMBER_COLORS.get(kind, Color.WHITE) * (LEVEL_TINTS[clampi(level, 0, 3)] if kind == "enemy" else Color.WHITE))
+
+
+## "Miss" over a target the kid whiffed (night, outside his flashlight). Same
+## rise-and-fade as damage numbers, pale grey. Not a number, so it shows even
+## with damage numbers off: a swing that does nothing needs an explanation.
+func miss(world_pos: Vector2) -> void:
+	_pop_text(world_pos, "Miss", 10, MISS_COLOR)
+
+
+func _pop_text(world_pos: Vector2, text: String, font_size: int, color: Color) -> void:
+	popped.emit(text)
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", font_size)
+	l.add_theme_color_override("font_color", color)
 	l.add_theme_color_override("font_outline_color", Color(0.05, 0.03, 0.08))
 	l.add_theme_constant_override("outline_size", 3)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

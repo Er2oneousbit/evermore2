@@ -5,7 +5,7 @@
 # data/characters/<ID>.tres; {kid} and {dog} are the names the player picked;
 # any other {key} comes from data/names.json (proper nouns live there).
 # Scene commands handled by realms/podunk/ruffleberg_lot.gd:
-#   @time <day|golden|night> [seconds]     @end_slice
+#   @time <morning|day|golden|night> [seconds]     @end_slice
 # Story: docs/design-bible.md sections 4 and 5. Lines here are first drafts.
 #
 # Written with help from Claude (Anthropic) via Claude Code.

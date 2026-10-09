@@ -15,6 +15,7 @@ GAME
 │   ├── Names        Proper nouns from data/names.json                  [done]
 │   ├── EventBus     Game-wide signals                                  [done]
 │   ├── GameState    Player names, current realm, story flags          [done]
+│   ├── Clock        The game clock: morning/day/golden/night, modes    [done]
 │   ├── SaveManager  JSON save/load (human-readable for debugging)      [todo]
 │   ├── Dialogue     Runs .dlg conversations, owns the text box          [done]
 │   ├── Interaction  What the kid would talk to; drives the HUD prompt   [done]
@@ -22,7 +23,7 @@ GAME
 │   ├── Audio        Sounds by name, world/menu pools, music crossfade   [done]
 │   ├── PauseMenu    Esc / Start: Resume, Settings, Quit                 [done]
 │   ├── Difficulty   Normal/Hard levers in one table                     [done]
-│   ├── Fx           Damage numbers, slash trails, hit-stop, shake       [done]
+│   ├── Fx           Damage numbers, "Miss", slash trails, hit-stop, shake [done]
 │   ├── Party        Kid + dog: switching, Stay put, stances, knockouts  [done]
 │   └── Economy      Per-realm currencies, exchange rates, trade routes [todo]
 │   (Audio: "SFX" and "Music" buses under Master; Settings sets their volume)
@@ -43,6 +44,7 @@ GAME
 │   ├── DirectionalSprite 4-direction sheet animation (LpcSprite,        [done]
 │   │                    AnimalSprite)
 │   ├── Atmosphere       Time of day: tint, grade, clouds, particles     [done]
+│   ├── Shop             Keeper + closed shutter that follow the clock   [done]
 │   ├── HdView           HD-2D presentation of a 2D realm (3D view)      [done]
 │   ├── Prop / PropData  Data-driven world props (.tres)                 [done]
 │   ├── WangAutotiler    Terrain + fence autotiling from Tiled data      [done]
@@ -122,7 +124,9 @@ a realm leaves out come from `AsciiRealm.DEFAULTS`. The test yard
    gets lily pads and reeds automatically.
 4. **Apron.** Woods beyond the fence (decor only, no physics) for wide screens.
 5. **Mood.** The scene's `Atmosphere` node: CanvasModulate tint, color grade,
-   cloud shadows, light shafts, particles. F2 cycles day / golden / night.
+   cloud shadows, light shafts, particles, per time of day (morning / day /
+   golden / night). The time itself comes from the `Clock` (section 3f); F2
+   jumps to the next one.
 
 Real realms will be painted in the Godot editor with the same tileset and
 PropData; the ASCII builder is scaffolding for prototypes.
@@ -151,9 +155,10 @@ test, and the ASCII level builder keep working unchanged, and the 2D view
 stays one key away (F6) for debugging. Height (stairs, cliffs) can come later
 as per-tile elevation in the view without touching the simulation.
 
-Time of day still comes from the realm's `Atmosphere` (F2). In HD mode its 2D
-layers are switched off (`render_2d = false`) and `HdView` maps the same time
-names to its own 3D presets.
+Time of day still comes from the realm's `Atmosphere` (which follows the
+`Clock`). In HD mode its 2D layers are switched off (`render_2d = false`) and
+`HdView` maps the same time names to its own 3D presets, fading over
+`Clock.last_blend` (several seconds when the clock moves on by itself).
 
 **Same-row depth ties.** 2D Y-sort settles ties by draw order; in 3D, two
 upright sprites on the same row sit at the same depth and z-fight. HdView
@@ -248,6 +253,51 @@ ItemPickup: Party.leader touches it -> GameState inventory + flag,
             EventBus.item_found -> HUD "Found X  n/m here"
 ```
 
+## 3f. The clock, shops and night rules
+
+```
+Clock (autoload)  phase: morning -> day -> golden -> night -> morning
+                  DAY_MINUTES = 24 (6 game minutes a phase), game time only:
+                  _process delta x speed, so the pause menu, the ring menu and
+                  hit-stop stop or slow it; never the wall clock
+   modes   free (runs)  set_time(t) (jump, then runs)  hold(t) / release()
+           jump(t) (F2, @time): new phase, mode unchanged (held stays held)
+   realm   AsciiRealm CLOCK_MODE: "free" keeps the running time (the first
+           realm starts at Atmosphere.start_time), "set" starts there and
+           runs, "hold" freezes there. Test yard free, prologue hold.
+   debug   F7 pause/resume, F9 speed x1/x10/x60, F3 shows status_text()
+Clock.phase_changed(phase, blend) -> Atmosphere._apply -> EventBus.time_of_day_changed
+           -> HdView (fades over Clock.last_blend), Audio (music set, ambience),
+              Kid flashlight energy, Shop.refresh
+```
+
+Why an autoload and not Atmosphere: time is game state. It must outlive a
+scene change, and shops, enemies and the kid ask it without finding a realm
+node (tests use it with no realm at all). Atmosphere is only the look.
+
+* **Shops** (`systems/shops/shop.gd`, AsciiRealm `SHOPS_BY_CHAR`): a keeper
+  `Npc` on the shop's cell, the stall a prop one cell north, a `ShopShutter`
+  (hd_actor + interactable) over its counter. `rule`: `follow_clock` (open
+  morning to golden, closed at night), `always_open`, `always_closed`;
+  `set_rule()` lets a scene override. Closed = keeper hidden and disabled
+  (not solid), shutter shown and talkable ("closed" node). No currency: the
+  greeting node hands over the shop's item once per `Clock.phase_count`.
+* **Night misses** (`Kid._make_hit`): at night, a target whose feet are
+  outside the flashlight beam is missed with `night_miss_chance` (0.2) using
+  `Kid.miss_rng` (tests seed it). `_make_hit` returns null, `Combat.strike`
+  skips it, `Fx.miss` pops "Miss", the swing sound whiffs. The beam:
+  `Kid.point_in_beam` asks `HdView.in_beam` (the real SpotLight3D's aim,
+  angle and range, on the ground) in HD, `Kid.in_beam_2d` (a 32 degree, 256 px
+  cone) in the classic view and headless. Light off = nothing is lit.
+* **The dog's nose at night** (`Enemy.scent`, 0..1): fades to 1 while
+  `Clock.is_night()` and `Party.leader is Dog`. 2D: an additive `ScentGlow`
+  under the body. HD: `hd_actor.gdshader`'s `instance uniform scent`, set per
+  sprite by HdView. No stat changes.
+* **Enemies and the clock**: AsciiRealm `ENEMY_CLOCK` ("unchanged" or
+  "follow_clock"), per spawner `{"id": "rat", "clock": ...}` in
+  `ENEMIES_BY_CHAR`, lands on `Enemy.clock_rule`. A hook only: nothing reacts
+  to follow_clock yet. The test yard's rats are "unchanged".
+
 ## 4. Follow AI (how it works)
 
 `systems/party/follower.gd`, used by whichever member the AI plays (the dog
@@ -293,6 +343,7 @@ it and confirming the test fails:
 | `tests/smoke_items.tscn` | no | Hidden items: placement and the count, the dog finding and digging on Search, the leash and Offensive leaving items alone, tucked search and pointing, sniff trails then dig while driving the dog, only the driven one picks up, found items stay found, the pause menu line, HD-2D mirroring and the hop |
 | `tests/smoke_ring.tscn` | no | Equipment data and rules (only owned pieces that fit, the weapon slot never empty, armor adding up and cutting damage, a new weapon's swing and charge), the demo kit once, the ring menu (pause, tabs, one step per push, hold to spin, instant change and its panel, Tab to the dog, Esc, not mid-conversation, HD-2D placement) |
 | `tests/smoke_rings.tscn` | no | The Items, Alchemy and Party rings (use, cast, cost, experience and levels, stances, Stay put), quick slots (assign, move, fire on whoever you drive, notices, not mid-conversation), the D-pad moving to quick slots and old saves, dialogue keys |
+| `tests/smoke_clock.tscn` | no | The clock: phase order and wrap on game time, the long fade, pause, hold/set/release, F7/F9; the yard runs free and its HD look fades; the prologue holds (and @time keeps it held); shops open/closed by the clock, the shutter, one item per phase, set_rule; night misses only outside the beam (2D cone and HD spotlight, seeded dice, "Miss", no damage); the dog's scent glow only at night while driving him |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |
 | `tests/smoke_aspect.tscn` | part B only | Scaling math (18 monitors); live bars, void, camera, HUD |
 | `tests/run_aspect_matrix.sh` / `.ps1` | yes (Xvfb on Linux) | smoke_aspect at 13 resolutions |

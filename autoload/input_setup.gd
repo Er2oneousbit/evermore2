@@ -62,6 +62,8 @@ const BINDINGS := {
 	"debug_overlay":    {"keys": [KEY_F3]},
 	"debug_warp_dog":   {"keys": [KEY_F4]},
 	"debug_toggle_view": {"keys": [KEY_F6]},
+	"debug_clock_pause": {"keys": [KEY_F7]},  # stop / restart the game clock
+	"debug_clock_speed": {"keys": [KEY_F9]},  # clock speed x1 / x10 / x60
 }
 
 

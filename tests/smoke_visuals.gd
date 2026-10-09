@@ -100,10 +100,12 @@ func _test_atmosphere() -> void:
 		_check(pollen.emitting == (p["pollen"] > 0.0), "%s: pollen emitting=%s" % [t, pollen.emitting])
 		_check(flies.emitting == (p["fireflies"] > 0.0), "%s: fireflies emitting=%s" % [t, flies.emitting])
 
-	# F2 order wraps: night -> day -> golden.
+	# F2 order wraps: night -> morning -> day -> golden.
 	atm.set_time("night", 0.0)
 	atm.cycle_time()
-	_check(atm.time_name == "day", "cycle after night should be day, got %s" % atm.time_name)
+	_check(atm.time_name == "morning", "cycle after night should be morning, got %s" % atm.time_name)
+	atm.cycle_time()
+	_check(atm.time_name == "day", "cycle after morning should be day, got %s" % atm.time_name)
 	atm.cycle_time()
 	_check(atm.time_name == "golden", "cycle after day should be golden, got %s" % atm.time_name)
 

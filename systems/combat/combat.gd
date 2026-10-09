@@ -38,12 +38,16 @@ static func hits_in_arc(tree: SceneTree, origin: Vector2, dir: Vector2, reach: f
 
 ## Hit everything in the slice once. Returns the total damage dealt.
 ## `make_info` builds a fresh HitInfo for each target: func(hb: Hurtbox) -> HitInfo.
+## It may return null: that target was missed (the kid at night, outside his
+## flashlight beam), so it's skipped.
 ## `level` (the swing's charge level) scales the hit-stop and shake.
 static func strike(tree: SceneTree, origin: Vector2, dir: Vector2, reach: float, arc_deg: float,
 		attacker_team: String, make_info: Callable, level := 1) -> int:
 	var total := 0
 	for hb in hits_in_arc(tree, origin, dir, reach, arc_deg, attacker_team):
 		var info: HitInfo = make_info.call(hb)
+		if info == null:
+			continue
 		var dealt := hb.receive(info)
 		if dealt > 0:
 			total += dealt

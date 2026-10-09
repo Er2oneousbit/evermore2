@@ -9,7 +9,8 @@
 #
 # RUN (needs a display; on Linux CI use xvfb-run):
 #   EVERMORE_SHOT_DIR=/tmp/shots godot --path . --resolution 1280x720 res://tests/screenshot_tour.tscn
-#   optional: EVERMORE_TOUR_TIMES="golden,night"   (default: day,golden,night)
+#   optional: EVERMORE_TOUR_TIMES="golden,night"   (default: day,golden,night;
+#                                                   morning works too)
 #             EVERMORE_TOUR_SPOTS="start,pond"      (default: all spots)
 #             EVERMORE_TOUR_VIEW="2d"               (default: hd = the HD-2D view)
 #   Windows PowerShell: $env:EVERMORE_SHOT_DIR="C:\temp\shots" before running.
@@ -28,6 +29,7 @@ const SPOTS := {
 	"pond":   [Vector2i(25, 8), Vector2.RIGHT],
 	"pen":    [Vector2i(9, 13), Vector2.DOWN],
 	"garden": [Vector2i(31, 17), Vector2.LEFT],
+	"shops":  [Vector2i(47, 9), Vector2.UP],  # the street: both stalls in view
 }
 
 var _dir := OS.get_environment("EVERMORE_SHOT_DIR")

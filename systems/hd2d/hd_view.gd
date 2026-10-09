@@ -43,6 +43,8 @@ const PROP_LAYER := 4
 ## depth and z-fight (flickering stripes). So props stand a hair behind
 ## their base point and actors a hair in front, kid in front of the dog.
 ## Far too small to see, big enough to always break the tie.
+## in_beam(): anything this close to the kid's feet (m) counts as lit.
+const BEAM_NEAR_M := 0.4
 const PROP_DEPTH_BIAS := -0.03
 const KID_DEPTH_BIAS := 0.02
 const NPC_DEPTH_BIAS := 0.015
@@ -73,6 +75,18 @@ const WOOD_POST := preload("res://assets/textures/hd/wood_post.png")
 ## scattered toward the camera washed the whole screen yellow and drained the
 ## sprites. Keep the sun above ~30 degrees, fog near the day value, shadows lifted.
 const PRESETS := {
+	# Morning (2026-10-09): soft and cool. A lower sun than day but kept above
+	# 30 degrees, a pale sky, cool ambient and a light mist (fog a little over
+	# day's, pale blue so it can't go yellow). Brighter than golden: readable.
+	"morning": {
+		"sun_color": Color(0.9, 0.93, 1.0), "sun_energy": 1.15, "sun_elev": 36.0, "sun_yaw": 0.0, "shadow_opacity": 0.4,
+		"ambient": Color(0.66, 0.74, 0.96), "ambient_energy": 0.85,
+		"sky_top": Color(0.42, 0.58, 0.86), "sky_horizon": Color(0.86, 0.9, 0.98),
+		"fog_density": 0.006, "fog_albedo": Color(0.88, 0.93, 1.0),
+		"exposure": 1.0, "saturation": 0.88, "contrast": 0.97, "glow": 0.35,
+		"flashlight": 0.0, "pollen": 0.25, "fireflies": 0.0, "clouds": 0.08, "dof": 0.07,
+		"water_glow": 0.28, "phone_glow": 0.0, "actor_lift": 0.1,
+	},
 	"day": {
 		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "sun_elev": 68.0, "sun_yaw": 0.0, "shadow_opacity": 0.45,
 		"ambient": Color(0.62, 0.7, 0.88), "ambient_energy": 0.75,
@@ -201,7 +215,8 @@ func _ready() -> void:
 	_build_clouds()
 	await _build_ground()
 
-	EventBus.time_of_day_changed.connect(func(t: String) -> void: _apply_time(t, 0.8))
+	# Fade as long as the clock asks (long when it moves on by itself).
+	EventBus.time_of_day_changed.connect(func(t: String) -> void: _apply_time(t, Clock.last_blend))
 	_apply_time(_atmo.time_name, 0.0)
 	_apply_graphics()
 	Settings.changed.connect(_on_setting_changed)
@@ -301,6 +316,10 @@ func _process(delta: float) -> void:
 		var s2 := actor.get_node(a[3]) as Sprite2D
 		s3.visible = actor.visible and s2.visible
 		_sync_actor(s3, s2, actor.global_position, a[2])
+		# The dog's nose at night (Enemy.scent); only enemies have it.
+		var scent: Variant = actor.get("scent")
+		if scent != null and a[3] == "Sprite":
+			s3.set_instance_shader_parameter("scent", scent)
 	_follow_camera(delta)
 	_aim_flashlight()
 	# Particles live in world space; keep their spawn boxes over the view.
@@ -665,6 +684,26 @@ func _sync_actor(s3: Sprite3D, s2: Sprite2D, pos: Vector2, depth_bias: float) ->
 	s3.offset = Vector2(s2.offset.x, -s2.offset.y)  # hops (item pickups)
 	s3.flip_h = s2.flip_h
 	s3.modulate = s2.modulate  # hit flashes, attack telegraphs
+
+
+## Is a 2D world point inside the flashlight's lit wedge? Gameplay asks this
+## (Kid.point_in_beam: night misses) so the beam you SEE is the beam that
+## counts: the real SpotLight3D's aim, spot_angle and spot_range, measured on
+## the ground from the kid's feet (the light is tilted down, so its 3D cone
+## misses a rat right at his toes that the lit ground clearly covers).
+## Works headless (pure transforms).
+func in_beam(point: Vector2) -> bool:
+	if _flash == null or not _flash.visible or _kid3d == null:
+		return false
+	var axis := -_flash.global_transform.basis.z
+	var aim := Vector2(axis.x, axis.z)
+	var to := point * PX - Vector2(_kid3d.position.x, _kid3d.position.z)
+	var dist := to.length()
+	if dist <= BEAM_NEAR_M:
+		return true
+	if dist > _flash.spot_range or aim.length() < 0.01:
+		return false
+	return rad_to_deg(absf(aim.angle_to(to))) <= _flash.spot_angle
 
 
 func _aim_flashlight() -> void:

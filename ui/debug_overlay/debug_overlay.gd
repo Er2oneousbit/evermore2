@@ -55,7 +55,8 @@ func _build_text() -> String:
 	else:
 		lines.append("Dog  n/a")
 
-	lines.append("F2 time  F3 overlay  F4 warp dog  F6 2D/HD")
+	lines.append(Clock.status_text())
+	lines.append("F2 time  F3 overlay  F4 warp dog  F6 2D/HD  F7 clock stop  F9 clock speed")
 	return "\n".join(lines)
 
 

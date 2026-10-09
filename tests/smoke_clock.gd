@@ -1,0 +1,375 @@
+# =============================================================================
+# smoke_clock.gd  -  Headless checks for the game clock, shops and night rules
+# -----------------------------------------------------------------------------
+# WHAT:  1. The clock runs on GAME time: morning -> day -> golden -> night ->
+#           morning, each change with the long fade; a frame of game time is
+#           a frame of clock time; the tree's pause stops it
+#        2. hold() freezes it (a jump keeps it held), release() runs it,
+#           set_time() jumps and runs on
+#        3. Debug keys: F7 pauses and resumes, F9 cycles x1 / x10 / x60
+#        4. The test yard runs free and its look FADES when the clock moves on
+#           (the HD sun is between the two moods a second in)
+#        5. Shops: the corner store is closed at night (keeper gone, shutter
+#           down, the shutter says so) and open in the morning; the all-night
+#           stand is open at night; each hands over its item once per phase;
+#           set_rule() overrides the clock
+#        6. Night misses: only at night, only outside the flashlight beam (2D
+#           cone and HdView's spotlight), seeded dice; a miss deals nothing,
+#           pops "Miss" and whiffs
+#        7. The dog's nose: enemies glow (scent 1, 2D glow, HD shader) only at
+#           night while you drive the dog
+#        8. The prologue holds the clock (golden), and its @time night moves
+#           it without releasing it
+#
+# RUN:   godot --headless --path . --fixed-fps 60 res://tests/smoke_clock.tscn
+#        Exit code 0 = PASS, 1 = FAIL.
+#
+# Written with help from Claude (Anthropic) via Claude Code.
+# Made with ❤️ from your friendly hacker - er2oneousbit
+# =============================================================================
+extends Node
+
+const YARD_HD := "res://realms/big_yard/yard_hd.tscn"
+const LOT := "res://realms/podunk/ruffleberg_lot.tscn"
+
+var _failures: PackedStringArray = []
+var _sounds: Array[String] = []
+var _popped: Array[String] = []
+var _dialogues: Array[String] = []
+
+
+func _ready() -> void:
+	Audio.played.connect(func(s: String) -> void: _sounds.append(s))
+	Fx.popped.connect(func(t: String) -> void: _popped.append(t))
+	EventBus.dialogue_started.connect(func(n: String) -> void: _dialogues.append(n))
+	_run.call_deferred()
+
+
+func _run() -> void:
+	await _test_order_and_game_time()
+	await _test_hold_set_release()
+	await _test_debug_keys()
+	var scene: Node = load(YARD_HD).instantiate()
+	add_child(scene)
+	await _frames(10)
+	await _test_yard_fades(scene)
+	await _test_shops(scene)
+	await _test_night_misses(scene)
+	await _test_dog_nose(scene)
+	scene.queue_free()
+	await _frames(5)
+	await _test_prologue_held()
+	if _failures.is_empty():
+		print("[TEST] PASS  smoke_clock")
+		get_tree().quit(0)
+	else:
+		for f in _failures:
+			printerr("[TEST] FAIL  ", f)
+		get_tree().quit(1)
+
+
+# -----------------------------------------------------------------------------
+func _test_order_and_game_time() -> void:
+	var seen: Array[String] = []
+	var blends: Array[float] = []
+	var on_change := func(p: String, b: float) -> void:
+		seen.append(p)
+		blends.append(b)
+	Clock.phase_changed.connect(on_change)
+	Clock.enter_realm("hold", "morning")
+	_check(Clock.phase == "morning" and Clock.mode == "hold", "enter_realm(hold, morning) holds at morning")
+	_check(is_equal_approx(Clock.phase_seconds(), Clock.DAY_MINUTES * 60.0 / 4.0), "a phase is a quarter of the day")
+	_check(is_equal_approx(Clock.DAY_MINUTES, 24.0), "a game day is 24 real minutes by default")
+	Clock.advance(Clock.phase_seconds() - 1.0)
+	_check(seen.is_empty() and Clock.phase == "morning", "one second short of a phase: still morning")
+	Clock.advance(1.5)
+	for i in 3:
+		Clock.advance(Clock.phase_seconds())
+	_check(seen == ["day", "golden", "night", "morning"], "phases in order and wrapping: %s" % [seen])
+	_check(blends.all(func(b: float) -> bool: return b == Clock.FADE_SECONDS) and Clock.FADE_SECONDS >= 3.0,
+			"the clock's own changes fade slowly (%s)" % [blends])
+
+	# Game time: 60 frames at --fixed-fps 60 is one second on the clock.
+	Clock.release()
+	var before := Clock.elapsed
+	await _frames(60)
+	var ran := Clock.elapsed - before
+	_check(ran > 0.9 and ran < 1.1, "60 frames should run the clock 1 s (ran %.2f)" % ran)
+	get_tree().paused = true
+	before = Clock.elapsed
+	await _frames(30)
+	_check(Clock.elapsed == before, "a paused game stops the clock")
+	get_tree().paused = false
+	Clock.phase_changed.disconnect(on_change)
+
+
+func _test_hold_set_release() -> void:
+	Clock.hold("night", 0.0)
+	var t := Clock.elapsed
+	await _frames(30)
+	_check(Clock.phase == "night" and Clock.elapsed == t and Clock.mode == "hold", "hold freezes the clock")
+	Clock.jump("day", 0.0)
+	await _frames(10)
+	_check(Clock.phase == "day" and Clock.mode == "hold" and Clock.elapsed == 0.0, "a jump keeps a held clock held")
+	Clock.release()
+	await _frames(30)
+	_check(Clock.mode == "free" and Clock.elapsed > 0.3, "release runs it again")
+	Clock.hold("golden", 0.0)
+	Clock.set_time("night", 0.0)
+	await _frames(30)
+	_check(Clock.phase == "night" and Clock.mode == "free" and Clock.elapsed > 0.3, "set jumps, then runs on")
+
+
+func _test_debug_keys() -> void:
+	Clock.set_time("day", 0.0)
+	_tap("debug_clock_pause")
+	await _frames(2)
+	var t := Clock.elapsed
+	await _frames(30)
+	_check(Clock.paused and Clock.elapsed == t, "F7 stops the clock")
+	_tap("debug_clock_pause")
+	await _frames(2)
+	_check(not Clock.paused and Clock.is_running(), "F7 again restarts it")
+	_tap("debug_clock_speed")
+	await _frames(2)
+	_check(Clock.speed == 10.0, "F9 speeds it to x10 (x%d)" % int(Clock.speed))
+	t = Clock.elapsed
+	await _frames(60)
+	_check(absf(Clock.elapsed - t - 10.0) < 1.0, "x10 runs 10 s a second (ran %.1f)" % (Clock.elapsed - t))
+	_tap("debug_clock_speed")
+	await _frames(2)
+	_check(Clock.speed == 60.0, "then x60")
+	_tap("debug_clock_speed")
+	await _frames(2)
+	_check(Clock.speed == 1.0, "then back to x1")
+	_check(Clock.status_text().contains("day") and Clock.status_text().contains("x1"),
+			"the F3 line names the phase and speed: %s" % Clock.status_text())
+
+
+# -----------------------------------------------------------------------------
+func _test_yard_fades(scene: Node) -> void:
+	var atmo: Atmosphere = scene.get_node("Yard/Atmosphere")
+	var hd: HdView = scene.get_node("HdView")
+	_check(Clock.mode == "free", "the test yard runs the clock free (%s)" % Clock.mode)
+	atmo.set_time("day", 0.0)
+	await _frames(5)
+	var sun: DirectionalLight3D = hd.get_node("Sun")
+	var day_e: float = HdView.PRESETS["day"]["sun_energy"]
+	var gold_e: float = HdView.PRESETS["golden"]["sun_energy"]
+	_check(absf(sun.light_energy - day_e) < 0.01, "day sun to start (%.2f)" % sun.light_energy)
+	Clock.advance(Clock.phase_seconds())  # day runs out
+	_check(atmo.time_name == "golden", "the look follows the clock (%s)" % atmo.time_name)
+	await _wait(1.0)
+	_check(sun.light_energy > day_e + 0.01 and sun.light_energy < gold_e - 0.01,
+			"a second in, the sun is mid-fade (%.2f between %.2f and %.2f)" % [sun.light_energy, day_e, gold_e])
+	await _wait(Clock.FADE_SECONDS)
+	_check(absf(sun.light_energy - gold_e) < 0.01, "and lands on golden after the fade (%.2f)" % sun.light_energy)
+	# Morning has its own look in both views, sun kept above 30 degrees.
+	_check(HdView.PRESETS.has("morning") and Atmosphere.PRESETS.has("morning"), "a morning preset in both views")
+	_check(HdView.PRESETS["morning"]["sun_elev"] >= 30.0, "morning sun above 30 degrees")
+
+
+func _test_shops(_scene: Node) -> void:
+	var corner: Shop = null
+	var stand: Shop = null
+	for s: Shop in get_tree().get_nodes_in_group("shop"):
+		if s.shop_id == "corner_store":
+			corner = s
+		elif s.shop_id == "all_night":
+			stand = s
+	_check(corner != null and stand != null, "the yard has both shops")
+	if corner == null or stand == null:
+		return
+	_check(corner.rule == "follow_clock" and stand.rule == "always_open", "one follows the clock, one stays open")
+
+	Clock.hold("night", 0.0)
+	await _frames(2)
+	_check(not corner.is_open() and not corner.keeper.visible and corner.shutter.visible,
+			"corner store at night: keeper gone, shutter down")
+	_check(corner.keeper.process_mode == Node.PROCESS_MODE_DISABLED, "and the missing keeper isn't solid")
+	_check(stand.is_open() and stand.keeper.visible and not stand.shutter.visible, "the all-night stand is open at night")
+	corner.shutter.interact()
+	await _finish_dialogue()
+	_check(_dialogues.has("shop_corner_closed"), "the shutter says it's closed (%s)" % [_dialogues])
+
+	var sodas := GameState.item_count("soda")
+	stand.keeper.interact()
+	await _finish_dialogue()
+	_check(GameState.item_count("soda") == sodas + 1, "the night vendor hands over a soda")
+	stand.keeper.interact()
+	await _finish_dialogue()
+	_check(GameState.item_count("soda") == sodas + 1 and _dialogues.back() == "shop_allnight_again",
+			"only once per phase (then: %s)" % _dialogues.back())
+
+	Clock.jump("morning", 0.0)
+	await _frames(2)
+	_check(corner.is_open() and corner.keeper.visible and not corner.shutter.visible,
+			"corner store open in the morning")
+	var apples := GameState.item_count("apple")
+	corner.keeper.interact()
+	await _finish_dialogue()
+	_check(GameState.item_count("apple") == apples + 1 and _dialogues.back() == "shop_corner",
+			"the grocer greets and hands over an apple")
+	Clock.jump("day", 0.0)
+	await _frames(2)
+	stand.keeper.interact()
+	await _finish_dialogue()
+	_check(GameState.item_count("soda") == sodas + 2, "a new phase, a new soda")
+
+	stand.set_rule("always_closed")
+	_check(not stand.is_open() and stand.shutter.visible and not stand.keeper.visible, "a scene can close a shop")
+	stand.set_rule("always_open")
+
+
+func _test_night_misses(scene: Node) -> void:
+	var kid: Kid = scene.get_node("Yard/World/Kid")
+	var hd: HdView = scene.get_node("HdView")
+	kid.light_on = true
+	kid.facing = Vector2.RIGHT
+	var at := kid.global_position
+	# The 2D cone.
+	_check(kid.in_beam_2d(at + Vector2(100, 0)), "2D: straight ahead is in the beam")
+	_check(not kid.in_beam_2d(at + Vector2(-100, 0)), "2D: behind him is not")
+	_check(not kid.in_beam_2d(at + Vector2(80, 80)), "2D: 45 degrees off is not")
+	_check(not kid.in_beam_2d(at + Vector2(400, 0)), "2D: past the beam's reach is not")
+	# HdView's real spotlight.
+	if not hd.enabled:
+		hd.set_enabled(true)
+	await _frames(3)
+	_check(hd.in_beam(at + Vector2(70, 0)), "HD: the spotlight covers a rat two meters ahead")
+	_check(not hd.in_beam(at + Vector2(-70, 0)), "HD: not one behind him")
+	_check(not hd.in_beam(at + Vector2(0, 70)), "HD: not one beside him")
+	_check(kid.point_in_beam(at + Vector2(70, 0)) and not kid.point_in_beam(at + Vector2(-70, 0)),
+			"Kid.point_in_beam asks the HD view while it's on")
+	kid.light_on = false
+	_check(not kid.point_in_beam(at + Vector2(70, 0)), "flashlight off: nothing is lit")
+	kid.light_on = true
+
+	var behind := at + Vector2(-60, 0)
+	var ahead := at + Vector2(60, 0)
+	kid.night_miss_chance = 1.0
+	Clock.hold("day", 0.0)
+	_check(not kid.misses_at(behind), "by day he never misses")
+	Clock.hold("night", 0.0)
+	_check(kid.misses_at(behind) and not kid.misses_at(ahead), "at night: misses outside the beam, not in it")
+	kid.night_miss_chance = 0.2
+	_check(is_equal_approx(0.2, kid.get_script().get_property_default_value("night_miss_chance")),
+			"default night miss chance is 20%")
+	var counts: Array[int] = []
+	for run in 2:
+		kid.miss_rng.seed = 12345
+		var n := 0
+		for i in 1000:
+			n += 1 if kid.misses_at(behind) else 0
+		counts.append(n)
+	_check(counts[0] == counts[1], "seeded dice repeat (%s)" % [counts])
+	_check(counts[0] > 150 and counts[0] < 250, "about 20%% of 1000 night swings outside the beam miss (%d)" % counts[0])
+
+	# A miss deals nothing, pops "Miss" and whiffs.
+	var rat := _rat()
+	if rat == null:
+		_failures.append("no rat in the yard")
+		return
+	var hp := rat.health.hp
+	kid.night_miss_chance = 1.0
+	kid.facing = Vector2.LEFT  # the rat is not in front of him
+	kid.global_position = rat.global_position + Vector2(-20, 0)
+	(kid.get_node("Camera2D") as Camera2D).reset_smoothing()  # sounds this far off are culled
+	await _frames(3)
+	_popped.clear()
+	_sounds.clear()
+	var info: HitInfo = kid._make_hit(rat.get_node("Hurtbox"))
+	_check(info == null and _popped.has("Miss") and _sounds.has("swing"), "a night miss pops Miss and whiffs")
+	var dealt := Combat.strike(get_tree(), rat.global_position, Vector2.RIGHT, 40.0, 360.0, "player",
+			func(_hb: Hurtbox) -> HitInfo: return null)
+	_check(dealt == 0 and rat.health.hp == hp, "a missed target takes no damage")
+	kid.facing = Vector2.RIGHT  # now it's in his beam
+	await _frames(3)
+	_check(kid._make_hit(rat.get_node("Hurtbox")) != null, "the same rat in the beam is hit")
+	kid.night_miss_chance = 0.2
+	kid.global_position = at
+
+
+func _test_dog_nose(scene: Node) -> void:
+	var hd: HdView = scene.get_node("HdView")
+	var rat := _rat()
+	if rat == null:
+		return
+	var kid: Kid = scene.get_node("Yard/World/Kid")
+	var dog: Dog = scene.get_node("Yard/World/Dog")
+	Clock.hold("night", 0.0)
+	await _wait(1.0)
+	_check(Party.leader == kid and rat.scent == 0.0, "night, driving the kid: no scent (%.2f)" % rat.scent)
+	Party.switch_control()
+	await _wait(1.0)
+	var glow: Sprite2D = rat.get_node("ScentGlow")
+	_check(Party.leader == dog and rat.scent == 1.0 and glow.visible, "night, driving the dog: enemies glow (%.2f)" % rat.scent)
+	var s3: Sprite3D = hd._mirrored.get(rat.get_instance_id())
+	_check(s3 != null and is_equal_approx(float(s3.get_instance_shader_parameter("scent")), 1.0),
+			"and the HD sprite glows too")
+	_check(rat.health.max_hp == Difficulty.enemy_hp(rat.data.hp), "no stat change")
+	Clock.hold("day", 0.0)
+	await _wait(1.0)
+	_check(rat.scent == 0.0 and not glow.visible, "by day, even with the dog: no glow")
+	Party.switch_control()
+	await _frames(5)
+
+
+func _test_prologue_held() -> void:
+	var lot: Node = load(LOT).instantiate()
+	lot.skip_intro = true
+	add_child(lot)
+	await _frames(10)
+	_check(Clock.mode == "hold" and Clock.phase == "golden", "the prologue holds the clock at golden (%s, %s)" % [Clock.mode, Clock.phase])
+	Clock.advance(0.0)
+	await _frames(60)
+	_check(Clock.elapsed == 0.0 and Clock.phase == "golden", "and it doesn't move by itself")
+	Dialogue.command.emit("time", PackedStringArray(["night", "0"]))
+	await _frames(2)
+	var atmo: Atmosphere = lot.get_node("Atmosphere")
+	_check(Clock.phase == "night" and Clock.mode == "hold" and atmo.time_name == "night",
+			"@time night moves it and keeps it held")
+	lot.queue_free()
+	await _frames(3)
+
+
+# -----------------------------------------------------------------------------
+func _rat() -> Enemy:
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e is Enemy and not (e as Enemy).health.is_dead():
+			return e
+	return null
+
+
+func _finish_dialogue() -> void:
+	await _frames(14)  # past the box's open guard
+	for i in 60:
+		if not Dialogue.is_active():
+			return
+		_tap("interact")
+		await _frames(3)
+
+
+func _tap(action: String) -> void:
+	var ev := InputEventAction.new()
+	ev.action = action
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	var up := InputEventAction.new()
+	up.action = action
+	up.pressed = false
+	Input.parse_input_event(up)
+
+
+func _frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
+
+
+func _wait(seconds: float) -> void:
+	await _frames(ceili(seconds * 60.0))
+
+
+func _check(condition: bool, message: String) -> void:
+	if not condition:
+		_failures.append(message)

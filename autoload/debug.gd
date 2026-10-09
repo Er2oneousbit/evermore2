@@ -39,13 +39,15 @@ Usage:  godot --path <project folder> -- [options]
   --verbose      Print extra VERBOSE log lines (AI state changes, spawns, etc.)
   --hard         Play on Hard (enemies tougher, prices higher)
   --arena        Start in the combat arena (giant rats)
-  --yard         Start in the test yard (F2 cycles day, golden hour, night)
+  --yard         Start in the test yard (the clock runs: morning, day, golden hour, night)
 
 In-game debug keys (always available in prototypes):
-  F2   Cycle time of day (day / golden hour / night); outdoor music and ambience follow
+  F2   Next time of day (morning / day / golden hour / night, with a fade); music and ambience follow
   F3   Toggle debug overlay (FPS, positions, dog AI state, breadcrumb trail)
   F4   Warp the dog to the kid (unstick the dog)
   F6   Toggle HD-2D view / classic 2D view
+  F7   Stop / restart the game clock (24 minutes a day at x1; F3 shows it)
+  F9   Clock speed: x1 / x10 / x60
 """
 
 ## True when --verbose was passed. Read-only from outside, please.

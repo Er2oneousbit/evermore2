@@ -48,6 +48,9 @@ const LAYOUT: Array[String] = [
 const REALM_NAME_KEY := "place_ruffleberg_lot"
 ## The dare (dinner plays "home" over black first, see _play_intro).
 const MUSIC := "lot"
+## The story picks the time here: golden hour on the street, night at the
+## dare (@time night). The clock never moves on by itself.
+const CLOCK_MODE := "hold"
 const DIALOGUE := "res://data/dialogue/prologue.dlg"
 const TERRAIN_BY_CHAR := {":": "Dirt"}
 const FENCES := {"#": "Wood Fence", "%": "Metal Fence"}
