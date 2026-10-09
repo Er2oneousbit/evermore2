@@ -8,6 +8,9 @@
 #                                         prologue's flags are cleared
 #          Prologue street (skip intro)   the street with the intro done
 #          Test yard, Combat arena        the demo maps
+#        "Play as: < Boy / Girl >" picks the kid (GameState.kid_gender: sprite,
+#        portrait and the {he}/{boy|girl} dialogue tokens); the real title screen
+#        will ask this first, with the name (ROADMAP).
 #        Start time applies to maps with a free clock (the prologue keeps its
 #        held story timing). Hard is what --hard sets.
 # HOW:   begin() sets the options and hands the map to Travel.go (fade out,
@@ -38,20 +41,23 @@ const MAPS := [
 ]
 const TIMES := [["morning", "Morning"], ["day", "Day"], ["golden", "Golden hour"], ["night", "Night"]]
 const DIFFICULTIES := [["normal", "Normal"], ["hard", "Hard"]]
+const GENDERS := [["boy", "Boy"], ["girl", "Girl"]]
 
 ## Where the last choice is saved.
 static var path := "user://debug_menu.cfg"
-## The last choice: {"map", "time", "difficulty"} (loaded on first use).
+## The last choice: {"map", "time", "difficulty", "gender"} (loaded on first use).
 static var last := {}
 
 var map_buttons := {}
 var time_button: Button
 var difficulty_button: Button
+var gender_button: Button
 var settings_button: Button
 var quit_button: Button
 
 var _time := "day"
 var _difficulty := "normal"
+var _gender := "boy"
 var _layout: Control
 var _settings: SettingsMenu
 var _building := true  # no focus tick for the focus the build sets
@@ -66,6 +72,7 @@ func _ready() -> void:
 	_load_last()
 	_time = last["time"]
 	_difficulty = last["difficulty"]
+	_gender = last["gender"]
 	_build()
 	get_viewport().gui_focus_changed.connect(func(_c: Control) -> void:
 		if not _building:
@@ -85,12 +92,18 @@ static func map_entry(id: String) -> Dictionary:
 	return {}
 
 
-## Set the options and travel to the map. False if Travel refused.
-static func begin(id: String, time: String, difficulty: String) -> bool:
+## Set the options and travel to the map. False if Travel refused. `gender`
+## is the kid ("boy"/"girl"); empty keeps whatever GameState already has.
+static func begin(id: String, time: String, difficulty: String, gender := "") -> bool:
 	var entry := map_entry(id)
 	if entry.is_empty():
 		return false
 	GameState.difficulty = difficulty
+	# Before the map loads, so the kid spawns with the right sheet.
+	if gender.is_empty():
+		gender = GameState.kid_gender
+	if not GameState.set_kid_gender(gender):
+		return false
 	if id == "prologue":
 		GameState.clear_flags("prologue.")
 	elif id == "street":
@@ -98,7 +111,7 @@ static func begin(id: String, time: String, difficulty: String) -> bool:
 	# Free-clock maps keep the phase they find; the held prologue sets its own.
 	Clock.paused = false
 	Clock.jump(time, 0.0)
-	last = {"map": id, "time": time, "difficulty": difficulty}
+	last = {"map": id, "time": time, "difficulty": difficulty, "gender": gender}
 	_save_last()
 	return await Travel.go(entry["scene"], "", false)
 
@@ -114,15 +127,18 @@ static func _load_last() -> void:
 	if not last.is_empty():
 		return
 	last = {"map": MAPS[0]["id"], "time": "day",
-		"difficulty": "hard" if GameState.difficulty == "hard" else "normal"}
+		"difficulty": "hard" if GameState.difficulty == "hard" else "normal",
+		"gender": GameState.kid_gender}
 	var cfg := ConfigFile.new()
 	if _persist() and cfg.load(path) == OK:
 		var map: String = cfg.get_value("last", "map", last["map"])
 		var time: String = cfg.get_value("last", "time", last["time"])
 		var diff: String = cfg.get_value("last", "difficulty", last["difficulty"])
+		var gender: String = cfg.get_value("last", "gender", last["gender"])
 		last = {"map": map if not map_entry(map).is_empty() else last["map"],
 			"time": time if TIMES.any(func(t: Array) -> bool: return t[0] == time) else last["time"],
-			"difficulty": diff if diff in ["normal", "hard"] else last["difficulty"]}
+			"difficulty": diff if diff in ["normal", "hard"] else last["difficulty"],
+			"gender": gender if gender in GenderedText.GENDERS else last["gender"]}
 
 
 static func _save_last() -> void:
@@ -177,6 +193,8 @@ func _build() -> void:
 		func(v: String) -> void: _time = v)
 	difficulty_button = _cycler(list, "Difficulty", DIFFICULTIES, func() -> String: return _difficulty,
 		func(v: String) -> void: _difficulty = v)
+	gender_button = _cycler(list, "Play as", GENDERS, func() -> String: return _gender,
+		func(v: String) -> void: _gender = v)
 	settings_button = _button(list, "Settings", _open_settings)
 	quit_button = _button(list, "Quit", func() -> void: get_tree().quit())
 
@@ -266,8 +284,12 @@ func selected_difficulty() -> String:
 	return _difficulty
 
 
+func selected_gender() -> String:
+	return _gender
+
+
 func _start(id: String) -> void:
-	begin(id, _time, _difficulty)
+	begin(id, _time, _difficulty, _gender)
 
 
 func _open_settings() -> void:

@@ -16,6 +16,18 @@
 #   DAD (tired): Long day.       optional emotion (portrait variant; falls back)
 #   : The fridge hums.           narration (no speaker, no portrait)
 #   {kid} / {dog} / {any_key}    in text: the player's names, or a names.json key
+#   {boy text|girl text}         in text: the kid is a boy or a girl (player's
+#                                choice); the first part shows for a boy, the
+#                                second for a girl. Exactly two parts, no braces
+#                                inside. "Hey you, {boy|girl}!"
+#   {he} {him} {his}  {son}  {boy}   he/she, him/her, his/her, son/daughter,
+#                                boy/girl; capitalised {He} {Him} {His} {Son}
+#                                {Boy} for the start of a sentence. Only for the
+#                                KID: Dad's own 1995 story stays plain text.
+#                                (Syntax lives in GenderedText; Names.expand does
+#                                the same for notices, signs and labels.)
+#                                Bad braces, a split without two parts and
+#                                unknown tokens are line-numbered errors.
 #   * Why not?  -> why           a choice; consecutive * lines form one menu
 #   * Okay.                      a choice with no jump continues after the menu
 #   -> node_name                 jump to another node
@@ -137,6 +149,7 @@ func _parse_statement(raw: String, line_no: int) -> Dictionary:
 		if text.is_empty():
 			_error(line_no, "a choice needs some text")
 			return {}
+		_check_tokens(text, line_no)
 		return {"type": "choice", "cond": cond, "line": line_no, "text": text, "target": target}
 
 	if body.begins_with("->"):
@@ -171,16 +184,25 @@ func _parse_statement(raw: String, line_no: int) -> Dictionary:
 		return {"type": "command", "cond": cond, "line": line_no, "name": cmd, "args": parts.slice(1)}
 
 	if body.begins_with(":"):
+		var narration := body.substr(1).strip_edges()
+		_check_tokens(narration, line_no)
 		return {"type": "line", "cond": cond, "line": line_no, "speaker": "", "emotion": "",
-				"text": body.substr(1).strip_edges()}
+				"text": narration}
 
 	var lm := _line_regex.search(body)
 	if lm:
+		_check_tokens(lm.get_string(3), line_no)
 		return {"type": "line", "cond": cond, "line": line_no, "speaker": lm.get_string(1),
 				"emotion": lm.get_string(2).strip_edges(), "text": lm.get_string(3).strip_edges()}
 
 	_error(line_no, "can't read this line (speaker lines look like 'DAD: text', narration like ': text')")
 	return {}
+
+
+## Report bad {tokens} in a piece of text (GenderedText.problems).
+func _check_tokens(text: String, line_no: int) -> void:
+	for why in GenderedText.problems(text, Names.has_key):
+		_error(line_no, why)
 
 
 func _parse_value(text: String, line_no: int) -> Variant:

@@ -163,14 +163,14 @@ func _on_item_found(item: ItemData, count: int, _key: String) -> void:
 
 ## A line at the top of the screen for a moment (found items).
 func show_toast(text: String) -> void:
-	_toast.text = text
+	_toast.text = Names.expand(text)
 	_toast.visible = true
 	_toast_left = TOAST_SECONDS
 
 
 ## A short notice for a moment, under the find line.
 func show_notice(text: String) -> void:
-	_notice.text = text
+	_notice.text = Names.expand(text)
 	_notice.visible = true
 	_notice_left = TOAST_SECONDS
 
