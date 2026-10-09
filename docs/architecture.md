@@ -286,7 +286,7 @@ node (tests use it with no realm at all). Atmosphere is only the look.
 
 * **Shop buildings in HD-2D** (`systems/hd2d/shop_building.gd`): HdView swaps
   each `stall_*` prop's quad for a `ShopBuilding3D` (boxes, prism gables,
-  slanted roof and awning; 32x32 LPC tiles, world triplanar, nearest, so
+  slanted roof and awning; 32x32 LPC tiles, world triplanar, sharp-bilinear texel AA (hd_texel.gdshader), so
   32 px = 1 m; all parts cast shadows). It listens to `Shop.state_changed`:
   shutter panel while closed, lamp and gable windows at night while open.
   The stall prop's 96x54 px footprint is the collision, the 2D `ShopShutter`

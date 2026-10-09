@@ -160,7 +160,7 @@ var _actor_materials: Dictionary = {}  # texture id -> ShaderMaterial
 var _exposure := 1.0
 ## Settings that change how this view draws.
 const GRAPHICS_KEYS := ["shadows", "light_shafts", "reflections", "ambient_occlusion",
-		"tilt_shift", "bloom", "particles", "clouds", "brightness"]
+		"tilt_shift", "bloom", "particles", "clouds", "brightness", "antialiasing"]
 ## Seconds until the next look for actors that arrived after load.
 var _scan_timer := 0.0
 const SCAN_SECONDS := 0.2
@@ -263,6 +263,9 @@ func _apply_graphics() -> void:
 	_fireflies.visible = Settings.get_value("particles")
 	_clouds.visible = Settings.get_value("clouds")
 	_env.tonemap_exposure = _exposure * Settings.get_value("brightness")
+	# MSAA smooths geometry edges (posts, roof lines, fences). The texture
+	# interiors are handled by the texel-AA shaders; MSAA does not touch those.
+	get_viewport().msaa_3d = msaa_mode(Settings.get_value("antialiasing"))
 
 
 ## Show the HD-2D view (true) or the classic 2D one (false).
@@ -288,6 +291,11 @@ func camera() -> Camera3D:
 ## 2D pixel position -> 3D meters on the ground plane.
 static func to3(p: Vector2, height := 0.0) -> Vector3:
 	return Vector3(p.x * PX, height, p.y * PX)
+
+
+## The Viewport MSAA level for an "antialiasing" setting value.
+static func msaa_mode(value: String) -> Viewport.MSAA:
+	return {"msaa2": Viewport.MSAA_2X, "msaa4": Viewport.MSAA_4X}.get(value, Viewport.MSAA_DISABLED)
 
 
 ## Which renderer is running decides which effects to switch on (asking a
@@ -386,11 +394,7 @@ func _build_ground() -> void:
 
 	var plane := PlaneMesh.new()
 	plane.size = rect.size * PX
-	var mat := StandardMaterial3D.new()
-	mat.albedo_texture = tex
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	mat.roughness = 1.0
-	mat.metallic_specular = 0.25
+	var mat := TexelMaterial.make(tex, false, false, Vector2.ONE, Vector2.ZERO, 1.0, 0.25)
 	_ground = MeshInstance3D.new()
 	_ground.name = "Ground"
 	_ground.mesh = plane
@@ -570,15 +574,8 @@ func _add_box(parent: Node3D, mesh: Mesh, mat: Material, at: Vector3, rot: Vecto
 
 ## Pixel-art wood on 3D boxes: world-space triplanar mapping at 32 px per
 ## meter, so the wood's pixels match the sprites' pixel size exactly.
-func _wood_material(tex: Texture2D) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_texture = tex
-	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	m.uv1_triplanar = true
-	m.uv1_world_triplanar = true
-	m.uv1_scale = Vector3.ONE
-	m.roughness = 0.9
-	return m
+func _wood_material(tex: Texture2D) -> ShaderMaterial:
+	return TexelMaterial.make(tex, true)
 
 
 # -----------------------------------------------------------------------------
@@ -999,6 +996,9 @@ func _blend(t: float) -> void:
 		_env.volumetric_fog_albedo = v["fog_albedo"]
 	_exposure = v["exposure"]
 	_env.tonemap_exposure = _exposure * Settings.get_value("brightness")
+	# MSAA smooths geometry edges (posts, roof lines, fences). The texture
+	# interiors are handled by the texel-AA shaders; MSAA does not touch those.
+	get_viewport().msaa_3d = msaa_mode(Settings.get_value("antialiasing"))
 	_env.adjustment_saturation = v["saturation"]
 	_env.adjustment_contrast = v["contrast"]
 	_env.glow_intensity = v["glow"]

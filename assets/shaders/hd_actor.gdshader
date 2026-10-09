@@ -24,13 +24,15 @@
 shader_type spatial;
 render_mode cull_disabled, depth_draw_opaque, diffuse_lambert_wrap, specular_schlick_ggx;
 
-uniform sampler2D tex : source_color, filter_nearest;
+#include "res://assets/shaders/texel_aa.gdshaderinc"
+
+uniform sampler2D tex : source_color, filter_linear, repeat_disable;
 uniform float lift : hint_range(0.0, 1.0) = 0.1;
 uniform vec3 scent_color : source_color = vec3(1.0, 0.86, 0.5);
 instance uniform float scent : hint_range(0.0, 1.0) = 0.0;
 
 void fragment() {
-	vec4 c = texture(tex, UV) * COLOR;
+	vec4 c = texture(tex, texel_aa_uv(UV, vec2(textureSize(tex, 0)))) * COLOR;
 	ALBEDO = c.rgb;
 	ALPHA = c.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;

@@ -83,6 +83,7 @@ func _test_presets() -> void:
 	Settings.set_value("quality", "ultra")
 	_check(Settings.get_value("reflections") and Settings.get_value("light_shafts"), "Ultra switches everything on")
 	Settings.set_value("reflections", false)
+	Settings.set_value("antialiasing", "msaa2")
 	_check(Settings.get_value("quality") == "high", "matching a preset by hand names it (High = Ultra without reflections)")
 	Settings.set_value("quality", "ultra")
 

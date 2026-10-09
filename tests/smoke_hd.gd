@@ -67,6 +67,7 @@ func _run() -> void:
 
 	# --- 1b. Shops are real 3D buildings (not sprite quads) ----------------------
 	await _check_shops(hd, kid, stalls)
+	await _check_texel_aa(hd)
 
 	# --- 2. Actors follow their 2D bodies --------------------------------------
 	Input.action_press("move_right")
@@ -168,9 +169,7 @@ func _check_shops(hd: HdView, kid: Kid, stalls: Array[Prop]) -> void:
 				continue
 			if part != "Sign":
 				_check(mi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "%s %s casts no shadow" % [b.name, part])
-			var tex := (mi.material_override as StandardMaterial3D).albedo_texture
-			_check((mi.material_override as StandardMaterial3D).texture_filter == BaseMaterial3D.TEXTURE_FILTER_NEAREST
-					and tex != null, "%s %s must use a nearest-filtered texture" % [b.name, part])
+			_check(_is_texel_aa(mi.material_override), "%s %s must use the texel-AA shader with a texture" % [b.name, part])
 		# Polish pass: goods on the counter, a crate and a barrel, a lantern.
 		for part in ["Good0", "Good1", "Good2", "Good3", "Crate", "Barrel", "Sack"]:
 			_check(b.find_child(part, true, false) is MeshInstance3D, "%s lacks %s" % [b.name, part])
@@ -252,6 +251,45 @@ func _frames(n: int) -> void:
 
 func _wait(seconds: float) -> void:
 	await _frames(ceili(seconds * Engine.physics_ticks_per_second))
+
+
+## A material that samples pixel art with the sharp-bilinear lookup and a
+## LINEAR sampler (plain NEAREST shimmers when the camera moves by sub-pixels).
+func _is_texel_aa(mat: Material) -> bool:
+	var sm := mat as ShaderMaterial
+	if sm == null or sm.shader == null or sm.get_shader_parameter("tex") == null:
+		return false
+	var code := sm.shader.code
+	return code.contains("texel_aa_uv") and code.contains("filter_linear") and not code.contains("filter_nearest")
+
+
+## Shops, props, fences, ground and the actors all use the texel-AA shaders,
+## and MSAA follows the quality preset (off / off / 2x / 4x).
+func _check_texel_aa(hd: HdView) -> void:
+	for sh: Shader in [TexelMaterial.SHADER, HdView.SPRITE_SHADER, HdView.ACTOR_SHADER, HdView.ACTOR_GROUND_SHADER]:
+		_check(sh.code.contains("texel_aa_uv") and sh.code.contains("filter_linear") and not sh.code.contains("filter_nearest"),
+				"%s must use texel_aa_uv with filter_linear" % sh.resource_path.get_file())
+	_check(_is_texel_aa(hd.get_node("Ground").material_override), "the ground plane must use the texel-AA shader")
+	var fenced := 0
+	for m in hd.get_node("Fences").get_children():
+		var mat := (m as MeshInstance3D).material_override
+		if mat is ShaderMaterial:
+			fenced += 1
+			_check(_is_texel_aa(mat), "a fence part isn't texel-AA")
+	_check(fenced > 0, "no fence part uses a texel-AA material")
+	var props := 0
+	for p in hd.get_node("Props").get_children():
+		var mat := ((p as GeometryInstance3D).material_override) as ShaderMaterial
+		if mat and mat.shader == HdView.SPRITE_SHADER:
+			props += 1
+			_check(_is_texel_aa(mat), "a prop isn't texel-AA")
+	_check(props > 0, "no prop uses hd_sprite")
+	for q in [["low", Viewport.MSAA_DISABLED], ["medium", Viewport.MSAA_DISABLED],
+			["high", Viewport.MSAA_2X], ["ultra", Viewport.MSAA_4X]]:
+		Settings.set_value("quality", q[0])
+		await _frames(2)
+		_check(hd.get_viewport().msaa_3d == q[1], "quality %s: msaa_3d is %d, expected %d" % [q[0], hd.get_viewport().msaa_3d, q[1]])
+	Settings.set_value("quality", "ultra")
 
 
 func _check(condition: bool, message: String) -> void:

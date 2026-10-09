@@ -51,6 +51,8 @@ const SCHEMA := [
 	{"key": "light_shafts", "tab": "graphics", "label": "Light shafts and haze", "type": "bool", "default": true},
 	{"key": "reflections", "tab": "graphics", "label": "Water reflections", "type": "bool", "default": true},
 	{"key": "ambient_occlusion", "tab": "graphics", "label": "Ambient occlusion", "type": "bool", "default": true},
+	{"key": "antialiasing", "tab": "graphics", "label": "Edge smoothing (MSAA)", "type": "choice", "default": "msaa4",
+		"options": [["off", "Off"], ["msaa2", "2x"], ["msaa4", "4x"]]},
 	{"key": "tilt_shift", "tab": "graphics", "label": "Tilt-shift blur", "type": "bool", "default": true},
 	{"key": "bloom", "tab": "graphics", "label": "Bloom", "type": "bool", "default": true},
 	{"key": "particles", "tab": "graphics", "label": "Pollen and fireflies", "type": "bool", "default": true},
@@ -91,12 +93,16 @@ const SCHEMA := [
 ## of them afterwards turns the preset into "custom".
 const QUALITY_PRESETS := {
 	"low": {"shadows": "low", "light_shafts": false, "reflections": false, "ambient_occlusion": false,
+		"antialiasing": "off",
 		"tilt_shift": false, "bloom": false, "particles": false, "clouds": true},
 	"medium": {"shadows": "high", "light_shafts": false, "reflections": false, "ambient_occlusion": false,
+		"antialiasing": "off",
 		"tilt_shift": true, "bloom": true, "particles": true, "clouds": true},
 	"high": {"shadows": "high", "light_shafts": true, "reflections": false, "ambient_occlusion": true,
+		"antialiasing": "msaa2",
 		"tilt_shift": true, "bloom": true, "particles": true, "clouds": true},
 	"ultra": {"shadows": "high", "light_shafts": true, "reflections": true, "ambient_occlusion": true,
+		"antialiasing": "msaa4",
 		"tilt_shift": true, "bloom": true, "particles": true, "clouds": true},
 }
 
