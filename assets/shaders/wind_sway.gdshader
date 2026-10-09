@@ -43,13 +43,15 @@ void vertex() {
 void fragment() {
 	// 0 at the roots, 1 at the top, eased so the top does most of the moving.
 	float h = clamp((-local_y / height - rooted) / (1.0 - rooted), 0.0, 1.0);
-	h *= h;
 	// Two sine waves = a lazy breeze with the occasional gust. Phase from the
 	// sprite's world position so a row of trees doesn't move in lockstep.
 	float phase = world_pos.x * 0.013 + world_pos.y * 0.007;
 	float t = TIME * speed * 6.2831 + phase;
 	float sway = sin(t) * 0.75 + sin(t * 2.37 + 1.3) * 0.25;
-	float shift = round(sway * strength * h);
+	// Everything above the roots moves as one block. Scaling the shift by height
+	// made the row where it rounds from 0 to 1 slide up and down the canopy as
+	// the wind changed: a visible wipe (owner, 2026-10-09).
+	float shift = round(sway * strength * step(0.001, h));
 	vec2 uv = UV - vec2(shift * TEXTURE_PIXEL_SIZE.x, 0.0);
 	float inside = step(uv_rect.x, uv.x) * step(uv.x, uv_rect.x + uv_rect.z);
 	COLOR = texture(TEXTURE, uv) * vertex_color;
