@@ -31,6 +31,29 @@ Full detail (notes and source links per layer): `credits/kid/credits.txt` / `cre
 > a DRM platform (Steam, consoles), swap the hair for an OGA-BY hairstyle in
 > `tools/lpc/characters.json` and rebuild.
 
+## The kid as a girl: `assets/characters/kid_girl/kid_girl_lpc.png`
+
+The player picks a boy or a girl; this is the girl's sheet. Same generator, same
+13-year-old body, red shirt, jeans and shoes (recipe `kid_girl` in
+`tools/lpc/characters.json`). Her hair is the CC0 "long straight" layer, so unlike
+the boy's hair it adds nothing share-alike. The nose and mouth are painted by
+`tools/art/faces.py` like every other sheet (no credit needed).
+
+| Layer | Artists | Licenses |
+|---|---|---|
+| `body/bodies/teen` | same as the kid above | OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0 |
+| `head/heads/human/female_small` | ElizaWy, Stephen Challener (Redshrike) | OGA-BY 3.0, CC-BY |
+| `head/faces/female/neutral` | JaidynReiman, ElizaWy, Stephen Challener (Redshrike) | OGA-BY 3.0 |
+| `hair/long_straight/adult` | JaidynReiman, thecilekli, bluecarrot16 | CC0 |
+| `torso/clothes/longsleeve/longsleeve2/teen` | same as the kid above | OGA-BY 3.0 |
+| `legs/pants/thin` | same as the kid above | OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0 |
+| `feet/shoes/revised/thin` | ElizaWy, JaidynReiman | OGA-BY 3.0 |
+
+Full detail: `credits/kid_girl/credits.txt` / `credits.csv`. The body and pants
+layers offer OGA-BY as one of their licenses, so the girl's sheet can be used
+under OGA-BY with attribution (the boy's messy hair is the only share-alike-only
+layer in the kid's sheet).
+
 ## Dad, Maya and Dex: `assets/characters/{dad,maya,dex}/`
 
 Built with the same LPC generator (recipes in `tools/lpc/characters.json`).
