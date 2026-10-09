@@ -28,7 +28,12 @@
 # CLOCK: with clock_rule "follow_clock" the realm's DayNightDirector
 #        (systems/enemies/day_night.gd) spawns, retires and recalls it; see
 #        EnemyData "Day and night". A flyer (data.flies) hovers `height` px up,
-#        ignores walls, flutters while idle and weaves while chasing.
+#        ignores walls and flutters while idle. In a fight it circles its
+#        target at `orbit_radius` (smooth steering, a slow radius wobble),
+#        telegraphs (WINDUP: hovers low, squeak, orange pulse), dives at the
+#        spot the target stood when the telegraph began (ATTACK, locked: stand
+#        still and it bites, sidestep and it misses), then climbs away and
+#        circles for attack_cooldown (RECOVER). Hittable all through.
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -60,6 +65,13 @@ const ARRIVE_PX := 18.0
 const SINK_SECONDS := 0.5
 ## Climb/fall speed for flyers' height changes (px/s).
 const HEIGHT_SPEED := 70.0
+## Flyer steering: gentle acceleration (px/s^2) and how fast it circles (rad/s).
+const FLY_ACCEL := 240.0
+const ORBIT_SPEED := 0.9
+## Seconds a flyer circles before its first swoop, and how far out it retreats
+## after one (x orbit_radius).
+const FIRST_SWOOP_DELAY := 1.2
+const RETREAT_FACTOR := 1.5
 
 @export var data: EnemyData
 
@@ -102,6 +114,11 @@ var _flutter_t := 0.0
 var _twitch_t := 3.0
 var _stuck_t := 0.0
 var _stuck_best := INF
+## Flyers: where it circles (angle around the target, direction) and the spot
+## the current dive is aimed at.
+var _orbit_angle := 0.0
+var _orbit_dir := 1.0
+var _dive_to := Vector2.ZERO
 
 
 ## Convenience constructor for level builders.
@@ -221,16 +238,17 @@ func _physics_process(delta: float) -> void:
 			if target:
 				state = State.CHASE
 				combat_timer = COMBAT_MEMORY
+				if data.flies:
+					_begin_circling()
 		State.CHASE:
 			if not _valid_target() or home.distance_to(target.global_position) > data.leash_radius:
 				state = State.RETURN
+			elif data.flies:
+				_fly_chase(delta)
 			elif global_position.distance_to(target.global_position) <= data.attack_range and _timer <= 0.0:
 				_start_windup()
 			else:
 				_move_toward(target.global_position, data.chase_speed, delta)
-				if data.flies:  # erratic: weaves side to side as it comes
-					velocity += global_position.direction_to(target.global_position).orthogonal() \
-							* sin(_age * 8.0 + float(get_instance_id() % 7)) * data.chase_speed * 0.5
 				_sprite.play(&"walk", velocity)
 				combat_timer = maxf(combat_timer, 1.0)
 		State.WINDUP:
@@ -240,11 +258,18 @@ func _physics_process(delta: float) -> void:
 			if _timer <= 0.0:
 				_start_attack()
 		State.ATTACK:
+			if data.flies:
+				_dive(delta)
+				move_and_slide()
+				return
 			velocity = velocity.move_toward(Vector2.ZERO, ACCEL * 0.5 * delta)
 			if not _landed and _sprite.frame_index() >= data.attack_hit_frame:
 				_land_attack()
 		State.RECOVER:
-			_brake(delta)
+			if data.flies and _valid_target():
+				_orbit(delta, RETREAT_FACTOR)  # climbs away, then circles
+			else:
+				_brake(delta)
 			if _timer <= 0.0:
 				state = State.CHASE if _valid_target() else State.IDLE
 		State.HURT:
@@ -274,6 +299,8 @@ func on_hit(info: HitInfo, _dealt: int) -> void:
 	if info.source is Node2D and not health.is_dead():
 		target = info.source  # whoever hit it gets its attention
 		_sound(data.sound_hurt)
+	if data.flies:
+		_timer = maxf(_timer, 0.8)  # a hit bat backs off a moment before it dives again
 	state = State.HURT
 	_timer = maxf(info.stagger, 0.12)
 
@@ -484,7 +511,7 @@ func _update_height(delta: float) -> void:
 		return
 	if state == State.LEAVE and leave_kind == "burrow":
 		return
-	var want := data.fly_height + sin(_age * 5.0) * 2.5
+	var want := data.fly_height + sin(_age * 3.0) * 2.5
 	match state:
 		State.ROOST:
 			want = data.hang_height
@@ -514,8 +541,50 @@ func _flutter(delta: float) -> void:
 	if _flutter_t <= 0.0 or global_position.distance_to(_flutter_to) < 6.0:
 		_flutter_t = randf_range(0.8, 2.0)
 		_flutter_to = home + Vector2(randf_range(-80, 80), randf_range(-50, 50))
-	_move_toward(_flutter_to, data.walk_speed, delta)
+	_move_toward(_flutter_to, data.walk_speed, delta, FLY_ACCEL)
 	_sprite.play(&"walk", velocity)
+
+
+## A flyer that just noticed someone: starts circling where it is, the first
+## swoop a moment away. Each bat circles its own way round.
+func _begin_circling() -> void:
+	_orbit_angle = (global_position - target.global_position).angle()
+	_orbit_dir = 1.0 if get_instance_id() % 2 == 0 else -1.0
+	_timer = FIRST_SWOOP_DELAY
+
+
+## Circle the target at orbit_radius (a slow wobble in the radius, not a
+## jitter): steer toward a point that moves round the target, easing off as it
+## nears it.
+func _orbit(delta: float, radius_factor := 1.0) -> void:
+	_orbit_angle += _orbit_dir * ORBIT_SPEED * delta
+	var wobble := sin(_age * 1.3 + float(get_instance_id() % 7)) * 8.0
+	var r := data.orbit_radius * radius_factor + wobble
+	var want := target.global_position + Vector2.from_angle(_orbit_angle) * r
+	var speed := minf(data.chase_speed, global_position.distance_to(want) * 3.0 + 20.0)
+	_move_toward(want, speed, delta, FLY_ACCEL)
+	_sprite.play(&"walk", velocity)
+
+
+func _fly_chase(delta: float) -> void:
+	combat_timer = maxf(combat_timer, 1.0)
+	_orbit(delta)
+	if _timer <= 0.0 and global_position.distance_to(target.global_position) <= data.orbit_radius * 1.6:
+		_start_windup()
+
+
+## The dive: straight at the locked spot, the bite lands when it gets there
+## (or flies past it), then it retreats.
+func _dive(_delta: float) -> void:
+	velocity = _attack_dir * data.swoop_speed
+	var to := _dive_to - global_position
+	if to.length() <= data.attack_reach * 0.6 or to.dot(_attack_dir) <= 0.0:
+		_land_attack()
+		state = State.RECOVER
+		_timer = data.attack_cooldown
+		if _valid_target():
+			_orbit_angle = (global_position - target.global_position).angle()
+		_sprite.play(&"walk", -_attack_dir)
 
 
 func _start_windup() -> void:
@@ -523,6 +592,7 @@ func _start_windup() -> void:
 	_sound(data.sound_windup)
 	_timer = data.windup_seconds
 	_attack_dir = global_position.direction_to(target.global_position)
+	_dive_to = target.global_position  # flyers: aimed now, so moving away dodges it
 	_sprite.play(&"idle", _attack_dir)
 
 
@@ -530,9 +600,11 @@ func _start_attack() -> void:
 	state = State.ATTACK
 	_landed = false
 	_sprite.modulate = Color.WHITE
-	if _valid_target():
+	if data.flies:
+		_attack_dir = global_position.direction_to(_dive_to)
+	elif _valid_target():
 		_attack_dir = global_position.direction_to(target.global_position)
-	velocity = _attack_dir * data.chase_speed * 1.6  # the lunge
+	velocity = _attack_dir * (data.swoop_speed if data.flies else data.chase_speed * 1.6)  # the lunge
 	_sprite.play(&"attack", _attack_dir, true)
 
 
@@ -553,7 +625,7 @@ func _make_hit(hb: Hurtbox, dmg: float) -> HitInfo:
 func _on_animation_finished(anim: StringName) -> void:
 	match anim:
 		&"attack":
-			if state == State.ATTACK:
+			if state == State.ATTACK and not data.flies:  # a dive ends on arrival
 				state = State.RECOVER
 				_timer = data.attack_cooldown
 		&"die":
@@ -602,8 +674,8 @@ func _valid_target() -> bool:
 	return is_instance_valid(target) and not Party.is_down(target)
 
 
-func _move_toward(p: Vector2, speed: float, delta: float) -> void:
-	velocity = velocity.move_toward(global_position.direction_to(p) * speed, ACCEL * delta)
+func _move_toward(p: Vector2, speed: float, delta: float, accel := ACCEL) -> void:
+	velocity = velocity.move_toward(global_position.direction_to(p) * speed, accel * delta)
 
 
 func _brake(delta: float) -> void:

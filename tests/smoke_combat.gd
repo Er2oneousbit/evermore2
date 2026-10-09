@@ -10,6 +10,13 @@
 #           weapon x charge, knockback pushes it away, a level-3 swing does 4x
 #        5. Enemies: wake by distance (not by screen), chase, telegraph, hit the
 #           kid, and die (removed from play); hits never hurt their own team
+#        5b. Bats (owner: "fly around crazy, never attacked"): a bat circles a
+#           still kid smoothly at a distance, telegraphs (WINDUP) before it
+#           dives, the dive bites for 3, it climbs away and rests, then comes
+#           again; moving away during the telegraph dodges it; the kid's swing
+#           and the dog's leap reach a bat at the bottom of its dive, a bat
+#           circling high is out of reach and the AI partner ignores it
+#           until it dives
 #        6. Talking wins over attacking on the shared button
 #        7. HD-2D: rats are mirrored in 3D, and effects land at the same screen
 #           spot in both views
@@ -26,6 +33,11 @@ const ARENA := "res://realms/test/combat_arena.tscn"
 const ARENA_HD := "res://realms/test/combat_arena_hd.tscn"
 const RAT := preload("res://data/enemies/rat.tres")
 const STICK := preload("res://data/weapons/stick.tres")
+const BAT := preload("res://data/enemies/bat.tres")
+
+## Circling bats may accelerate this fast at most (px/s^2); the old weave
+## piled velocity on every frame (thousands).
+const FLY_ACCEL_LIMIT := 400.0
 
 var _failures: PackedStringArray = []
 
@@ -40,6 +52,7 @@ func _run() -> void:
 	_test_difficulty()
 	await _test_swing()
 	await _test_enemy_behavior()
+	await _test_bat()
 	await _test_talk_beats_attack()
 	await _test_hd()
 	GameState.difficulty = "normal"
@@ -191,6 +204,125 @@ func _test_enemy_behavior() -> void:
 	_check(not is_instance_valid(near), "a dead rat is removed after its death animation")
 	arena.queue_free()
 	await _frames(2)
+
+
+func _test_bat() -> void:
+	var arena := await _load(ARENA)
+	var kid: Kid = arena.get_node("World/Kid")
+	var dog: Dog = arena.get_node("World/Dog")
+	_clear_enemies()
+	Clock.hold("night", 0.0)
+	dog.set_physics_process(false)
+	kid.set_physics_process(false)
+	dog.global_position = kid.global_position + Vector2(-300, 0)
+	kid.health.max_hp = 999
+	kid.health.hp = 999
+	var bat := Enemy.create(BAT, kid.global_position + Vector2(100, -30))
+	arena.get_node("World").add_child(bat)
+
+	# A still kid: circle, telegraph, dive, bite, retreat, again.
+	var hp0: int = kid.health.hp
+	var order: Array = []
+	var t_bite := -1.0
+	var t_windup := -1.0
+	var h_circle := 0.0
+	var h_bite := 99.0
+	var max_dv := 0.0
+	var prev_v := Vector2.ZERO
+	var d_after := 0.0
+	var swing_ok := false
+	var swing_high_ok := true
+	var dog_ok := false
+	var second_bite := false
+	var last_state := -1
+	for i in 60 * 9:
+		await get_tree().physics_frame
+		var t := i / 60.0
+		if bat.state != last_state:
+			order.append(bat.state)
+			last_state = bat.state
+		if bat.state == Enemy.State.CHASE:
+			max_dv = maxf(max_dv, (bat.velocity - prev_v).length() * 60.0)
+			h_circle = maxf(h_circle, bat.height)
+			# hovering at its circle distance, a stick can't reach it
+			var origin := kid.global_position + Vector2(0, -6)
+			var dir := (bat.global_position - kid.global_position).normalized()
+			if bat.global_position.distance_to(kid.global_position) > 55.0:
+				if Combat.hits_in_arc(get_tree(), origin, dir, STICK.reach, STICK.arc_deg, "player").has(bat.get_node("Hurtbox")):
+					swing_high_ok = false
+		prev_v = bat.velocity
+		if bat.state == Enemy.State.WINDUP and t_windup < 0.0:
+			t_windup = t
+		if bat.state == Enemy.State.ATTACK and not swing_ok:
+			# the bottom of the dive: right on the kid, low
+			if bat.global_position.distance_to(kid.global_position) < 24.0:
+				var origin := kid.global_position + Vector2(0, -6)
+				var dir := (bat.global_position - kid.global_position).normalized()
+				if dir == Vector2.ZERO:
+					dir = Vector2.DOWN
+				swing_ok = Combat.hits_in_arc(get_tree(), origin, dir, STICK.reach, STICK.arc_deg, "player").has(bat.get_node("Hurtbox"))
+				# the dog, standing a step off, leaps and his teeth reach it
+				dog.global_position = bat.global_position + Vector2(-34, 0)
+				dog.facing = Vector2.RIGHT
+				var leap := dog._pick_leap_target()
+				var jaws := dog.global_position + Vector2(0, -6) + dog.facing * (leap + dog.jaw_reach)
+				dog_ok = Combat.hits_in_arc(get_tree(), jaws, dog.facing, dog.weapon.reach * 0.5, 360.0, "player").has(bat.get_node("Hurtbox"))
+				dog.global_position = kid.global_position + Vector2(-300, 0)
+		if kid.health.hp < hp0:
+			if t_bite < 0.0:
+				t_bite = t
+				h_bite = bat.height
+				_check(hp0 - kid.health.hp == roundi(BAT.damage), "one bite = 3, took %d" % (hp0 - kid.health.hp))
+				d_after = 0.0
+			else:
+				second_bite = true
+			hp0 = kid.health.hp
+		if t_bite >= 0.0 and not second_bite:
+			d_after = maxf(d_after, bat.global_position.distance_to(kid.global_position))
+	_check(t_bite > 0.0 and t_bite < 6.0, "a still kid gets bitten within 6 s (first bite at %.1f s)" % t_bite)
+	_check(t_windup > 0.0 and t_windup < t_bite, "the bat telegraphs (WINDUP at %.1f s) before the bite (%.1f s)" % [t_windup, t_bite])
+	var wi := order.find(Enemy.State.WINDUP)
+	_check(wi > 0 and order.slice(wi, wi + 3) == [Enemy.State.WINDUP, Enemy.State.ATTACK, Enemy.State.RECOVER],
+			"the sequence is telegraph, dive, retreat: %s" % [order])
+	_check(d_after > 70.0, "after the bite it pulls away (reached %.0f px)" % d_after)
+	_check(second_bite, "and comes back for another dive")
+	_check(h_circle > 14.0 and h_bite < 8.0, "high while circling (%.1f), low at the bite (%.1f)" % [h_circle, h_bite])
+	_check(max_dv < FLY_ACCEL_LIMIT, "circling is smooth: peak acceleration %.0f px/s^2" % max_dv)
+	_check(swing_ok, "the kid's swing reaches a bat at the bottom of its dive")
+	_check(swing_high_ok, "a bat circling out at height is beyond the kid's swing")
+	_check(dog_ok, "the dog's leap reaches a bat at the bottom of its dive")
+
+	# Moving away during the telegraph dodges the dive.
+	bat.queue_free()
+	await _frames(3)
+	kid.global_position = arena.get_node("World/Kid").global_position
+	var b2 := Enemy.create(BAT, kid.global_position + Vector2(90, 0))
+	arena.get_node("World").add_child(b2)
+	hp0 = kid.health.hp
+	var home := kid.global_position
+	var dodged := false
+	var landed := false
+	for i in 60 * 6:
+		await get_tree().physics_frame
+		if b2.state == Enemy.State.WINDUP and not dodged:
+			kid.global_position = home + Vector2(0, 70)  # a sidestep (walking 0.8 s)
+			dodged = true
+		if dodged and b2.state == Enemy.State.RECOVER:
+			landed = kid.health.hp < hp0
+			break
+	_check(dodged and not landed, "a kid who sidesteps the telegraphed dive is not bitten")
+	kid.global_position = home
+
+	# The AI partner: leaves a high-circling bat alone, fights it in its dive.
+	var brain := PartnerBrain.new(kid)
+	dog.global_position = kid.global_position + Vector2(30, 0)
+	b2.global_position = kid.global_position + Vector2(-70, -10)
+	b2.height = 18.0
+	_check(brain._pick_target("offensive", false, dog) == null, "the partner doesn't chase a bat circling high")
+	b2.height = 4.0
+	_check(brain._pick_target("offensive", false, dog) == b2, "the partner goes for a bat in its swoop")
+	b2.queue_free()
+	Clock.hold("day", 0.0)
 
 
 func _test_talk_beats_attack() -> void:
