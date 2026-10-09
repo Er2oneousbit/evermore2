@@ -43,7 +43,7 @@ const WALL_H := 2.4
 const GABLE_H := 0.7      ## low pitch: the roof is under a quarter of the height
 const BACK_Z := -0.2
 const FRONT_Z := 1.6
-const COUNTER_H := 0.72   ## low enough to show the keeper from the waist up
+const COUNTER_H := 0.62   ## low enough to show the keeper from the waist up
 const LANTERN_ON := 2.6   ## light energy of the lit lantern
 
 var shop: Shop
@@ -125,8 +125,8 @@ func setup(prop_name: String, shop_: Shop) -> void:
 	awn.cull_mode = BaseMaterial3D.CULL_DISABLED
 	awn.uv1_scale = Vector3(2 * HALF_W + 0.2, 1, 1)
 	awn.roughness = 0.9
-	var drop := 0.3
-	var out := 0.55
+	var drop := 0.15
+	var out := 0.4
 	var cloth_len := sqrt(drop * drop + out * out)
 	var cloth := QuadMesh.new()
 	cloth.size = Vector2(2 * HALF_W + 0.2, cloth_len)
@@ -168,8 +168,8 @@ func _build_goods(tag: String) -> void:
 		m.uv1_scale = Vector3(0.25, 1, 1)
 		m.uv1_offset = Vector3(0.25 * i, 0, 0)
 		var q := QuadMesh.new()
-		q.size = Vector2(0.8, 0.8)
-		q.center_offset = Vector3(0, 0.4, 0)
+		q.size = Vector2(0.65, 0.65)
+		q.center_offset = Vector3(0, 0.325, 0)
 		var mi := _mesh("Good%d" % i, q, Vector3(-0.9 + 0.6 * i, COUNTER_H + 0.06, 1.42), m)
 		mi.rotation.x = -0.35
 		mi.reparent(goods, false)
