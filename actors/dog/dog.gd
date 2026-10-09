@@ -173,6 +173,11 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
 		move_and_slide()
 		return
+	if Travel.busy:
+		# Walking to the next map: stand still until the fade-in ends.
+		velocity = Vector2.ZERO
+		_update_animation(delta)
+		return
 	charge.tick(delta)
 
 	if _dig_left > 0.0 or _sniff_left > 0.0 or _attacking:

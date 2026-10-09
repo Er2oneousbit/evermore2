@@ -24,6 +24,20 @@
 #   any key of TRIGGERS_BY_CHAR    walking onto it starts a conversation
 #   any key of ENEMIES_BY_CHAR     an enemy (data/enemies/<id>.tres) waits there
 #   any key of SHOPS_BY_CHAR       a shop's keeper stands there (systems/shops/shop.gd)
+#   any key of EXITS               a way out on the map's edge (see MAP EXITS)
+#
+# MAP EXITS (systems/travel/, autoload/travel.gd): exit cells sit on the
+#   map's outer edge, in place of the fence there:
+#     const EXITS := {">": {"to": "res://realms/big_yard/yard_hd.tscn", "entry": "from_street"}}
+#     const ENTRIES := {"from_yard": {"cell": Vector2i(34, 12), "facing": Vector2.LEFT}}
+#   Walking the leader into an exit cell travels to `to` and puts the party
+#   on that scene's ENTRIES[entry]: the leader on `cell`, facing `facing`
+#   (into the map), the partner one tile behind him (or on "partner").
+#   Keep entries a few tiles inside: validation rejects one next to an exit.
+#   The exit's ground ("terrain", default Dirt) runs on out through the apron
+#   as a path with no trees on it, and an invisible wall past the edge keeps
+#   anyone from walking off the map. SIGNS put a signpost by the road:
+#     const SIGNS := [{"cell": Vector2i(35, 13), "place": "realm_test_yard", "dir": Vector2.RIGHT}]
 #
 # HIDDEN ITEMS sit on top of the layout (a bush cell can hide something), so
 #   they're a list, not characters:
@@ -126,6 +140,19 @@ const DEFAULTS := {
 	"START_ITEMS": {},
 	## Demo maps: formulas the kid knows from the start (ids).
 	"START_FORMULAS": [],
+	## Demo maps sharing one kit: the flag that says it was handed out (""
+	## = "<realm>.start_items"), so walking between them doesn't double it.
+	"START_ITEMS_FLAG": "",
+	## Ways out (see MAP EXITS above): char -> {"to": scene, "entry": id,
+	## "terrain": "Dirt"}. The char goes on the map's edge.
+	"EXITS": {},
+	## Where arrivals stand: id -> {"cell": Vector2i, "facing": Vector2,
+	## "partner": Vector2i (optional, default one tile behind)}.
+	"ENTRIES": {},
+	## How far an exit's path runs out into the apron, in tiles.
+	"EXIT_PATH_TILES": 14,
+	## Signposts by the roads: [{"cell": Vector2i, "place": names key, "dir": Vector2}].
+	"SIGNS": [],
 	## The .dlg file NPCs and triggers in this realm talk from.
 	"DIALOGUE": "",
 	## names.json key of the realm's display name (log line, debug overlay).
@@ -146,6 +173,8 @@ var _cfg: Dictionary = {}
 var _tiler: WangAutotiler
 var _prop_cache: Dictionary = {}
 var _day_night: DayNightDirector
+## This realm's exits (built from EXITS); null if it has none.
+var exits: MapExits
 var _counts := {"props": 0, "decals": 0, "solids": 0, "npcs": 0, "triggers": 0, "enemies": 0, "hidden": 0}
 
 
@@ -160,6 +189,8 @@ func _ready() -> void:
 	_build_terrain()
 	_build_fences()
 	_build_cells()
+	_build_exits()
+	_build_signs()
 	_build_roosts_and_exits()
 	_build_hidden()
 	_grant_start_items()
@@ -170,11 +201,14 @@ func _ready() -> void:
 	if not key.is_empty():
 		GameState.current_realm = key
 	if cfg("MUSIC_SET") != "":
-		Audio.play_music("", 0.0)  # clears any earlier set
+		# Crossfades from whatever played before (the last map's track): no
+		# silence between maps.
 		Audio.set_music_set(cfg("MUSIC_SET"))
 	else:
 		Audio.play_music(cfg("MUSIC"), 1.5)
 	Audio.set_ambience(cfg("AMBIENCE"))
+	# Last: everything is built, so an arrival can stand on its entry.
+	Travel.realm_ready(self)
 	Debug.log_info("%s loaded (%dx%d tiles, %d props, %d decals, %d NPCs, %d enemies, %d hidden items, %d solid shapes). Run with -- --help for options."
 			% [Names.text(key) if not key.is_empty() else name, layout[0].length(), layout.size(),
 			_counts["props"], _counts["decals"], _counts["npcs"], _counts["enemies"], _counts["hidden"], _counts["solids"]])
@@ -254,6 +288,15 @@ func _load_config() -> void:
 	for key: String in consts:
 		if DEFAULTS.has(key) or key == "LAYOUT":
 			_cfg[key] = consts[key]
+	# Exit cells get their ground from their spec (a dirt path by default),
+	# so terrain painting and footsteps treat them like any other ground.
+	var exit_specs: Dictionary = _cfg.get("EXITS", {})
+	if not exit_specs.is_empty():
+		var terrain: Dictionary = (_cfg.get("TERRAIN_BY_CHAR", DEFAULTS["TERRAIN_BY_CHAR"]) as Dictionary).duplicate()
+		for ch: String in exit_specs:
+			if not terrain.has(ch):
+				terrain[ch] = exit_specs[ch].get("terrain", "Dirt")
+		_cfg["TERRAIN_BY_CHAR"] = terrain
 	# Older realms name a single fence character.
 	if consts.has("FENCE_CHAR") and not consts.has("FENCES"):
 		_cfg["FENCES"] = {consts["FENCE_CHAR"]: "Wood Fence"}
@@ -272,7 +315,7 @@ func _validate_layout() -> bool:
 	var ok := true
 	var known := ".KD" + "".join(cfg("TERRAIN_BY_CHAR").keys()) + "".join(cfg("FENCES").keys()) \
 			+ "".join(cfg("PROPS_BY_CHAR").keys()) + "".join(cfg("NPCS_BY_CHAR").keys()) \
-			+ "".join(cfg("TRIGGERS_BY_CHAR").keys()) + "".join(cfg("ENEMIES_BY_CHAR").keys()) 			+ "".join(cfg("SHOPS_BY_CHAR").keys())
+			+ "".join(cfg("TRIGGERS_BY_CHAR").keys()) + "".join(cfg("ENEMIES_BY_CHAR").keys()) 			+ "".join(cfg("SHOPS_BY_CHAR").keys()) + "".join(cfg("EXITS").keys())
 	for y in layout.size():
 		if layout[y].length() != width:
 			Debug.log_error("LAYOUT row %d is %d chars wide, expected %d" % [y, layout[y].length(), width])
@@ -287,6 +330,7 @@ func _validate_layout() -> bool:
 			Debug.log_error("LAYOUT needs exactly one %s, found %d" % [spawn, joined.count(spawn)])
 			ok = false
 	ok = _validate_hidden() and ok
+	ok = _validate_exits() and ok
 	if not cfg("NPCS_BY_CHAR").is_empty() or not cfg("TRIGGERS_BY_CHAR").is_empty() 			or not cfg("SHOPS_BY_CHAR").is_empty():
 		if String(cfg("DIALOGUE")).is_empty():
 			Debug.log_error("%s has NPCs or triggers but no DIALOGUE file" % name)
@@ -303,6 +347,7 @@ func _build_terrain() -> void:
 	# Per-cell terrain for the map plus the apron (apron = plain grass).
 	var w: int = layout[0].length() + apron * 2
 	var h: int = layout.size() + apron * 2
+	var paths := _exit_path_cells()
 	var cells := []
 	for y in h:
 		var row := []
@@ -312,6 +357,8 @@ func _build_terrain() -> void:
 			var t := "Grass"
 			if mx >= 0 and my >= 0 and my < layout.size() and mx < layout[0].length():
 				t = terrain_by_char.get(layout[my][mx], "Grass")
+			elif paths.has(Vector2i(mx, my)):
+				t = paths[Vector2i(mx, my)]
 			row.append(t)
 		cells.append(row)
 	var priority := PackedStringArray(cfg("TERRAIN_PRIORITY"))
@@ -511,7 +558,9 @@ func _grant_start_items() -> void:
 			Usables.learn(id)
 	if items.is_empty():
 		return
-	var flag := realm_id() + ".start_items"
+	var flag: String = cfg("START_ITEMS_FLAG")
+	if flag.is_empty():
+		flag = realm_id() + ".start_items"
 	if GameState.get_flag(flag):
 		return
 	GameState.set_flag(flag, true)
@@ -614,6 +663,159 @@ func _dress_pond() -> void:
 				_place(reeds[(h >> 9) % reeds.size()], at, (h >> 5) & 1 == 1, true)
 
 
+# -----------------------------------------------------------------------------
+# Map exits (systems/travel/map_exits.gd, autoload/travel.gd)
+# -----------------------------------------------------------------------------
+## Which way an exit cell leaves the map (the edge it sits on), or ZERO if
+## it isn't on the edge.
+func exit_out(cell: Vector2i) -> Vector2:
+	if cell.x == 0:
+		return Vector2.LEFT
+	if cell.x == layout[0].length() - 1:
+		return Vector2.RIGHT
+	if cell.y == 0:
+		return Vector2.UP
+	if cell.y == layout.size() - 1:
+		return Vector2.DOWN
+	return Vector2.ZERO
+
+
+## Every exit cell -> its char.
+func exit_cells() -> Dictionary:
+	var specs: Dictionary = cfg("EXITS")
+	var out := {}
+	if specs.is_empty():
+		return out
+	for y in layout.size():
+		for x in layout[y].length():
+			if specs.has(layout[y][x]):
+				out[Vector2i(x, y)] = layout[y][x]
+	return out
+
+
+## Apron cells the exits' paths run over -> terrain.
+func _exit_path_cells() -> Dictionary:
+	var out := {}
+	var specs: Dictionary = cfg("EXITS")
+	var cells := exit_cells()
+	for c: Vector2i in cells:
+		var d := Vector2i(exit_out(c))
+		for k in range(1, int(cfg("EXIT_PATH_TILES")) + 1):
+			out[c + d * k] = specs[cells[c]].get("terrain", "Dirt")
+	return out
+
+
+## Is an apron point on (or right beside) an exit's path? Trees stay off it.
+func _on_exit_path(p: Vector2) -> bool:
+	var cell := Vector2i(floori(p.x / TILE), floori(p.y / TILE))
+	for c: Vector2i in _exit_path_set():
+		if absi(c.x - cell.x) <= 1 and absi(c.y - cell.y) <= 1:
+			return true
+	return false
+
+
+var _path_set_cache: Dictionary = {}
+
+
+func _exit_path_set() -> Dictionary:
+	if _path_set_cache.is_empty():
+		_path_set_cache = _exit_path_cells()
+	return _path_set_cache
+
+
+## Leader and partner spots of an entry: {"kid": Vector2, "dog": Vector2,
+## "facing": Vector2}, or {} if there's no such entry. `dog_leads`: the dog
+## is driven, so he stands on the entry and the kid behind him.
+func entry_spot(entry_id: String, dog_leads := false) -> Dictionary:
+	var entries: Dictionary = cfg("ENTRIES")
+	if not entries.has(entry_id):
+		return {}
+	var e: Dictionary = entries[entry_id]
+	var facing: Vector2 = e.get("facing", Vector2.DOWN)
+	var lead_cell: Vector2i = e["cell"]
+	var partner_cell: Vector2i = e.get("partner", lead_cell - Vector2i(facing.round()))
+	var lead := _cell_base(lead_cell)
+	var partner := _cell_base(partner_cell)
+	return {"kid": partner if dog_leads else lead, "dog": lead if dog_leads else partner, "facing": facing}
+
+
+func _cell_base(c: Vector2i) -> Vector2:
+	return Vector2(c.x * TILE + TILE * 0.5, c.y * TILE + TILE - 4)
+
+
+## One MapExits node with an area per exit cell (the cell plus a tile past
+## the edge), and a wall one tile out so nobody walks off into the apron
+## (it reaches a tile further along the edge than the gap: no slipping
+## round the fence post beside it).
+func _build_exits() -> void:
+	var specs: Dictionary = cfg("EXITS")
+	var cells := exit_cells()
+	if cells.is_empty():
+		return
+	exits = MapExits.new()
+	exits.name = "Exits"
+	add_child(exits)
+	for c: Vector2i in cells:
+		var spec: Dictionary = specs[cells[c]]
+		var out := exit_out(c)
+		var r := Rect2(c * TILE, Vector2(TILE, TILE))
+		exits.add(c, r.merge(Rect2(r.position + out * TILE, r.size)), spec.get("to", ""), spec.get("entry", ""), out)
+		var side := Vector2(absf(out.y), absf(out.x)) * TILE
+		var wall := Rect2(r.position + out * TILE - side, r.size + side * 2.0)
+		_add_solid(wall, "exit_wall")
+
+
+## Signposts: the prop plus the readable part (Signpost).
+func _build_signs() -> void:
+	for spec: Dictionary in cfg("SIGNS"):
+		var cell: Vector2i = spec["cell"]
+		var at := _cell_base(cell)
+		_place("signpost", at, spec.get("dir", Vector2.RIGHT) == Vector2.LEFT)  # the arrow points the way
+		var s := Signpost.new()
+		s.name = "Sign_%d_%d" % [cell.x, cell.y]
+		s.place_key = spec.get("place", "")
+		s.dir = spec.get("dir", Vector2.RIGHT)
+		s.position = at
+		_world.add_child(s)
+
+
+## Exits on the edge, pointing at a scene; entries on open ground a little
+## inside, never next to an exit (or you'd arrive and leave again).
+func _validate_exits() -> bool:
+	var ok := true
+	var specs: Dictionary = cfg("EXITS")
+	var cells := exit_cells()
+	for c: Vector2i in cells:
+		if exit_out(c) == Vector2.ZERO:
+			Debug.log_error("EXITS %s: an exit must sit on the map's edge" % c)
+			ok = false
+	for ch: String in specs:
+		var to: String = specs[ch].get("to", "")
+		if not ResourceLoader.exists(to):
+			Debug.log_error("EXITS '%s': no scene '%s'" % [ch, to])
+			ok = false
+	var blocked: String = cfg("SOLID_CHARS") + "".join(cfg("FENCES").keys()) + "".join(cfg("PROPS_BY_CHAR").keys()) \
+			+ "".join(cfg("NPCS_BY_CHAR").keys()) + "".join(specs.keys())
+	var entries: Dictionary = cfg("ENTRIES")
+	for id: String in entries:
+		var e: Dictionary = entries[id]
+		var lead: Vector2i = e.get("cell", Vector2i(-1, -1))
+		var facing: Vector2 = e.get("facing", Vector2.DOWN)
+		for c: Vector2i in [lead, e.get("partner", lead - Vector2i(facing.round()))]:
+			if c.y < 0 or c.y >= layout.size() or c.x < 0 or c.x >= layout[0].length():
+				Debug.log_error("ENTRIES %s: %s is outside the map" % [id, c])
+				ok = false
+				continue
+			if blocked.contains(layout[c.y][c.x]):
+				Debug.log_error("ENTRIES %s: %s needs open ground, found '%s'" % [id, c, layout[c.y][c.x]])
+				ok = false
+			for x: Vector2i in cells:
+				if absi(x.x - c.x) <= 1 and absi(x.y - c.y) <= 1:
+					Debug.log_error("ENTRIES %s: %s is next to the exit at %s" % [id, c, x])
+					ok = false
+	return ok
+
+
 ## Woods and bushes beyond the edges. Decor only (no collision): nobody can
 ## get out there, and it saves hundreds of physics bodies. Trees only go where
 ## some screen shape can actually see them: wide on the sides (48:9 sees
@@ -638,7 +840,7 @@ func _build_apron() -> void:
 			# Clear strip right outside the edge. Then a band where only short
 			# plants go: a tree there would hang its canopy over the playable
 			# map (Y-sorted after the kid, so it would hide him).
-			if not map.grow(18).has_point(p):
+			if not map.grow(18).has_point(p) and not _on_exit_path(p):
 				var options := shrubs if near.has_point(p) else trees
 				_place(options[h % options.size()], p + _jitter(h) * 2.0, (h >> 4) & 1 == 1, true)
 			x += step

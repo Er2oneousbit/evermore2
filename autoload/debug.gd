@@ -40,6 +40,8 @@ Usage:  godot --path <project folder> -- [options]
   --hard         Play on Hard (enemies tougher, prices higher)
   --arena        Start in the combat arena (giant rats)
   --yard         Start in the test yard (the clock runs: morning, day, golden hour, night)
+                 (the three demo maps are joined by paths: the street's road east to
+                 the yard, the yard's shop street north to the arena)
 
 In-game debug keys (always available in prototypes):
   F2   Next time of day (morning / day / golden hour / night, with a fade); music and ambience follow

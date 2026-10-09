@@ -47,6 +47,7 @@ the orange shelter tag).
 
 | Date | Decision |
 |---|---|
+| 2026-10-09 | **Paths between the demo maps, to test scene swapping** (owner: "why not make a path between them? Good way to test scene swapping!"). The prologue street's road runs east to the test yard, the yard's shop street north to the combat arena, and back. Every future map uses the same exits |
 | 2026-10-09 | **Smooth day/night enemy swap, bats in the trees** (owner). Day enemies stop respawning at dusk and leave (a hole, the edge, out of view), night enemies come in; never popping in or out in plain view. Bats hang in the oaks by day, drop out at dusk, fly back at dawn |
 | 2026-10-09 | **Time of day: a clock that scripts can set or hold** (owner: "can we have it both?"). A scene can start the clock at a time, stop it for as long as the scene needs, or let it run as normal (outside villages, where the script doesn't care) |
 | 2026-10-08 | **Alchemy: ingredients per cast, formulas level with use** (owner). Each cast uses up its ingredients and earns the formula experience; enough casts level it up and it gets stronger. Only the kid casts |
@@ -71,6 +72,44 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: walking between maps
+
+The three demo maps are joined by paths, on one shared map-exit system every
+future map will use:
+
+* Routes: the prologue street's road runs off the east edge (a signpost by it)
+  to the test yard's new west path; the yard's shop street runs off the north
+  edge to the combat arena; the arena's new south path leads back. The paths
+  carry on through the apron woods as dirt, with no trees on them.
+* A realm declares `EXITS` (an edge char -> scene + entry id), `ENTRIES` (id ->
+  cell + facing; the partner stands a tile behind) and `SIGNS` in its config,
+  like `TRIGGERS_BY_CHAR`. AsciiRealm validates them (exits on the edge, entries
+  on open ground and never next to an exit) and builds a `MapExits` node plus an
+  invisible wall past each gap.
+* `Travel` (new autoload) runs the swap: input swallowed, 0.5 s fade to black
+  (game time), scene change, the party placed on the entry facing into the map,
+  both cameras snapped, 0.5 s fade in. It carries kid and dog HP, the attack
+  charge, who you drive and Stay put (inventory, gear, stances, flags and the
+  clock already lived in autoloads). Each map's CLOCK_MODE applies on arrival
+  (leaving the prologue releases its hold); music crossfades from the old
+  map's track (the yard's music set no longer cuts to silence first).
+* No bounce back: exits ignore the leader until he has stood outside every
+  exit once since arriving. Esc, the ring menu and dialogue can't start mid-swap.
+* The prologue sets `prologue.intro_done` when the street fades in after dinner;
+  coming back skips the title card, dinner and the arrival talk. The demo kit
+  is handed out once between the yard and the arena (`START_ITEMS_FLAG`).
+* Art: a signpost prop composed in `build_art.py` from the LPC Revised
+  buildings siding (credited with the stalls); the place name is game text.
+* Measured: new `smoke_travel` passes (4 real swaps: dog-driven street -> yard
+  with HP 33/27, charge, leader and Stay put carried, clock hold -> free, HD
+  camera off by 0.00 m, no bounce for 90 frames on the exit; Esc mid-fade
+  ignored; yard -> arena -> yard; back to the street with no intro). Full suite
+  passes. Three sabotages, each fails it: no-bounce guard off (bounced back), HP
+  restore off (33 -> 40), intro flag ignored (intro replayed). Screenshots: the
+  street's road east, the yard's west entrance.
+* Not done: a knocked-out member arrives up at 30% HP (no carrying a KO across);
+  the winded state of running isn't carried.
 
 ## Done: day and night enemies
 

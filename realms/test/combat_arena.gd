@@ -8,6 +8,7 @@
 #
 # LEGEND: . grass  # wood fence  K kid  D dog  r giant rat
 #         T oak  R big rock  o small rock  B bush  v tall grass
+#         : dirt  _ the path south, back to the test yard (EXITS)
 #
 # Written with help from Claude (Anthropic) via Claude Code.
 # Made with ❤️ from your friendly hacker - er2oneousbit
@@ -28,8 +29,8 @@ const LAYOUT: Array[String] = [
 	"#.....B..............T.......#",
 	"#..v.........................#",
 	"#............K.D.............#",
-	"#...T................vv...B..#",
-	"##############################",
+	"#...T.........::.....vv...B..#",
+	"##############__##############",
 ]
 
 const REALM_NAME_KEY := "realm_combat_arena"
@@ -41,6 +42,11 @@ const PROPS_BY_CHAR := {
 	"v": ["tall_grass_a", "tall_grass_b", "tall_grass_c", "grass_clump_a"],
 }
 const ENEMIES_BY_CHAR := {"r": "rat"}
+## The path back to the test yard (realms/_shared/ascii_realm.gd MAP EXITS).
+const EXITS := {"_": {"to": "res://realms/big_yard/yard_hd.tscn", "entry": "from_arena"}}
+const ENTRIES := {"from_yard": {"cell": Vector2i(14, 11), "facing": Vector2.UP}}
+## The yard hands out the same kit: once between them.
+const START_ITEMS_FLAG := "demo.start_items"
 const MUSIC := "arena"
 ## A kit of demo gear to try in the ring menu (I / gamepad Y).
 const START_ITEMS := {"rusty_sword": 1, "bike_helmet": 1, "hoodie": 1, "hiking_boots": 1,
