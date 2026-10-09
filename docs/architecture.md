@@ -10,7 +10,7 @@ How the code is organized, why, and what comes next.
 GAME
 ├── Autoloads (global singletons, loaded in this order)
 │   ├── Debug        CLI options, leveled logging, F3 overlay          [done]
-│   ├── ScreenScaler Integer scaling that fills any monitor shape       [done]
+│   ├── ScreenScaler Integer scaling that fills any monitor shape; CANVAS_ITEMS stretch keeps UI text window-native [done]
 │   ├── InputSetup   Every key/gamepad binding in one table             [done]
 │   ├── Names        Proper nouns from data/names.json                  [done]
 │   ├── EventBus     Game-wide signals                                  [done]

@@ -75,6 +75,20 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: sharp text at any resolution
+
+Owner report (3440x1440): the debug menu opened "low res". The window used
+VIEWPORT stretch in the classic view, so menus, HUD and text were drawn at
+640x360 and scaled up (soft, chunky glyphs); only HD-2D switched to
+CANVAS_ITEMS. Now `ScreenScaler` uses CANVAS_ITEMS in both views: the layout is
+still 640x360 units at the same whole-number scale (view_size math unchanged),
+but every control and glyph is rasterized at window resolution. Sprites stay
+crisp (nearest filter, integer scale, 2D pixel snapping). Measured at
+2560x1440: the debug menu capture was 853x473 before and is window-sized
+(2559x1419) after, with smooth text. Tests: smoke_aspect (CANVAS_ITEMS in both
+views, integer + keep, canvas scale equals the integer scale) and smoke_settings
+(mode after the view toggle); sabotaged back to VIEWPORT, both fail.
+
 ## Released: v0.5.0 (2026-10-09)
 
 The milestones below, down to v0.4.0: shops with depth, the playtest fixes

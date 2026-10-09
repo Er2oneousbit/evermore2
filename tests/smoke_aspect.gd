@@ -97,6 +97,26 @@ func _part_a_math() -> void:
 	var capped := ScalerScript.compute(Vector2i(5120, 1440), 21.0 / 9.0)
 	_check(capped["view"] == Vector2i(840, 360), "cap 21:9 on 5120x1440: %s" % capped["view"])
 	print("[TEST] part A: %d monitors checked" % MONITORS.size())
+	_crisp_ui_checks()
+
+
+## Text is sharp when the window stretches in CANVAS_ITEMS mode (UI and glyphs
+## rasterized at window resolution) at the same whole-number scale as before.
+func _crisp_ui_checks() -> void:
+	var root := get_tree().root
+	for hd in [false, true]:
+		ScreenScaler.native_3d = hd
+		_check(root.content_scale_mode == Window.CONTENT_SCALE_MODE_CANVAS_ITEMS,
+				"content scale mode is CANVAS_ITEMS with native_3d=%s (VIEWPORT blurs text)" % hd)
+		_check(root.content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER and root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP,
+				"integer + keep stays on with native_3d=%s" % hd)
+		_check(root.content_scale_size == ScreenScaler.view_size, "content_scale_size is view_size")
+	ScreenScaler.native_3d = false
+	# A label's glyphs are drawn through the window's final transform: its scale
+	# must be the integer scale, so text is rasterized at scale x its font size.
+	var f := root.get_final_transform().get_scale()
+	_check(is_equal_approx(f.x, float(ScreenScaler.scale)) and is_equal_approx(f.y, float(ScreenScaler.scale)),
+			"canvas transform scale %s != integer scale %d" % [f, ScreenScaler.scale])
 
 
 # -----------------------------------------------------------------------------

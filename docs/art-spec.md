@@ -61,7 +61,7 @@ comparison. Nothing in gameplay code knows which view is on.
 | Fences | Real 3D posts + rails, LPC wood at 32 px/m triplanar | Cast long shadows at golden hour |
 | Water | Glossy plane over the water pixels (`hd_water.gdshader`): LPC water color + screen-space reflections + ripple normals | Sun glints for free |
 | Same-row depth | Props 3 cm behind their base, kid 2 cm and dog 1 cm in front | Without it, sprites on one row z-fight and the kid vanishes into a trunk |
-| Resolution | 3D at the window's **native** resolution; HUD/2D at integer scale (`ScreenScaler.native_3d`) | DoF/bloom/fog stay smooth, pixels stay crisp |
+| Resolution | 3D, HUD, menus and text at the window's **native** resolution (CANVAS_ITEMS stretch in both views); layout and sprites on the integer 640x360 grid | Text stays sharp, DoF/bloom/fog stay smooth, pixels stay crisp |
 
 ### Mood per time of day (`HdView.PRESETS`)
 

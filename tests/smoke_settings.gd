@@ -135,8 +135,10 @@ func _test_hd() -> void:
 	Settings.set_value("brightness", 1.0)
 	Settings.set_value("view", "classic")
 	_check(not hd.enabled, "View: Classic 2D turns the HD-2D view off")
+	_check(get_tree().root.content_scale_mode == Window.CONTENT_SCALE_MODE_CANVAS_ITEMS, "Classic view keeps CANVAS_ITEMS stretch (sharp text)")
 	Settings.set_value("view", "hd2d")
 	_check(hd.enabled, "and HD-2D back on")
+	_check(get_tree().root.content_scale_mode == Window.CONTENT_SCALE_MODE_CANVAS_ITEMS, "HD-2D view uses CANVAS_ITEMS stretch too")
 	scene.queue_free()
 	await _frames(2)
 
