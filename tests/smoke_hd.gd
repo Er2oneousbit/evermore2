@@ -177,6 +177,7 @@ func _check_shops(hd: HdView, kid: Kid, stalls: Array[Prop]) -> void:
 		_check(lt != null and not lt.shadow_enabled and lt.omni_range <= 6.0, "%s: lantern light missing, casts shadows or is too wide" % b.name)
 		_check(b.roof_height_share() < 0.3, "%s roof is %.2f of the height (should stay low)" % [b.name, b.roof_height_share()])
 		_check(b.shop != null, "%s isn't tied to its Shop" % b.name)
+		_check_no_coplanar(b)
 	# Kid walking up from the street stops at the counter, in reach of both.
 	for st in stalls:
 		var shop: Shop = null
@@ -295,3 +296,65 @@ func _check_texel_aa(hd: HdView) -> void:
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
+
+
+## Z-fighting guard (owner: "shops still have tearing"): no two faces of a
+## shop's boxes (and its sign) may face the same way, lie within 1 cm of each
+## other and overlap. Flush trim and walls flickered while the camera moved.
+## Faces are rebuilt from each mesh's transform, so rotated roof boards count.
+func _no_coplanar_faces(b: ShopBuilding3D) -> PackedStringArray:
+	var faces: Array = []   # [name, normal, center, u, v, hu, hv]
+	for mi: MeshInstance3D in b.get_children().filter(func(n: Node) -> bool: return n is MeshInstance3D):
+		var basis := mi.transform.basis.orthonormalized()
+		if mi.mesh is BoxMesh:
+			var size := (mi.mesh as BoxMesh).size * mi.scale
+			for axis in 3:
+				for sgn in [-1.0, 1.0]:
+					var n: Vector3 = basis[axis] * sgn
+					if n.y < -0.99 and absf(mi.position.y - size.y * 0.5) < 1e-4:
+						continue  # bottoms standing on the ground are under it, never seen
+					var u: Vector3 = basis[(axis + 1) % 3]
+					var v: Vector3 = basis[(axis + 2) % 3]
+					faces.append([mi.name, n, mi.position + n * size[axis] * 0.5, u, v,
+							size[(axis + 1) % 3] * 0.5, size[(axis + 2) % 3] * 0.5])
+		elif mi.mesh is PrismMesh:
+			# Gable: the two triangular ends (apex up, centered on the box).
+			var ps := (mi.mesh as PrismMesh).size
+			for sgn in [-1.0, 1.0]:
+				var n: Vector3 = basis[2] * sgn
+				faces.append([mi.name, n, mi.position + n * ps.z * 0.5, basis[0], basis[1], ps.x * 0.5, ps.y * 0.5, true])
+		elif mi.mesh is QuadMesh and mi.name == &"Sign":
+			var q := (mi.mesh as QuadMesh).size
+			faces.append([mi.name, basis[2], mi.position, basis[0], basis[1], q.x * 0.5, q.y * 0.5])
+	var bad := PackedStringArray()
+	for i in faces.size():
+		for j in range(i + 1, faces.size()):
+			var fa: Array = faces[i]
+			var fb: Array = faces[j]
+			if (fa[1] as Vector3).dot(fb[1]) < 0.9998:
+				continue
+			if absf((fa[1] as Vector3).dot((fb[2] as Vector3) - (fa[2] as Vector3))) >= 0.01:
+				continue
+			if _face_overlap(fa, fb) or _face_overlap(fb, fa):
+				bad.append("%s/%s" % [fa[0], fb[0]])
+	return bad
+
+
+## Does any interior sample point of face `a` land inside face `b`?
+func _face_overlap(a: Array, b: Array) -> bool:
+	for i in 15:
+		for j in 15:
+			var p: Vector3 = (a[2] as Vector3) + (a[3] as Vector3) * (a[5] * (2.0 * (i + 0.5) / 15.0 - 1.0)) \
+					+ (a[4] as Vector3) * (a[6] * (2.0 * (j + 0.5) / 15.0 - 1.0))
+			var d: Vector3 = p - (b[2] as Vector3)
+			var half_u: float = b[5]
+			if b.size() > 7:  # a triangle: narrows to the apex
+				half_u *= 1.0 - (d.dot(b[4]) + b[6]) / (2.0 * b[6])
+			if absf(d.dot(b[3])) < half_u - 1e-4 and absf(d.dot(b[4])) < b[6] - 1e-4:
+				return true
+	return false
+
+
+func _check_no_coplanar(b: ShopBuilding3D) -> void:
+	var bad := _no_coplanar_faces(b)
+	_check(bad.is_empty(), "%s: coplanar faces within 1 cm (z-fight): %s" % [b.name, ", ".join(bad)])

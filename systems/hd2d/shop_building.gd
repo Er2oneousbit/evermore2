@@ -44,6 +44,8 @@ const WALL_H := 2.4
 const GABLE_H := 0.7      ## low pitch: the roof is under a quarter of the height
 const BACK_Z := -0.2
 const FRONT_Z := 1.6
+const TRIM_PROUD := 0.02   ## trim stands this far off the wall (z-fight guard, see setup)
+const BASE_H := 0.16
 const COUNTER_H := 0.62   ## low enough to show the keeper from the waist up
 const LANTERN_ON := 2.6   ## light energy of the lit lantern
 
@@ -71,13 +73,29 @@ func setup(prop_name: String, shop_: Shop) -> void:
 	for side in [-1, 1]:
 		var n := "L" if side < 0 else "R"
 		_box("SideWall" + n, Vector3(0.15, WALL_H, depth), Vector3(side * (HALF_W - 0.075), WALL_H * 0.5, mid_z), wall)
-		# Corner posts (front and back) in the light trim wood so walls don't merge.
-		_box("Post" + n, Vector3(0.2, WALL_H, 0.2), Vector3(side * (HALF_W - 0.1), WALL_H * 0.5, FRONT_Z - 0.1), trim)
-		_box("PostBack" + n, Vector3(0.2, WALL_H, 0.2), Vector3(side * (HALF_W - 0.1), WALL_H * 0.5, BACK_Z + 0.1), trim)
-		# Base board along the foot of the side wall.
-		_box("Base" + n, Vector3(0.2, 0.16, depth), Vector3(side * (HALF_W - 0.1), 0.08, mid_z), trim)
-	_box("BaseBack", Vector3(2 * HALF_W - 0.3, 0.16, 0.2), Vector3(0, 0.08, BACK_Z + 0.1), trim)
-	_box("Lintel", Vector3(2 * HALF_W, 0.2, 0.2), Vector3(0, WALL_H - 0.1, FRONT_Z - 0.1), trim)
+		# Trim stands PROUD of the wall it dresses, in steps of 2 cm (post 2,
+		# base 4, lintel 4 at another height): faces within a centimeter of each
+		# other (flush, as they were) z-fight and tear while the camera moves.
+		# Posts (front and back) in the light trim wood so walls don't merge;
+		# they sit on the base board and stand a hair taller than the walls.
+		var post_h := WALL_H + TRIM_PROUD - BASE_H
+		var post_y := BASE_H + post_h * 0.5
+		var out := HALF_W + TRIM_PROUD
+		_box("Post" + n, Vector3(0.2 + TRIM_PROUD, post_h, 0.2 + TRIM_PROUD),
+				Vector3(side * (out - (0.2 + TRIM_PROUD) * 0.5), post_y, FRONT_Z + TRIM_PROUD - (0.2 + TRIM_PROUD) * 0.5), trim)
+		_box("PostBack" + n, Vector3(0.2 + TRIM_PROUD, post_h, 0.2 + TRIM_PROUD),
+				Vector3(side * (out - (0.2 + TRIM_PROUD) * 0.5), post_y, BACK_Z - TRIM_PROUD + (0.2 + TRIM_PROUD) * 0.5), trim)
+		# Base board along the foot of the side wall (the proudest trim).
+		var base_out := HALF_W + 2.0 * TRIM_PROUD
+		var base_z0 := BACK_Z - 2.0 * TRIM_PROUD
+		var base_z1 := FRONT_Z + 2.0 * TRIM_PROUD
+		_box("Base" + n, Vector3(0.2 + 2.0 * TRIM_PROUD, BASE_H, base_z1 - base_z0),
+				Vector3(side * (base_out - (0.2 + 2.0 * TRIM_PROUD) * 0.5), BASE_H * 0.5, (base_z0 + base_z1) * 0.5), trim)
+	# Between the side base boards (x +-1.3): touching them, not overlapping.
+	_box("BaseBack", Vector3(2 * (HALF_W - 0.2), BASE_H, 0.2 + 2.0 * TRIM_PROUD),
+			Vector3(0, BASE_H * 0.5, BACK_Z - 2.0 * TRIM_PROUD + (0.2 + 2.0 * TRIM_PROUD) * 0.5), trim)
+	_box("Lintel", Vector3(2 * (HALF_W + 2.0 * TRIM_PROUD), 0.2, 0.3 + 2.0 * TRIM_PROUD),
+			Vector3(0, WALL_H, FRONT_Z + 2.0 * TRIM_PROUD - (0.3 + 2.0 * TRIM_PROUD) * 0.5), trim)
 
 	# Gable ends (triangles) closing the roof at the front and back.
 	for z: float in [FRONT_Z - 0.06, BACK_Z + 0.06]:
@@ -100,14 +118,16 @@ func setup(prop_name: String, shop_: Shop) -> void:
 		mi.rotation.z = -side * pitch
 		# Eave fascia: a board standing on edge at the low end of the plane.
 		var eave := ridge + dir * plane_len + Vector3(0, 0, mid_z)
-		var fe := _box("Fascia" + n, Vector3(0.05, 0.16, roof_depth + 0.04), eave, trim)
+		# Taller and longer than the rakes and the roof edge, so no face of it
+		# sits within a centimeter of theirs.
+		var fe := _box("Fascia" + n, Vector3(0.1, 0.2, roof_depth + 0.1), eave + up * 0.04, trim)
 		fe.rotation.z = -side * pitch
 		# Gable-edge boards (rakes), front and back, along the slope.
 		for z: float in [FRONT_Z + 0.2, BACK_Z - 0.2]:
 			var rk := _box("Rake" + n + ("F" if z > 0.0 else "B"), Vector3(plane_len + 0.04, 0.14, 0.05),
 					center + Vector3(0, 0, z - mid_z), trim)
 			rk.rotation.z = -side * pitch
-	var cap := _box("RidgeCap", Vector3(0.18, 0.18, roof_depth + 0.04), Vector3(0, WALL_H + GABLE_H + 0.06, mid_z), trim)
+	var cap := _box("RidgeCap", Vector3(0.18, 0.18, roof_depth + 0.1), Vector3(0, WALL_H + GABLE_H + 0.06, mid_z), trim)
 	cap.rotation.z = PI * 0.25
 
 	# Counter: planked front on a base board, a wood top, goods on it.
@@ -121,13 +141,15 @@ func setup(prop_name: String, shop_: Shop) -> void:
 	var sign_mat := TexelMaterial.make(load(TEX_DIR + "shop_sign_%s.png" % tag), false, true)
 	var quad := QuadMesh.new()
 	quad.size = Vector2(0.42, 0.42)
-	_mesh("Sign", quad, Vector3(0, WALL_H + 0.27, FRONT_Z + 0.005), sign_mat)
+	# 2 cm off the gable and above the lintel (a 5 mm gap z-fought).
+	_mesh("Sign", quad, Vector3(0, WALL_H + 0.32, FRONT_Z + 0.02), sign_mat)
 
 	_build_lantern(trim)
 
 	# Shutter: wooden slats over the counter opening, shown only while closed.
 	var sh_mat := _tiled(TEX_DIR + "shop_shutter_%s.png" % tag)
-	shutter = _box("Shutter", Vector3(2 * HALF_W - 0.4, 1.3, 0.06), Vector3(0, COUNTER_H + 0.65, 1.3), sh_mat)
+	# Starts 3 cm up into the counter top: flush with its underside would share a plane.
+	shutter = _box("Shutter", Vector3(2 * HALF_W - 0.4, 1.27, 0.06), Vector3(0, COUNTER_H + 0.03 + 0.635, 1.3), sh_mat)
 
 	add_to_group("shop_building")
 	if shop:
