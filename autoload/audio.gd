@@ -74,6 +74,9 @@ const SOUNDS := {
 	"ui_move":    {"files": ["ui_move"], "db": -14.0, "pitch": 0.02},
 	"ui_confirm": {"files": ["ui_confirm"], "db": -16.0, "pitch": 0.0},
 	"ui_back":    {"files": ["ui_back"], "db": -12.0, "pitch": 0.0},
+	# The sky dial's soft chime every 3 game hours (the UI confirm, high and quiet).
+	"dial_chime":     {"files": ["ui_confirm"], "db": -30.0, "pitch": 0.0, "base": 1.5},
+	"dial_chime_big": {"files": ["ui_confirm"], "db": -26.0, "pitch": 0.0, "base": 1.1},
 	"ui_open":    {"files": ["ui_open"], "db": -13.0, "pitch": 0.0},
 	"text_blip":  {"files": ["text_blip"], "db": -24.0, "pitch": 0.04},
 	"whistle":    {"files": ["whistle"], "db": -17.0, "pitch": 0.02},

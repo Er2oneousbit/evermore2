@@ -1,7 +1,7 @@
 # =============================================================================
 # quick_bar.gd  -  The four quick slots on the HUD
 # -----------------------------------------------------------------------------
-# WHAT:  Four small boxes in the top-left corner: what's in each quick slot
+# WHAT:  Four small boxes at the bottom centre, between the member cards: what's in each quick slot
 #        (an item with how many are left, or a formula, faded when you're out
 #        of its ingredients) and the key that fires it (1-4 / the D-pad).
 #        Empty slots stay as outlines, so you can see there's room. Fill them
@@ -16,12 +16,14 @@ extends Control
 
 const CELL := 20.0
 const GAP := 3.0
+## Its whole footprint (the HUD anchors it by this).
+const SIZE := Vector2(CELL * 4 + GAP * 3, CELL + 9)
 const BG := Color(0.06, 0.05, 0.1, 0.7)
 const BORDER := Color(1, 1, 1, 0.35)
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(CELL * 4 + GAP * 3, CELL + 9)
+	custom_minimum_size = SIZE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Keeps drawing while the ring menu pauses the game: you see a slot fill
 	# the moment you assign it.

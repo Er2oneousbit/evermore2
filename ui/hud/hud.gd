@@ -5,9 +5,10 @@
 #          health bar with the lost-health ghost, charge bar, the partner's
 #          stance and Stay, KO with the revive countdown; "> " and a gold
 #          border on the one you drive)
-#        - top left: the quick slots (QuickBar)
-#        - top middle: "Found Old key  2/5 here", and notices under it
-#        - bottom middle: "[E] Talk to Maya" while something is in reach
+#        - top middle: the sky dial (SkyDial: the clock), and under it
+#          "Found Old key  2/5 here" with notices below that
+#        - bottom middle: the quick slots (QuickBar) between the cards, with
+#          "[E] Talk to Maya" just above them while something is in reach
 #        - an arrow at the frame edge points at the partner when he's off screen
 #        The text box covers the bottom of the screen, so the cards, prompt
 #        and quick slots tuck away while people talk.
@@ -31,6 +32,7 @@ var dog_card: MemberCard
 var _prompt: Label
 var _partner_arrow: PartnerArrow
 var _quick_bar: QuickBar
+var _sky_dial: SkyDial
 ## "Found Old key  2/5 here", for TOAST_SECONDS (game time).
 var _toast: Label
 var _toast_left := 0.0
@@ -61,18 +63,36 @@ func _ready() -> void:
 	_prompt = _build_label("InteractPrompt")
 	_prompt.anchor_top = 1.0
 	_prompt.anchor_bottom = 1.0
-	_prompt.offset_top = -18
-	_prompt.offset_bottom = -6
+	# Above the quick slots, which fill the bottom centre.
+	_prompt.offset_top = -QuickBar.SIZE.y - MARGIN - 14
+	_prompt.offset_bottom = -QuickBar.SIZE.y - MARGIN - 2
+	# Under the sky dial (the top centre).
 	_toast = _build_label("FoundToast")
-	_toast.offset_top = 8
-	_toast.offset_bottom = 20
+	_toast.offset_top = MARGIN + SkyDial.SIZE.y + 3
+	_toast.offset_bottom = _toast.offset_top + 12
 	_notice = _build_label("Notice")
-	_notice.offset_top = 24
-	_notice.offset_bottom = 36
+	_notice.offset_top = _toast.offset_bottom + 3
+	_notice.offset_bottom = _notice.offset_top + 12
 	_quick_bar = QuickBar.new()
 	_quick_bar.name = "QuickBar"
-	_quick_bar.position = Vector2(5, 5)
+	_quick_bar.anchor_left = 0.5
+	_quick_bar.anchor_right = 0.5
+	_quick_bar.anchor_top = 1.0
+	_quick_bar.anchor_bottom = 1.0
+	_quick_bar.offset_left = -QuickBar.SIZE.x * 0.5
+	_quick_bar.offset_right = QuickBar.SIZE.x * 0.5
+	_quick_bar.offset_top = -QuickBar.SIZE.y - MARGIN
+	_quick_bar.offset_bottom = -MARGIN
 	$SafeFrame.add_child(_quick_bar)
+	_sky_dial = SkyDial.new()
+	_sky_dial.name = "SkyDial"
+	_sky_dial.anchor_left = 0.5
+	_sky_dial.anchor_right = 0.5
+	_sky_dial.offset_left = -SkyDial.SIZE.x * 0.5
+	_sky_dial.offset_right = SkyDial.SIZE.x * 0.5
+	_sky_dial.offset_top = MARGIN
+	_sky_dial.offset_bottom = MARGIN + SkyDial.SIZE.y
+	$SafeFrame.add_child(_sky_dial)
 	EventBus.item_found.connect(_on_item_found)
 	EventBus.notice.connect(show_notice)
 	EventBus.interaction_target_changed.connect(_on_target_changed)
@@ -171,12 +191,14 @@ func _on_dialogue_started(_node: String) -> void:
 	kid_card.visible = false
 	dog_card.visible = false
 	_quick_bar.visible = false
+	_sky_dial.visible = false
 
 
 func _on_dialogue_ended(_node: String) -> void:
 	kid_card.visible = kid_card.member != null
 	dog_card.visible = dog_card.member != null
 	_quick_bar.visible = true
+	_sky_dial.visible = true
 	_on_target_changed(Interaction.current_target())
 
 
@@ -192,6 +214,11 @@ func _on_target_changed(target: Node) -> void:
 func _key_name(action: String) -> String:
 	var keys: Array = InputSetup.bindings_of(action)["keys"]
 	return InputSetup.key_label(keys[0]) if not keys.is_empty() else "?"
+
+
+## The sky dial (tests read it).
+func sky_dial() -> SkyDial:
+	return _sky_dial
 
 
 ## The frame HUD pieces anchor to (tests read this).

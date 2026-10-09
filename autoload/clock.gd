@@ -2,8 +2,10 @@
 # clock.gd  -  The game clock: morning, day, golden hour, night, and around
 # -----------------------------------------------------------------------------
 # WHAT:  One running clock for the whole game (autoload "Clock"). The day has
-#        four phases in PHASES order; each lasts DAY_MINUTES / 4 of GAME time
-#        (process delta, so it pauses with the tree, slows with hit-stop and
+#        four phases in PHASES order with unequal lengths (PHASE_START hours:
+#        morning 5-11, day 11-17, golden 17-20, night 20-5; owner, 2026-10-09).
+#        One real minute is one game hour (DAY_MINUTES = 24). It counts GAME
+#        time (process delta, so it pauses with the tree, slows with hit-stop and
 #        never reads the wall clock). When a phase ends it announces the next
 #        one on `phase_changed` with a long FADE_SECONDS blend, and every
 #        realm's Atmosphere (and through it HdView, music, ambience, the kid's
@@ -39,8 +41,10 @@ signal phase_changed(phase: String, blend_seconds: float)
 signal state_changed
 
 const PHASES: Array[String] = ["morning", "day", "golden", "night"]
-## One whole game day at 1x, in real minutes (6 per phase). The one knob.
+## One whole game day at 1x, in real minutes (1 per game hour). The one knob.
 const DAY_MINUTES := 24.0
+## The hour (0-24) each phase starts at. Night runs 20:00 to 5:00.
+const PHASE_START := {"morning": 5.0, "day": 11.0, "golden": 17.0, "night": 20.0}
 ## How long the look fades when the clock moves on by itself.
 const FADE_SECONDS := 6.0
 ## Debug speeds (F9 cycles them).
@@ -82,9 +86,27 @@ func is_running() -> bool:
 	return mode == "free" and not paused
 
 
-## Game seconds in one phase.
-func phase_seconds() -> float:
-	return DAY_MINUTES * 60.0 / PHASES.size()
+## Game seconds in one game hour.
+func hour_seconds() -> float:
+	return DAY_MINUTES * 60.0 / 24.0
+
+
+## Hours phase `p` lasts (the current phase when empty): 6, 6, 3 and 9.
+func phase_hours(p := "") -> float:
+	if p == "":
+		p = phase
+	var next: String = next_of(p)
+	return fposmod(float(PHASE_START[next]) - float(PHASE_START[p]), 24.0)
+
+
+## Game seconds in phase `p` (the current phase when empty).
+func phase_seconds(p := "") -> float:
+	return phase_hours(p) * hour_seconds()
+
+
+## The time of day as a float hour, 0 to 24 (the sky dial turns by it).
+func hour() -> float:
+	return fposmod(float(PHASE_START[phase]) + elapsed / hour_seconds(), 24.0)
 
 
 ## Move time on by `seconds` of game time (what _process does each frame;
@@ -173,11 +195,12 @@ func minutes_into_phase() -> float:
 	return elapsed / 60.0
 
 
-## One line for the F3 overlay, e.g. "clock golden 2.5/6.0 min  free  x10".
+## One line for the F3 overlay, e.g. "clock golden 2.5/3.0 min  17:30  free  x10".
 func status_text() -> String:
 	var state := "paused" if paused else mode
-	return "clock %s %.1f/%.1f min  %s  x%d" % [phase, minutes_into_phase(), phase_seconds() / 60.0,
-			state, int(speed)]
+	var h := hour()
+	return "clock %s %.1f/%.1f min  %02d:%02d  %s  x%d" % [phase, minutes_into_phase(), phase_seconds() / 60.0,
+			int(h), int(fposmod(h, 1.0) * 60.0), state, int(speed)]
 
 
 func _change(p: String, blend: float) -> void:
