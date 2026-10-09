@@ -102,6 +102,10 @@ func entry() -> NameEntry:
 # -----------------------------------------------------------------------------
 func _show(to: Step) -> void:
 	step = to
+	if _entry:
+		# It centres itself over the whole screen, so it lives beside the holder.
+		remove_child(_entry)
+		_entry.queue_free()
 	_entry = null
 	gender_buttons.clear()
 	begin_button = null
@@ -218,7 +222,7 @@ func _build_entry(heading: String, default: String, done: Callable) -> void:
 		Audio.play("ui_confirm")
 		done.call(n))
 	_entry.cancelled.connect(go_back)
-	_holder.add_child(_entry)
+	add_child(_entry)
 
 
 func _build_confirm() -> void:
