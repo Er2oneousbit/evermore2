@@ -283,11 +283,15 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
     his charge reaches level 1.
   - *Kid, Defensive:* stays with you and only swings at enemies already within
     reach, waiting for a full charge (fewer, bigger hits).
-  - *Dog, Offensive:* bites awake enemies near you.
+  - *Dog, Offensive:* bites awake enemies near you: he crouches and leaps at
+    them (like the original game), biting on contact. In any stance, when it's
+    calm, he also notices hidden items near you and goes to point at them.
   - *Dog, Search:* stays out of fights, nose down (he sniffs when he stands
-    still). He only bites back at something that's after him. Near a hidden
-    item (and near you) he goes over, points and barks, then digs it up, or,
-    if it's under a bush, keeps pointing until you come and search it.
+    still). He only bites back at something that's after him. His nose is the
+    keenest: he notices hidden items from farther off, looks more often and
+    skips a fight to go to one. At an item (near you) he goes over, points and
+    barks, then digs it up, or, if it's under a bush, keeps pointing until you
+    come and search it.
   - The AI never wakes sleeping enemies and never fights more than 240 px from
     you (past that it drops the fight and catches up).
   - The ring menu's Party ring sets both stances (and Stay put); R / gamepad RB
@@ -309,7 +313,7 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
     a pressure plate while the other crosses; the kid waits while the dog sniffs
     a way through a dark maze; a door stays open only while someone stands on
     the switch.
-- **Sniffing:** besides Search stance, a sniff button (C / gamepad B, when you
+- **Sniffing:** besides the AI dog's own nose (any stance when calm, keenest on Search), a sniff button (C / gamepad B, when you
   control the dog) shows scent trails as colored wisps: gold for items, green
   for ingredients, blue for people. They lead to the nearest three within
   range. A buried spot he's smelled can be dug up (interact).

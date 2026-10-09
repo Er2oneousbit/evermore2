@@ -186,7 +186,11 @@ Npc.interact() / DialogueTrigger ──> Dialogue.start(file, node)
   It checks each node's *own* visibility: in HD-2D mode the 2D World is hidden
   on purpose and its NPCs must stay talkable (a bug the screenshots caught).
 * **HdView** mirrors every node in group `hd_actor` (kid, dog, NPCs), with the
-  same rule: the actor's own visibility, not the hidden World's.
+  same rule: the actor's own visibility, not the hidden World's. Layers listed
+  in an actor's `hd_layers` meta (the kid's weapon) use
+  `hd_actor_ground.gdshader`: art that reaches below the feet would otherwise
+  sink into the ground plane and lose its tip. `tests/screenshot_feel.tscn`
+  renders the club's swing and the dog's leap.
 
 ## 3d. Combat
 
@@ -283,14 +287,14 @@ it and confirming the test fails:
 | Test | Needs a display? | Checks |
 |---|---|---|
 | `tests/run_all.sh` / `.ps1` | no | Runs every headless test below in one go |
-| `tests/smoke_follow.tscn` | no | Dog follow AI on the pen route, stay command, night + flashlight |
+| `tests/smoke_follow.tscn` | no | Dog follow AI on the pen route, stay command, night + flashlight, the kid's feel (+10% speeds, steady facing, smooth reversals, a kept stride) |
 | `tests/smoke_visuals.tscn` | no | LPC animation rows, Atmosphere presets/particles, Prop building |
 | `tests/smoke_dialogue.tscn` | no | .dlg parsing and errors, the runner (choices, flags, conditions, commands, loop guard), every game script loads, talking to Maya in 2D and HD-2D |
 | `tests/smoke_combat.tscn` | no | Charge meter math, health/armor, difficulty levers, the swing (front only, x1 to x4), enemies (wake by distance, telegraph, bite, team rules, death), talk beats attack, rats and late spawns in HD-2D |
-| `tests/smoke_party.tscn` | no | Switching (camera glide, following), Stay put through a switch and call-back, knockout hand-off, every stance, the dog's bite, the HUD marker and partner arrow, talking belongs to the kid, the HD-2D camera follows the leader |
+| `tests/smoke_party.tscn` | no | Switching (camera glide, following), Stay put through a switch and call-back, knockout hand-off, every stance, the dog's leap and bite (no slash arc, walls stop it), the HUD marker and partner arrow, talking belongs to the kid, the HD-2D camera follows the leader |
 | `tests/smoke_settings.tscn` | no | Settings values and presets, save/load round trip, every graphics switch reaching HdView, gameplay options, rebinding, pause and settings menus driven by key presses |
 | `tests/smoke_audio.tscn` | no | Every sound and music file loads, per-frame limit, every gameplay hook makes its sound (swing, hits, rat, dog, footsteps by surface, whistle, switch), music per map and crossfades, menu ticks and the text blip |
-| `tests/smoke_items.tscn` | no | Hidden items: placement and the count, the dog finding and digging on Search, the leash and Offensive leaving items alone, tucked search and pointing, sniff trails then dig while driving the dog, only the driven one picks up, found items stay found, the pause menu line, HD-2D mirroring and the hop |
+| `tests/smoke_items.tscn` | no | Hidden items: placement and the count, the dog finding and digging (any stance when calm; Search reaches farther), the leash and a rat awake nearby stopping him, tucked search and pointing, sniff trails then dig while driving the dog, only the driven one picks up, found items stay found, the pause menu line, HD-2D mirroring and the hop |
 | `tests/smoke_ring.tscn` | no | Equipment data and rules (only owned pieces that fit, the weapon slot never empty, armor adding up and cutting damage, a new weapon's swing and charge), the demo kit once, the ring menu (pause, tabs, one step per push, hold to spin, instant change and its panel, Tab to the dog, Esc, not mid-conversation, HD-2D placement) |
 | `tests/smoke_rings.tscn` | no | The Items, Alchemy and Party rings (use, cast, cost, experience and levels, stances, Stay put), quick slots (assign, move, fire on whoever you drive, notices, not mid-conversation), the D-pad moving to quick slots and old saves, dialogue keys |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |

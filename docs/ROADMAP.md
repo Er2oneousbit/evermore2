@@ -46,6 +46,7 @@ the orange shelter tag).
 
 | Date | Decision |
 |---|---|
+| 2026-10-09 | **The dog sniffs out hidden items in any stance when it's calm** (owner); Search is the keener, braver version (farther, quicker, skips fights). The dog's bite is a leap and bite, like the original |
 | 2026-10-08 | **Alchemy: ingredients per cast, formulas level with use** (owner). Each cast uses up its ingredients and earns the formula experience; enough casts level it up and it gets stronger. Only the kid casts |
 | 2026-10-08 | **Quick slots on the D-pad** (owner): four slots, D-pad on the gamepad, 1-4 on the keyboard; the gamepad moves with the left stick only |
 | 2026-10-08 | **Ring menu, friendlier than the original** (owner: it "could be putsy"). The pain points: hunting across rings and opening it for everything. So every ring is a visible tab, and quick slots come with the Items and Alchemy rings. One menu for both: a button flips to the other's gear. First version: Equipment only |
@@ -68,6 +69,57 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: playtest fixes (movement, club, dog bite, sniffing)
+
+Owner's playtest notes, 2026-10-09. Measured first, then fixed:
+
+* **The dog sniffs in any stance** (owner's choice). When it's calm (no awake
+  enemy within 260 px of him or the kid) the AI dog notices a hidden item near
+  him and the kid (130 px / 140 px), trots over, points, barks, and digs a
+  buried one. **Search** is the keen version: 220 px / 230 px, looks every
+  0.15 s instead of 0.4 s, and keeps at it with a rat about. The 240 px leash
+  and skipping what he can't reach are unchanged. Before: only Search
+* **The kid's movement was janky, measured**: on a diagonal stick that wobbles
+  a hair either side of 45 degrees his facing changed on every one of 60
+  frames (up/right flicker); the walk/run cycle restarted from frame 0 on each
+  pace change, and a turn through zero speed blinked to idle and restarted the
+  stride. (His velocity was not the problem: a reversal already took ~7
+  frames.) Now: the sprite keeps its side-or-front axis until the other wins
+  by 1.35x (`DirectionalSprite.dir_bias`: 1 change in 60 frames); walk and run
+  share their cycle (`phase_groups`), and he stays in the walk cycle while
+  turning; velocity steers (a bend rotates it at 720 deg/s instead of dipping
+  speed, a reversal brakes at 1300 px/s^2 then accelerates: 5 frames to cross
+  zero). Same code drives the AI kid while you play the dog
+* **+10% kid speed**: walk 85 to 93.5, run 140 to 154, follow walk 120 to 132,
+  follow sprint 165 to 181.5; the animation-match constants went up 10% too
+  (feet don't skate). The dog needed nothing: his sprint is 210, still well
+  past the kid's run, and `smoke_follow` passes at 30, 60 and 120 fps
+* **The club's tip was cut off in HD-2D**: not the sheet (192 px frames, all
+  there) and not the 2D draw. The swing reaches up to 11 px below his soles;
+  the weapon quad stands upright, so that part sat under the ground plane
+  and the ground hid it (proved: with depth testing off the whole club drew).
+  The weapon layers now use `hd_actor_ground.gdshader`, which gives
+  below-ground pixels the depth of the ground just above them (same screen
+  position). They don't cast a shadow (a shader that writes depth breaks
+  shadows)
+* **The dog's bite is a leap, like the original**: no arc effect. A short
+  crouch, a quick spring at the nearest enemy in front (up to 96 px, three
+  tiles) with a hop in height in HD-2D (the shadow stays on the ground),
+  the bite lands when the teeth touch it (or at the end of the leap), then he
+  springs back a little. Walls and fences stop the leap. Damage and charge
+  rules are the same; the AI starts it from 77 px out. Driving him, the attack
+  button does the same (a small hop forward when nothing is there)
+* Tests: `smoke_follow` (speeds, facing flicker, reversal, stride), `smoke_party`
+  (the leap: phases, moves toward the rat, damage on contact, no slash effect,
+  hop height, no leaping through a fence), `smoke_items` (calm Offensive points
+  and digs, not with a rat awake, Search reaches farther), `smoke_ring` (the
+  club's whole frame in 2D and HD-2D, ground-clamped material). Broken on
+  purpose: facing hysteresis off (60 changes in 60 frames), the sniff calm
+  rule off, the bite's strike disabled. New tool: `tests/screenshot_feel.tscn`
+  (club frames contact sheet, the dog mid-leap)
+* Not done: the dog's own walk/turn feel was not touched; the old `bite`
+  animation and `WeaponData.hit_frame` for the dog are no longer used
 
 ## Done: a real HUD
 
@@ -274,7 +326,7 @@ the orange shelter tag).
   * *Tucked*: under a bush or rock. A glint now and then is the tell; the kid
     searches it (interact: "Search")
   * *Secret*: an item lying in a nook off the path, found by looking
-* **The dog on Search stance finds them by himself**: when nothing's after him
+* **The dog finds them by himself** (any stance since 2026-10-09, see "playtest fixes"; Search is the keen one): when nothing's after him
   and an item is near him and the kid, he trots over, stops, points and barks,
   then digs a buried one up (dirt flies) or keeps pointing at the bush until
   the kid comes over. Same leash as fighting: never far from the kid, and an
