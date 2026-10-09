@@ -58,8 +58,11 @@ const SCHEMA := [
 	{"key": "brightness", "tab": "graphics", "label": "Brightness", "type": "range", "default": 1.0,
 		"min": 0.6, "max": 1.4, "step": 0.05},
 	# --- Display ---------------------------------------------------------------
-	{"key": "window_mode", "tab": "display", "label": "Window", "type": "choice", "default": "windowed",
+	{"key": "window_mode", "tab": "display", "label": "Window", "type": "choice", "default": "borderless",
 		"options": [["windowed", "Windowed"], ["borderless", "Borderless fullscreen"], ["fullscreen", "Exclusive fullscreen"]]},
+	{"key": "window_size", "tab": "display", "label": "Window size", "type": "choice", "default": "auto",
+		"options": [["auto", "Auto (biggest that fits)"], ["1280x720", "1280 x 720"], ["1920x1080", "1920 x 1080"],
+			["2560x1440", "2560 x 1440"], ["3840x2160", "3840 x 2160"]]},
 	{"key": "vsync", "tab": "display", "label": "V-Sync", "type": "bool", "default": true},
 	{"key": "max_fps", "tab": "display", "label": "Frame rate limit", "type": "choice", "default": 0,
 		"options": [[0, "Unlimited"], [30, "30"], [60, "60"], [120, "120"], [144, "144"], [240, "240"]]},
@@ -238,12 +241,18 @@ func _apply(key: String) -> void:
 			if DisplayServer.get_name() == "headless":
 				return
 			var mode := DisplayServer.WINDOW_MODE_WINDOWED
-			if v == "borderless":
+			if has_resolution_arg(OS.get_cmdline_args()):
+				pass  # an explicit --resolution means an exact-size window
+			elif v == "borderless":
 				mode = DisplayServer.WINDOW_MODE_FULLSCREEN
 			elif v == "fullscreen":
 				mode = DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
 			if DisplayServer.window_get_mode() != mode:
 				DisplayServer.window_set_mode(mode)
+			if mode == DisplayServer.WINDOW_MODE_WINDOWED:
+				_apply_window_size()
+		"window_size":
+			_apply_window_size()
 		"vsync":
 			if DisplayServer.get_name() != "headless":
 				DisplayServer.window_set_vsync_mode(
@@ -257,6 +266,54 @@ func _apply(key: String) -> void:
 			if bus >= 0:
 				AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(float(v), 0.0001)))
 				AudioServer.set_bus_mute(bus, float(v) <= 0.0)
+
+
+## Room kept for the title bar when sizing the window (pixels, vertical).
+const TITLE_BAR_ROOM := 40
+const BASE_VIEW := Vector2i(640, 360)
+
+
+## The biggest whole multiple of the 640x360 view that fits the usable screen
+## area (minus room for the title bar), never below 1280x720.
+static func auto_window_size(usable: Vector2i) -> Vector2i:
+	var k := mini(usable.x / BASE_VIEW.x, (usable.y - TITLE_BAR_ROOM) / BASE_VIEW.y)
+	return BASE_VIEW * maxi(k, 2)
+
+
+## The size a "window_size" choice gives on a screen: "auto", or a fixed size
+## clamped to the Auto size when the screen can't hold it (never below 720p).
+static func resolve_window_size(choice: String, usable: Vector2i) -> Vector2i:
+	var auto := auto_window_size(usable)
+	if choice == "auto" or not "x" in choice:
+		return auto
+	var parts := choice.split("x")
+	var want := Vector2i(int(parts[0]), int(parts[1]))
+	if want.x > auto.x or want.y > auto.y:
+		return auto
+	return want
+
+
+static func has_resolution_arg(args: Array) -> bool:
+	for a: String in args:
+		if a == "--resolution" or a.begins_with("--resolution="):
+			return true
+	return false
+
+
+func _apply_window_size() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+		return
+	# An explicit --resolution on the command line wins (tests, screenshots).
+	if has_resolution_arg(OS.get_cmdline_args()):
+		return
+	var screen := DisplayServer.window_get_current_screen()
+	var usable := DisplayServer.screen_get_usable_rect(screen)
+	var size := resolve_window_size(str(_values.get("window_size", "auto")), usable.size)
+	if DisplayServer.window_get_size() != size:
+		DisplayServer.window_set_size(size)
+	DisplayServer.window_set_position(usable.position + (usable.size - size) / 2)
 
 
 func _ensure_buses() -> void:

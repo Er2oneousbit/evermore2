@@ -71,6 +71,20 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: a bigger window (and borderless by default)
+
+The window used to open at 1280x720 on every monitor. Settings > Display now has
+**Window size**: Auto (default), 1280x720, 1920x1080, 2560x1440, 3840x2160.
+Auto picks the largest whole multiple of 640x360 that fits the screen's usable
+area with 40 px spare for the title bar (never under 1280x720) and centers the
+window: 1080p monitor -> 1280x720, 1440p -> 1920x1080, 4K -> 3200x1800. Fixed
+sizes too big for the screen fall back to Auto. Windowed mode only, saved with
+the other settings, applied at startup; an explicit `--resolution` and headless
+runs are untouched. The game now also **opens borderless fullscreen** at the
+monitor's native resolution by default (`window_mode` default "borderless"; players
+who saved "windowed" keep it; no hotkey); Window size applies when windowed. An
+explicit `--resolution` forces a windowed, exact-size window. `smoke_settings` checks the size math and the default.
+
 ## Done: a running clock, two shops, night effects
 
 The day now goes by on its own: **morning, day, golden hour, night**, and

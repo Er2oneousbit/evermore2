@@ -268,9 +268,15 @@ a character file. Proper nouns go in `data/names.json`, never in the script text
   tab, label, type (`choice`, `bool`, `range`) and default. The settings menu
   builds itself from that table, so a new row shows up with no UI work.
 * Read options with `Settings.get_value("bloom")` and react to
-  `Settings.changed(key, value)`. Settings applies its own (window, V-Sync,
+  `Settings.changed(key, value)`. Settings applies its own (window, window
+  size, V-Sync,
   frame cap, widest view, volumes, bindings); HdView, Atmosphere, Fx and the
   dialogue box apply theirs.
+* Window size (windowed mode only): Auto picks the biggest whole multiple of
+  640x360 that fits the screen's usable area (40 px kept for the title bar,
+  minimum 1280x720) and centers the window; fixed sizes that don't fit fall
+  back to it. An explicit `--resolution` on the command line wins; headless
+  runs skip it. The math is `Settings.auto_window_size` / `resolve_window_size`.
 * Saved to `user://settings.cfg` (on Windows:
   `%APPDATA%\Godot\app_userdata\Secret of Evermore 2- Return to Evermore`).
   Delete it to get the defaults back.
