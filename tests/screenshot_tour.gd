@@ -16,7 +16,8 @@
 #             EVERMORE_TOUR_MAP="street"            (default: yard; street = the
 #                                                   prologue road, HD only, STREET_SPOTS;
 #                                                   arena = the big combat arena, ARENA_SPOTS)
-#             EVERMORE_TOUR_WAIT=9                  (seconds to wait before each shot,
+#             EVERMORE_TOUR_GENDER="girl"           (default: boy; the kid's sheet)
+#             EVERMORE_TOUR_WAIT=9                 (seconds to wait before each shot,
 #                                                   default 0.5; the day/night enemy swap takes ~10)
 #   Windows PowerShell: $env:EVERMORE_SHOT_DIR="C:\temp\shots" before running.
 #
@@ -66,6 +67,8 @@ func _run() -> void:
 		get_tree().quit(2)
 		return
 	DirAccess.make_dir_recursive_absolute(_dir)
+	if OS.has_environment("EVERMORE_TOUR_GENDER"):
+		GameState.set_kid_gender(OS.get_environment("EVERMORE_TOUR_GENDER"))
 	var street := OS.get_environment("EVERMORE_TOUR_MAP") == "street"
 	var arena := OS.get_environment("EVERMORE_TOUR_MAP") == "arena"
 	var hd_mode := street or arena or OS.get_environment("EVERMORE_TOUR_VIEW") != "2d"

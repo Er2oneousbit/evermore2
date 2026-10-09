@@ -28,7 +28,7 @@ it's not decided yet. **Locked** = agreed, don't change without discussion.
 | Item | Decision |
 |---|---|
 | Year | October 2025, Podunk |
-| Lead | The kid, **player-named**, age 13 (original boy reads as about 13; the game never states it) |
+| Lead | The kid: **a boy or a girl, the player's choice** (owner, 2026-10-09), **player-named**, age 13 (the game never states it). Same story either way; text adapts with the `{he}` / `{boy|girl}` tokens (section 10) |
 | Dog | **Shelter dog**, medium to large, adopted two weeks before the game. Player-named; default "Biscuit" |
 | Arrival | Kid and dog are **separated** when they arrive in Evermore 2.0 |
 | Length | **At least 8 hours of play** for the main story (the original runs roughly 15 to 20). Density over length: every area earns its time with people, challenges, secrets and set pieces; each realm has multiple areas, challenges and mini-bosses |
@@ -58,7 +58,7 @@ whoever enters it, so nobody would ever be trapped in someone else's dream again
 
 **Carltron's goal:** robot imagination is unstable (the v2 problem). He can
 dream worlds but can't hold them together without a human **anchor**. That's
-why he grabs the kid, and he spends the game trying to get him back. The dog
+why he grabs the kid, and he spends the game trying to get the kid back. The dog
 was never part of the plan; he's the wild card.
 
 ### Ruffleberg's journal (collectibles)
@@ -73,16 +73,16 @@ was never part of the plan; he's the wild card.
 
 ## 4. The story spine (DRAFT, for review)
 
-**Logline.** A 13-year-old breaks the one rule his dad never explained ("stay
+**Logline.** A 13-year-old breaks the one rule their dad never explained ("stay
 away from the Ruffleberg place"), wakes a robot that has been afraid of the dark
-for thirteen years, and has one night to find his dog, learn his father's secret,
+for thirteen years, and has one night to find the dog, learn Dad's secret,
 and decide what to do with a machine that just wants to not be switched off.
 
 **Theme: nobody gets left behind.** Everyone in the story is afraid of it:
 - **the dog** was left at a shelter
 - **Carltron** was switched off in the dark
-- **Dad** came back from Evermore in 1995 to a town that called him a liar, so he stopped talking about it, and went quiet with his own son too
-- **the kid** feels left out of whatever his dad won't say
+- **Dad** came back from Evermore in 1995 to a town that called him a liar, so he stopped talking about it, and went quiet with the kid too
+- **the kid** feels left out of whatever Dad won't say
 
 The second theme: courage isn't being unafraid, it's going in anyway.
 
@@ -90,17 +90,17 @@ The second theme: courage isn't being unafraid, it's going in anyway.
 
 | Who | Draft |
 |---|---|
-| **The kid** (player-named, 13) | Lives with his dad; his mom works night shifts at the county hospital (which is why nobody notices he's gone). Funny, online, quick with a reference, secretly sure his dad finds him boring. He wanted the dog; Dad didn't |
-| **The dog** (default "Biscuit") | Adopted from the shelter two weeks ago, the kid's idea. Already sleeps on his bed |
+| **The kid** (boy or girl by the player's choice, player-named, 13) | Lives with Dad; Mom works night shifts at the county hospital (which is why nobody notices the kid is gone). Funny, online, quick with a reference, secretly sure Dad finds them boring. Wanted the dog; Dad didn't |
+| **The dog** (default "Biscuit") | Adopted from the shelter two weeks ago, the kid's idea. Already sleeps on the kid's bed |
 | **Dad** (43, never named) | The boy from 1995. Kept one thing from that night: his own dog's collar, in a drawer. That dog died the year before the kid was born (the kid has never heard of him), and Dad never wanted another, because losing him was worse than anything in Evermore. Quotes old B-movies nobody gets; the kid groans every time |
 | **Carltron** | Wants a human anchor so his dreamed world can hold together and nobody can ever switch him off. Recognizes the kid's face: **it's the face of the boy who beat him in 1995.** His revenge fantasy has a target now |
 | **The Professor's Echo** | A warm, funny fragment of Ruffleberg who knows he isn't the real thing. Knew the 1995 boy. Asks the kid to *help* Carltron. Where he lives is open (the realms are) |
-| **Maya** (13, placeholder name) | The kid's best friend. Came to the dare to talk him out of it. Stays at the fence. Hours later, she's the one who calls his dad |
+| **Maya** (13, placeholder name) | The kid's best friend. Came to the dare to talk the kid out of it. Stays at the fence. Hours later, she's the one who calls the kid's dad |
 | **Dex** (14, placeholder name) | Made the dare. Not a monster, just a kid who's never been told no |
 
 ### The kid's voice (rule of thumb)
 
-He references things that exist only in this game's world: the battle-royale
+The kid references things that exist only in this game's world: the battle-royale
 everyone plays (working title *Dropzone Dynasty*), the streamer he quotes
 (working title *GlitchGoblin*), the meme of the week. Never real brands. Dad
 answers with 1990s B-movie quotes (also made up). Payoff: in the last scene, the
@@ -117,7 +117,7 @@ end with one piece.
 |---|---|
 | 1 | A dog's paw and part of a jacket |
 | 2 | Part of a face. Something about it is familiar |
-| 3 | The whole photo: a 13-year-old with his dog, outside the Podunk movie theater. He's seen that face in his own family photos. **It's Dad.** |
+| 3 | The whole photo: a 13-year-old with his dog, outside the Podunk movie theater. The kid has seen that face in the family photos (and in the mirror). **It's Dad.** |
 
 The third piece leads to Carltron. He has been waiting: *"Oh, you've finally
 worked it out. You have his face, you know. I'd know it anywhere."*
@@ -139,7 +139,7 @@ worked it out. You have his face, you know. I'd know it anywhere."*
 - **Play as Dad**, an adult with a phone flashlight, walking the same mansion
   the kid walked in the prologue, room for room. He knows the way. That's the
   scariest part.
-- The lab: his son asleep at the console, the dog asleep against his legs. They
+- The lab: his child asleep at the console, the dog asleep against his legs. They
   won't wake. The curled note, which Dad flattens and reads whole: **"DO NOT
   ACTIVATE."** Ruffleberg's last, half-written journal entry, addressed to him.
 - He swore he'd never go back. He sits down at the console and goes back.
@@ -148,13 +148,13 @@ worked it out. You have his face, you know. I'd know it anywhere."*
 - A new door in the hub: Evermore 2.0 grows from whoever enters it, and Dad's
   dream is the night he came home in 1995.
 - Podunk's Main Street at dusk, the theater marquee lit. **Dad is 13 here**, in
-  his 1995 jacket, the boy from the photo. Same age as his son.
+  his 1995 jacket, the boy from the photo. Same age as his child.
 - No combat. A walk. His old dog is waiting outside the theater, and Dad gets to
   say the goodbye he never got to say. The kid's dog and the old dog touch noses.
 - Young Dad joins for the finale.
 
 ### The offer (DRAFT)
-Before the end, Dad offers himself as Carltron's anchor so his son can go home.
+Before the end, Dad offers himself as Carltron's anchor so the kid can go home.
 Carltron is tempted (the boy who beat him, his forever). The kid refuses:
 nobody gets left behind, not Dad, and in the true ending not Carltron either.
 
@@ -240,8 +240,8 @@ are local, in `research/`). Guidance, not rules:
 
 | Ending | Condition | Result |
 |---|---|---|
-| **Shutdown** | Flip the switch | Carltron goes dark for good. Father and son wake at dawn in the lab. The dog looks back at the dark robot |
-| **Dreamer (true)** | Optional conditions (to be designed with the realms: journals, side quests, the dog's story), then **don't** flip it. The dog brings Carltron a stick | Carltron stays as Evermore 2.0's caretaker. Father and son wake in the lab at dawn; Carltron's chair is empty; the note now reads, in shaky robot handwriting, **"THANK YOU."** |
+| **Shutdown** | Flip the switch | Carltron goes dark for good. Dad and the kid wake at dawn in the lab. The dog looks back at the dark robot |
+| **Dreamer (true)** | Optional conditions (to be designed with the realms: journals, side quests, the dog's story), then **don't** flip it. The dog brings Carltron a stick | Carltron stays as Evermore 2.0's caretaker. Dad and the kid wake in the lab at dawn; Carltron's chair is empty; the note now reads, in shaky robot handwriting, **"THANK YOU."** |
 | **Post-credits** | Either | The dare kids outside: "So? What'd you bring back?" The dog drops something from Evermore at their feet (what it is depends on the realms) |
 
 Theme of the true ending: the dog and Carltron are both creatures afraid of
@@ -254,7 +254,7 @@ something fun with someone else. That steadies v2, and he no longer needs to
 hold anyone as an anchor.
 
 *(Draft) Last scene, either ending:* walking home at dawn, Dad and the kid, the
-dog between them. Dad starts to explain 1995. The kid says he knows, and quotes
+dog between them. Dad starts to explain 1995. The kid says they know, and quotes
 one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
 
 ## 10. Gameplay rules
@@ -270,6 +270,7 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
 | Stances | **The kid: Offensive or Defensive. The dog: Offensive or Search.** Set any time |
 | Weapon charge | **Auto power-up: no holding a button.** The charge builds by itself between swings; a swing uses whatever level it reached |
 | Armor | **The kid: head, body, legs, boots, hands, arms** (six slots). **The dog: collar** |
+| Boy or girl | **The player picks the kid's gender** (owner, 2026-10-09): sprite and portrait change, and every line about the kid adapts through tokens: `{he}` `{him}` `{his}` `{son}` `{boy}` (capitalised `{He}`...) and the inline split `{boy text|girl text}`, e.g. `Hey you, {boy|girl}!`. Syntax in the `.dlg` header; checked at load. Dad's 1995 self stays a boy in plain text |
 | Voices | **One or two words from real voice actors** (owner, 2026-10-07): "Hey!" when you talk to someone, short reactions. No full voice acting for now; AI voices were tried and rejected. Babble is the backup plan. The kid is silent |
 | Difficulty | **Normal and Hard playthroughs** (owner, 2026-10-07). On Hard, things cost more and enemies have more HP and armor and hit harder. Every lever lives in one table (`autoload/difficulty.gd`) |
 | Text box | Fits the amount of text: grows and shrinks, long lines turn into pages (done) |
@@ -319,8 +320,8 @@ one of Dad's B-movies, on purpose. Dad laughs for the first time in the game.
   range. A buried spot he's smelled can be dug up (interact).
 - **Hidden items, three kinds:**
   - *Buried:* only the dog finds them (sniff, then dig).
-  - *Tucked:* under a bush or rock; the kid can search it (interact) if he
-    notices the tell (a glint, a disturbed patch of ground), or the dog points it out.
+  - *Tucked:* under a bush or rock; the kid can search it (interact) if the
+    player notices the tell (a glint, a disturbed patch of ground), or the dog points it out.
   - *Secret:* behind breakable things or in nooks off the path; found by looking.
   - Every realm says how many it has and how many you've found (no silent missables):
     a line when you find one ("2/5 here") and the count in the pause menu.

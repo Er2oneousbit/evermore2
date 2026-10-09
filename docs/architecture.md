@@ -185,6 +185,15 @@ Npc.interact() / DialogueTrigger ──> Dialogue.start(file, node)
                        portrait (CharacterData crop), name, typed text, choices
 ```
 
+* **Boy or girl.** `GameState.kid_gender` ("boy"/"girl", set with
+  `set_kid_gender`, which fires `EventBus.kid_gender_changed`) picks the kid's
+  sheet (`Kid.SHEETS`, HdView copies the texture) and portrait
+  (`CharacterData.sheet_girl`). Text adapts through one resolver,
+  `GenderedText` (`systems/dialogue/gendered_text.gd`): `{boy|girl}` splits and
+  `{he}`/`{him}`/`{his}`/`{son}`/`{boy}` (capitalised too). `DialogueRunner`,
+  the HUD toast/notice, the ring menu and `Names.text` values all go through it
+  (`Names.expand(text)` for anything else); `DialogueScript` reports bad
+  tokens as line-numbered errors at load.
 * **Who's talking** comes from `data/characters/<ID>.tres` (`CharacterData`):
   name key, sprite sheet, portrait crop. The ID is the speaker in `.dlg` files.
 * **While someone talks** the kid ignores movement (it reads
