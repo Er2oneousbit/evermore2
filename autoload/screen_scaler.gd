@@ -72,7 +72,14 @@ func _ready() -> void:
 	# VIEWPORT mode drew the UI at 640x360 and blew it up (soft, chunky text).
 	# Sprites stay crisp: nearest filter + integer scale + 2D pixel snapping.
 	# KEEP aspect: we hand Godot an exact size, so it never needs to expand.
-	_window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	_window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+	# Start in VIEWPORT and switch one frame later. Starting straight in
+	# CANVAS_ITEMS left the 3D world drawn in a 640x360-shaped box (2560x1440
+	# with black bars on a 3440x1440 screen) even though content_scale_size
+	# and the canvas transform were right; switching modes at runtime makes
+	# Godot size the 3D render to the whole window (measured on the owner's
+	# monitor, 2026-10-09).
+	_window.set_deferred("content_scale_mode", Window.CONTENT_SCALE_MODE_CANVAS_ITEMS)
 	_window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	_window.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
 	_window.size_changed.connect(_recalculate)
