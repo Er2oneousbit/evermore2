@@ -43,6 +43,7 @@ func _run() -> void:
 	await _test_gameplay()
 	_test_rebinding()
 	await _test_menus()
+	_test_window_size()
 	_test_persistence()
 	for opt: Dictionary in Settings.SCHEMA:
 		Settings.set_value(opt["key"], opt["default"])
@@ -67,7 +68,7 @@ func _test_values() -> void:
 	Settings.set_value("brightness", 0.97)
 	_check(is_equal_approx(Settings.get_value("brightness"), 0.95), "a range snaps to its step")
 	Settings.set_value("window_mode", "potato")
-	_check(Settings.get_value("window_mode") == "windowed", "an unknown choice falls back to the default")
+	_check(Settings.get_value("window_mode") == "borderless", "an unknown choice falls back to the default")
 	Settings.set_value("max_fps", 60)
 	_check(Settings.get_value("max_fps") == 60, "a number choice is accepted")
 	Settings.set_value("brightness", 1.0)
@@ -252,29 +253,44 @@ func _test_menus() -> void:
 	await _frames(2)
 
 
+func _test_window_size() -> void:
+	_check(Settings.option("window_size").get("default") == "auto", "window size defaults to auto")
+	_check(Settings.get_value("window_size") == "auto", "window size starts on auto")
+	_check(Settings.option("window_mode").get("default") == "borderless", "the window defaults to borderless fullscreen")
+	_check(Settings.has_resolution_arg(["--path", ".", "--resolution", "1280x720"]), "--resolution is detected (forces windowed)")
+	_check(not Settings.has_resolution_arg(["--path", "."]), "no --resolution, no override")
+	var S := Settings
+	_check(S.auto_window_size(Vector2i(1920, 1040)) == Vector2i(1280, 720), "auto: 1080p screen -> 1280x720")
+	_check(S.auto_window_size(Vector2i(2560, 1400)) == Vector2i(1920, 1080), "auto: 1440p screen -> 1920x1080")
+	_check(S.auto_window_size(Vector2i(3840, 2100)) == Vector2i(3200, 1800), "auto: 4K screen -> 3200x1800")
+	_check(S.auto_window_size(Vector2i(800, 600)) == Vector2i(1280, 720), "auto: tiny screen -> 1280x720 minimum")
+	_check(S.resolve_window_size("1920x1080", Vector2i(3840, 2100)) == Vector2i(1920, 1080), "a fixed size that fits is kept")
+	_check(S.resolve_window_size("3840x2160", Vector2i(1920, 1040)) == Vector2i(1280, 720), "a fixed size that does not fit is clamped to auto")
+
+
 func _test_persistence() -> void:
 	Settings.path = SCRATCH
 	Settings._persist = true
 	Settings.set_value("brightness", 1.25)
-	Settings.set_value("window_mode", "borderless")
+	Settings.set_value("window_mode", "fullscreen")
 	var k := InputEventKey.new()
 	k.physical_keycode = KEY_U
 	InputSetup.rebind("interact", k, 0)
 	Settings.store_binding("interact")
 	# Forget it all in memory, then load the file back.
 	Settings._values["brightness"] = 1.0
-	Settings._values["window_mode"] = "windowed"
+	Settings._values["window_mode"] = "borderless"
 	Settings._controls.clear()
 	InputSetup.reset_to_defaults()
 	Settings._load()
 	Settings._apply_all()
 	_check(is_equal_approx(Settings.get_value("brightness"), 1.25), "brightness survives a save and load")
-	_check(Settings.get_value("window_mode") == "borderless", "the window mode survives a save and load")
+	_check(Settings.get_value("window_mode") == "fullscreen", "the window mode survives a save and load")
 	_check(InputSetup.bindings_of("interact")["keys"][0] == KEY_U, "a rebound key survives a save and load")
 	Settings._persist = false
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SCRATCH))
 	Settings.path = "user://settings.cfg"
-	Settings._values["window_mode"] = "windowed"
+	Settings._values["window_mode"] = "borderless"
 
 
 # -----------------------------------------------------------------------------
