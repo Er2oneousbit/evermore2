@@ -86,7 +86,8 @@ The ring menu (I / Y) pauses and shows four rings (Z/X or LB/RB to switch):
 Equipment (up/down changes a slot), Items and Alchemy (E / A uses or casts
 on whoever is shown), Party (stances, Stay put). Tab shows the other one.
 Select an item or formula and press 1-4 / the D-pad to put it in a quick
-slot; outside the menu the same key uses it. The test yard and the arena
+slot; outside the menu the same key uses it. The quick slots sit at the
+bottom centre; the sky dial at the top centre shows the time of day. The test yard and the arena
 give you gear, apples, a soda, wild carrots and the Heal formula to try.
 
 Hidden items: the test yard hides five. The dog finds buried ones and

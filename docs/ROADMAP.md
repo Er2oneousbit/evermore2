@@ -49,6 +49,7 @@ the orange shelter tag).
 
 | Date | Decision |
 |---|---|
+| 2026-10-09 | **A sky dial clock at the top centre, the quick slots at the bottom centre, unequal phase hours** (owner). One real minute is one game hour; morning 5:00-11:00, day 11:00-17:00, golden 17:00-20:00, night 20:00-5:00 (a longer night, OK'd). The dial shows the sun and moon opposite each other on a turning wheel;; no clock text at all (owner) |
 | 2026-10-09 | **The dog sniffs out hidden items in any stance when it's calm** (owner); Search is the keener, braver version (farther, quicker, skips fights). The dog's bite is a leap and bite, like the original |
 | 2026-10-09 | **Paths between the demo maps, to test scene swapping** (owner: "why not make a path between them? Good way to test scene swapping!"). The prologue street's road runs east to the test yard, the yard's shop street north to the combat arena, and back. Every future map uses the same exits |
 | 2026-10-09 | **Smooth day/night enemy swap, bats in the trees** (owner). Day enemies stop respawning at dusk and leave (a hole, the edge, out of view), night enemies come in; never popping in or out in plain view. Bats hang in the oaks by day, drop out at dusk, fly back at dawn |
@@ -75,6 +76,29 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: a sky dial clock
+
+A half-circle window of sky at the top centre of the HUD (`ui/hud/sky_dial.gd`)
+reads the time at a glance: pale blue by day, orange at dawn and dusk, navy
+with twinkling stars at night. A wheel behind it carries the sun and the moon
+opposite each other and turns smoothly with `Clock.hour()`: the sun rises left
+at 6:00, tops the dial at noon, sets right at 18:00; the moon tops it at
+midnight. A rim mark lights and a soft chime plays every 3 game hours (bigger
+at 0, 6, 12, 18; quiet above x10). There is no clock text (owner). Badges: a
+pause icon while the clock is held (prologue) or stopped (F7), "x10"/"x60"
+when sped up (F9). It hides during dialogue like the rest of the HUD.
+The clock now has game hours: 1 real minute = 1 hour (24-minute day), phases
+start at 5, 11, 17 and 20 (6, 6, 3 and 9 hours; `Clock.PHASE_START`,
+`Clock.hour()`, `phase_hours()`); F2, F7, F9, hold/set/free and the 6 s fade
+are unchanged, and the F3 line shows the clock time. The quick slots moved to
+the bottom centre between the member cards; the interact prompt sits above
+them, the find and notice lines under the dial. Measured: `smoke_clock` checks
+the phase hours and boundaries, `hour()` advancing 1/min, sun top at noon and
+moon top at midnight, ticks and chimes, the badges, and that
+dial, hotbar, cards, prompt and toasts sit inside the SafeFrame without
+overlapping at 640x360, 840x360 (21:9) and 1280x720. Sabotaged: moving golden
+to 16:00 and anchoring the hotbar left both fail it.
 
 ## Done: no more shimmering textures
 
@@ -348,7 +372,7 @@ test and screenshot runs (a `res://tests/` scene) and `-- --windowed` keep a win
 ## Done: a running clock, two shops, night effects
 
 The day now goes by on its own: **morning, day, golden hour, night**, and
-around again. A game day is 24 real minutes (6 a phase, one constant:
+around again. A game day is 24 real minutes (6 a phase then; since the sky dial, 1 minute = 1 game hour with unequal phases, one constant:
 `Clock.DAY_MINUTES`), counted in game time, so it stops with the pause and
 ring menus. Every change fades over 6 seconds (sky, sun, fog, music,
 ambience, the flashlight). Owner's request: "Expand the area a bit and
@@ -424,7 +448,7 @@ the day list and keeps playing). A plain `play_music()` clears the set (dinner s
     after a moment, so you see how much that hit took, and the bar flashes
   * his charge bar underneath (pips, winded blink)
   * knocked out: the card dims and says **KO, back in 8**, counting down
-* The quick slots stay top left, the found / notice lines top middle, the
+* The quick slots stay top left (moved to the bottom centre on 2026-10-09), the found / notice lines top middle, the
   "[E] Talk to Maya" prompt bottom middle; the cards, prompt and quick slots
   tuck away while people talk
 * Found while testing: if a scene changed while someone was knocked out,

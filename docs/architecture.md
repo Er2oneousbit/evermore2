@@ -266,7 +266,8 @@ ItemPickup: Party.leader touches it -> GameState inventory + flag,
 
 ```
 Clock (autoload)  phase: morning -> day -> golden -> night -> morning
-                  DAY_MINUTES = 24 (6 game minutes a phase), game time only:
+                  DAY_MINUTES = 24 (1 minute = 1 game hour; phases start at
+                  5, 11, 17, 20; Clock.hour() feeds the HUD SkyDial), game time only:
                   _process delta x speed, so the pause menu, the ring menu and
                   hit-stop stop or slow it; never the wall clock
    modes   free (runs)  set_time(t) (jump, then runs)  hold(t) / release()

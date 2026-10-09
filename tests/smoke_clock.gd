@@ -18,6 +18,13 @@
 #           pops "Miss" and whiffs
 #        7. The dog's nose: enemies glow (scent 1, 2D glow, HD shader) only at
 #           night while you drive the dog
+#        9. Game hours: 1 real minute = 1 game hour, phases start at 5, 11, 17
+#           and 20 (6, 6, 3 and 9 hours), Clock.hour() runs 0-24
+#        10. The HUD sky dial (ui/hud/sky_dial.gd, in a HUD of its own at
+#           16:9 and 21:9 view sizes): the sun is at the top at noon and the
+#           moon at midnight, a tick every 3 hours, hold/F7/F9 badges, no time
+#           text or setting, hotbar bottom
+#           centre, dial top centre, nothing overlaps
 #        8. The prologue holds the clock (golden), and its @time night moves
 #           it without releasing it
 #
@@ -49,6 +56,9 @@ func _run() -> void:
 	await _test_order_and_game_time()
 	await _test_hold_set_release()
 	await _test_debug_keys()
+	await _test_hours()
+	await _test_dial()
+	await _test_hud_layout()
 	var scene: Node = load(YARD_HD).instantiate()
 	add_child(scene)
 	await _frames(10)
@@ -78,7 +88,8 @@ func _test_order_and_game_time() -> void:
 	Clock.phase_changed.connect(on_change)
 	Clock.enter_realm("hold", "morning")
 	_check(Clock.phase == "morning" and Clock.mode == "hold", "enter_realm(hold, morning) holds at morning")
-	_check(is_equal_approx(Clock.phase_seconds(), Clock.DAY_MINUTES * 60.0 / 4.0), "a phase is a quarter of the day")
+	_check(is_equal_approx(Clock.phase_seconds("morning"), 6.0 * 60.0) and is_equal_approx(Clock.phase_seconds(), 6.0 * 60.0),
+			"morning lasts 6 game hours (6 minutes)")
 	_check(is_equal_approx(Clock.DAY_MINUTES, 24.0), "a game day is 24 real minutes by default")
 	Clock.advance(Clock.phase_seconds() - 1.0)
 	_check(seen.is_empty() and Clock.phase == "morning", "one second short of a phase: still morning")
@@ -144,6 +155,160 @@ func _test_debug_keys() -> void:
 	_check(Clock.speed == 1.0, "then back to x1")
 	_check(Clock.status_text().contains("day") and Clock.status_text().contains("x1"),
 			"the F3 line names the phase and speed: %s" % Clock.status_text())
+
+
+# -----------------------------------------------------------------------------
+func _test_hours() -> void:
+	var lengths := {"morning": 6.0, "day": 6.0, "golden": 3.0, "night": 9.0}
+	var starts := {"morning": 5.0, "day": 11.0, "golden": 17.0, "night": 20.0}
+	for p in Clock.PHASES:
+		_check(is_equal_approx(Clock.phase_hours(p), lengths[p]), "%s lasts %.0f hours (%.1f)" % [p, lengths[p], Clock.phase_hours(p)])
+		Clock.hold(p, 0.0)
+		_check(is_equal_approx(Clock.hour(), starts[p]), "%s starts at %.0f:00 (%.2f)" % [p, starts[p], Clock.hour()])
+	# Crossing a boundary by running: 1 minute of game time = 1 hour, the phase
+	# flips at 5, 11, 17 and 20, and the hour wraps past midnight.
+	Clock.hold("night", 0.0)
+	Clock.advance(60.0 * 3.5)
+	_check(absf(Clock.hour() - 23.5) < 0.001 and Clock.phase == "night", "3.5 minutes after 20:00 it is 23:30 (%.2f)" % Clock.hour())
+	Clock.advance(60.0)
+	_check(absf(Clock.hour() - 0.5) < 0.001, "an hour later it is 0:30, wrapped (%.2f)" % Clock.hour())
+	Clock.advance(60.0 * 4.0)
+	_check(Clock.phase == "night" and absf(Clock.hour() - 4.5) < 0.001, "still night at 4:30 (%s %.2f)" % [Clock.phase, Clock.hour()])
+	Clock.advance(60.0)
+	_check(Clock.phase == "morning" and absf(Clock.hour() - 5.5) < 0.001, "morning from 5:00 (%s %.2f)" % [Clock.phase, Clock.hour()])
+	Clock.advance(60.0 * 6.0)
+	_check(Clock.phase == "day" and absf(Clock.hour() - 11.5) < 0.001, "day from 11:00 (%s %.2f)" % [Clock.phase, Clock.hour()])
+	Clock.advance(60.0 * 6.0)
+	_check(Clock.phase == "golden" and absf(Clock.hour() - 17.5) < 0.001, "golden from 17:00 (%s %.2f)" % [Clock.phase, Clock.hour()])
+	Clock.advance(60.0 * 3.0)
+	_check(Clock.phase == "night" and absf(Clock.hour() - 20.5) < 0.001, "night from 20:00 (%s %.2f)" % [Clock.phase, Clock.hour()])
+	# Real game time: 60 frames at 60 fps is one second, so 1/60 of an hour.
+	Clock.release()
+	var h0 := Clock.hour()
+	await _frames(120)
+	var dh := Clock.hour() - h0
+	_check(absf(dh - 2.0 / 60.0) < 0.004, "two seconds of game time is 1/30 of an hour (%.4f)" % dh)
+	# F2 lands on the next phase's start.
+	Clock.hold("golden", 0.0)
+	Clock.next_phase(0.0)
+	_check(Clock.phase == "night" and is_equal_approx(Clock.hour(), 20.0), "F2 from golden goes to 20:00")
+
+
+func _test_dial() -> void:
+	# Pure mapping first.
+	var noon_sun := SkyDial.body_offset(12.0)
+	var noon_moon := SkyDial.body_offset(12.0, true)
+	_check(noon_sun.distance_to(Vector2(0, -SkyDial.WHEEL_R)) < 0.01, "the sun is at the top of the dial at noon (%s)" % noon_sun)
+	_check(noon_moon.y > 0.0, "and the moon is under the dial then (%s)" % noon_moon)
+	var mid_moon := SkyDial.body_offset(0.0, true)
+	_check(mid_moon.distance_to(Vector2(0, -SkyDial.WHEEL_R)) < 0.01, "the moon is at the top at midnight (%s)" % mid_moon)
+	_check(SkyDial.body_offset(6.0).x < -SkyDial.WHEEL_R + 0.01 and absf(SkyDial.body_offset(6.0).y) < 0.01, "the sun rises on the left at 6:00")
+	_check(SkyDial.body_offset(18.0).x > SkyDial.WHEEL_R - 0.01 and absf(SkyDial.body_offset(18.0).y) < 0.01, "and sets on the right at 18:00")
+	_check(SkyDial.body_offset(9.0).y < -5.0 and SkyDial.body_offset(9.0).x < 0.0, "at 9:00 it is climbing, left of the top")
+	_check(SkyDial.body_offset(3.0).distance_to(-SkyDial.body_offset(3.0, true)) < 0.01, "the moon is always opposite the sun")
+	var day_sky: Color = SkyDial.sky_colors(13.0)[1]
+	var dusk_sky: Color = SkyDial.sky_colors(18.0)[1]
+	var night_sky: Color = SkyDial.sky_colors(1.0)[0]
+	_check(day_sky.b > 0.9 and dusk_sky.r > dusk_sky.b + 0.4 and night_sky.b < 0.25, "pale blue by day, orange at dusk, navy at night")
+	_check(SkyDial.star_alpha(13.0) == 0.0 and SkyDial.star_alpha(1.0) == 1.0, "stars only at night")
+
+	# The live dial.
+	var hud = load("res://ui/hud/hud.tscn").instantiate()
+	add_child(hud)
+	await _frames(3)
+	var dial: SkyDial = hud.sky_dial()
+	var ticks: Array[Vector2i] = []
+	dial.ticked.connect(func(h: int, big: bool) -> void: ticks.append(Vector2i(h, 1 if big else 0)))
+	Clock.hold("day", 0.0)  # 11:00, held
+	await _frames(3)
+	_check(dial.badges() == ["pause"], "a held clock shows the pause badge (%s)" % [dial.badges()])
+	Clock.release()
+	_check(dial.badges().is_empty(), "a running clock shows no badge")
+	Clock.toggle_pause()
+	_check(dial.badges() == ["pause"], "F7 (stopped) shows the pause badge")
+	Clock.toggle_pause()
+	Clock.cycle_speed()
+	_check(dial.badges() == ["x10"], "x10 shows its badge (%s)" % [dial.badges()])
+	Clock.cycle_speed()
+	_check(dial.badges() == ["x60"], "x60 shows its badge (%s)" % [dial.badges()])
+	Clock.cycle_speed()
+	_check(dial.badges().is_empty(), "back at x1: none")
+
+	# A tick every 3 game hours, big at 0, 6, 12 and 18; the chime plays.
+	Clock.hold("morning", 0.0)  # 5:00
+	await _frames(2)
+	ticks.clear()
+	_sounds.clear()
+	Clock.release()
+	for i in 30:  # 30 steps of 0.25 hour = 7.5 hours, 5:00 -> 12:30
+		Clock.advance(Clock.hour_seconds() * 0.25)
+		await _frames(1)
+	_check(ticks == [Vector2i(6, 1), Vector2i(9, 0), Vector2i(12, 1)], "ticks at 6 (big), 9, 12 (big) between 5:00 and 12:30: %s" % [ticks])
+	_check(_sounds.count("dial_chime_big") == 2 and _sounds.count("dial_chime") == 1, "a soft chime each, bigger on the big ones: %s" % [_sounds])
+	ticks.clear()
+	Clock.next_phase(0.0)  # a jump is not a tick
+	await _frames(3)
+	_check(ticks.is_empty(), "F2 jumps do not tick")
+	Clock.hold("night", 0.0)
+	Clock.release()
+	await _frames(2)
+	ticks.clear()
+	for i in 12:  # 20:00 -> 23:00
+		Clock.advance(Clock.hour_seconds() * 0.25)
+		await _frames(1)
+	_check(ticks == [Vector2i(21, 0)], "night: 21 ticks, small (%s)" % [ticks])
+
+	Clock.hold("golden", 0.0)
+	await _frames(3)
+	# No time text, no setting for it.
+	_check(not dial.has_method("text_shown") and Settings.option("show_time").is_empty(), "the dial has no time text and there is no Show the time option")
+	# Hidden while people talk, back after.
+	EventBus.dialogue_started.emit("x")
+	_check(not dial.visible, "the dial hides with the rest of the HUD during dialogue")
+	EventBus.dialogue_ended.emit("x")
+	_check(dial.visible, "and returns")
+	hud.queue_free()
+	await _frames(2)
+
+
+## Top-centre dial, bottom-centre hotbar, nothing overlapping, at 16:9 and 21:9.
+func _test_hud_layout() -> void:
+	for view in [Vector2i(640, 360), Vector2i(840, 360), Vector2i(1280, 720)]:
+		var sv := SubViewport.new()
+		sv.size = view
+		add_child(sv)
+		var hud = load("res://ui/hud/hud.tscn").instantiate()
+		sv.add_child(hud)
+		await _frames(4)
+		var frame: Rect2 = hud.get_safe_frame().get_global_rect()
+		var dial: Control = hud.sky_dial()
+		var bar: Control = hud.get_node("SafeFrame/QuickBar")
+		var kid: Control = hud.get_node("SafeFrame/KidCard")
+		var dog: Control = hud.get_node("SafeFrame/DogCard")
+		var prompt: Label = hud.get_node("SafeFrame/InteractPrompt")
+		prompt.text = "[E] Talk to a neighbour"
+		prompt.visible = true
+		hud.show_toast("Found Old key x2   2/5 here")
+		hud.show_notice("Slot 2 is empty")
+		await _frames(3)
+		var toast: Control = hud.get_node("SafeFrame/FoundToast")
+		var notice: Control = hud.get_node("SafeFrame/Notice")
+		var tag := "at %dx%d: " % [view.x, view.y]
+		var cx := frame.position.x + frame.size.x * 0.5
+		_check(absf(bar.get_global_rect().get_center().x - cx) <= 0.6 and bar.get_global_rect().end.y > frame.end.y - 8.0
+				and bar.get_global_rect().position.y > frame.size.y * 0.8, tag + "the hotbar is at the bottom centre (%s)" % bar.get_global_rect())
+		_check(absf(dial.get_global_rect().get_center().x - cx) <= 0.6 and dial.get_global_rect().position.y < 8.0,
+				tag + "the dial is at the top centre (%s)" % dial.get_global_rect())
+		var parts := {"dial": dial, "bar": bar, "kid": kid, "dog": dog, "prompt": prompt, "toast": toast, "notice": notice}
+		var names: Array = parts.keys()
+		for i in names.size():
+			var r: Rect2 = (parts[names[i]] as Control).get_global_rect()
+			_check(frame.encloses(r), tag + "%s is inside the safe frame (%s in %s)" % [names[i], r, frame])
+			for j in range(i + 1, names.size()):
+				var r2: Rect2 = (parts[names[j]] as Control).get_global_rect()
+				_check(not r.intersects(r2), tag + "%s and %s do not overlap (%s, %s)" % [names[i], names[j], r, r2])
+		sv.queue_free()
+		await _frames(2)
 
 
 # -----------------------------------------------------------------------------
