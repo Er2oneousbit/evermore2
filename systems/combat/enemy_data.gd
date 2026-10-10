@@ -74,8 +74,9 @@ extends Resource
 @export_enum("always", "day", "night") var active := "always"
 ## How it goes away when its time is over: "burrow" (scurries to a hole),
 ## "edge" (walks off past the map edge), "fade" (poof: magic types only),
-## "roost" (flies back to its tree and hangs there).
-@export_enum("burrow", "edge", "fade", "roost") var leaves_by := "burrow"
+## "roost" (flies back into its tree's leaves), "sink" (back into the ground
+## where it stands: the rise played backwards).
+@export_enum("burrow", "edge", "fade", "roost", "sink") var leaves_by := "burrow"
 ## How it shows up: "offscreen" (appears out of view and wanders in), "burrow"
 ## (squeezes out of a hole), "drop" (falls from a tree), "rise" (up out of the
 ## ground with dirt), "fade" (poof: magic types only).
@@ -92,7 +93,8 @@ extends Resource
 @export var swoop_speed := 170.0
 ## A killed one comes back this many seconds later while its time lasts (0 = never).
 @export var respawn_seconds := 0.0
-## Hangs from its tree by day (a roost) instead of leaving: see Enemy.State.ROOST.
+## Spends the day up in its tree's leaves (a roost), unseen, instead of leaving:
+## see Enemy.State.ROOST.
 @export var roosts := false
-## How high it hangs under the canopy (px).
+## How high up in the canopy it is when it flies out or in (px).
 @export var hang_height := 46.0

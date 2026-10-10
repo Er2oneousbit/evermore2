@@ -11,12 +11,14 @@
 #          HURT     knocked back and staggered after a hit
 #          RETURN   lost its target past leash_radius: walks home, heals up
 #          DEAD     plays the death animation, blinks, and is removed
-#          ENTER    a visible entrance (drop from a tree, rise from the ground,
+#          ENTER    a visible entrance (out of the canopy, rise from the ground,
 #                   squeeze out of a hole, fade in); can't be hit meanwhile
 #          LEAVE    its time of day is over: scurries/flies to an exit (a hole,
 #                   its tree, past the edge). The DayNightDirector removes it
 #                   once it is out of the camera's view, never in plain sight
-#          ROOST    hangs upside down in its tree (bats, by day); no aggro
+#          ROOST    up in its tree's leaves (bats, by day): not drawn at all, no
+#                   aggro; at dusk it flies out of the canopy (a shower of
+#                   leaves), at dawn it flies back in and vanishes among them
 #        Stats come from the EnemyData scaled by Difficulty (Hard: more HP and
 #        armor, harder hits).
 # PLACE: Enemy.create(data, position), or an AsciiRealm's ENEMIES_BY_CHAR.
@@ -204,7 +206,7 @@ static func scent_wanted() -> bool:
 
 
 func _update_scent(delta: float) -> void:
-	var want := 1.0 if scent_wanted() and state != State.DEAD else 0.0
+	var want := 1.0 if scent_wanted() and state != State.DEAD and state != State.ROOST else 0.0
 	scent = move_toward(scent, want, SCENT_FADE * delta)
 	_scent_glow.visible = scent > 0.0
 	_scent_glow.modulate = Color(SCENT_COLOR, 0.7 * scent)
@@ -334,9 +336,19 @@ func begin_entrance(how: String) -> void:
 		"drop":
 			height = data.hang_height if data.roosts else 70.0
 			_sprite.play(&"walk", Vector2.DOWN)
+			if data.roosts:
+				# Out of the canopy: it shows up inside the leaves, which shake.
+				_sprite.visible = true
+				Fx.leaves(global_position, data.hang_height)
+				var out := Vector2.from_angle(randf() * TAU)
+				velocity = out * data.walk_speed
+				_sprite.play(&"walk", out)
 		"rise":
-			Fx.dirt(global_position)
-			_sprite.play(&"idle", Vector2.DOWN)
+			Fx.dirt(global_position, 10)
+			if data.anims.has(&"rise"):
+				_sprite.play(&"rise", Vector2.DOWN, true)  # pushed up out of the ground, frame by frame
+			else:
+				_sprite.play(&"idle", Vector2.DOWN)
 		"burrow":
 			Fx.dirt(global_position + Vector2(0, 2))
 			_sprite.play(&"walk", Vector2.DOWN)
@@ -350,8 +362,12 @@ func _set_entrance_look(k: float) -> void:
 	var a := 1.0
 	match entrance:
 		"rise":
-			up.y = (1.0 - k) * 16.0  # starts buried
-			a = clampf(k * 2.5, 0.0, 1.0)
+			if not data.anims.has(&"rise"):
+				up.y = (1.0 - k) * 16.0  # starts buried
+				a = clampf(k * 2.5, 0.0, 1.0)  # (a sheet with a rise anim draws it itself)
+		"drop":
+			if data.roosts:
+				a = clampf(k * 5.0, 0.0, 1.0)  # fades in among the leaves
 		"burrow":
 			up.y = (1.0 - k) * 10.0
 			a = clampf(k * 3.0, 0.0, 1.0)
@@ -370,9 +386,14 @@ func _process_enter(delta: float) -> void:
 		var to_h := data.fly_height if data.flies else 0.0
 		var start_h := data.hang_height if data.roosts else 70.0
 		height = lerpf(start_h, to_h, 1.0 - pow(1.0 - k, 2.0))
+		if data.roosts:
+			velocity = velocity.move_toward(Vector2.ZERO, 30.0 * delta)
+			move_and_slide()  # drifts out from the tree as it falls and catches itself
 	elif entrance == "burrow":
 		velocity = Vector2(0, 12.0 * (1.0 - k))  # slips out toward the viewer
 		move_and_slide()
+	elif entrance == "rise" and _enter_t - delta < dur * 0.5 and _enter_t >= dur * 0.5:
+		Fx.dirt(global_position, 6)  # a second shower as the shoulders clear
 	_set_entrance_look(k)
 	if k >= 1.0:
 		entrance = ""
@@ -400,6 +421,12 @@ func begin_leave(kind: String, point: Vector2) -> void:
 	_sprite.modulate = Color.WHITE
 	if kind == "fade":
 		_sprite.play(&"idle", Vector2.ZERO)
+	elif kind == "sink":
+		# Back into the ground where it stands (the rise played backwards).
+		velocity = Vector2.ZERO
+		_set_hittable(false)
+		Fx.dirt(global_position, 8)
+		_sprite.play(&"sink" if data.anims.has(&"sink") else &"idle", Vector2.DOWN, true)
 
 
 ## Its time came back before it got away: carry on as usual.
@@ -407,6 +434,9 @@ func cancel_leave() -> void:
 	if state != State.LEAVE:
 		return
 	state = State.IDLE
+	if leave_kind == "sink":
+		_set_hittable(true)
+		_sprite.play(&"idle", Vector2.DOWN, true)
 	leave_kind = ""
 	_sprite.modulate = Color.WHITE
 	_sprite.offset = _base_offset + Vector2(0, -height)
@@ -422,6 +452,11 @@ func _process_leave(delta: float) -> void:
 		_sink_t += delta
 		_sprite.modulate = Color(1, 1, 1, clampf(1.0 - _sink_t / 0.9, 0.0, 1.0))
 		leave_done = _sink_t >= 0.9
+		return
+	if leave_kind == "sink":
+		_brake(delta)
+		_sink_t += delta
+		leave_done = _sink_t >= ENTER_SECONDS["rise"]
 		return
 	var to := leave_point - global_position
 	var arrived := to.length() < ARRIVE_PX
@@ -439,6 +474,9 @@ func _process_leave(delta: float) -> void:
 	var speed := (data.chase_speed * 0.7) if data.flies else (data.walk_speed * 1.8)
 	_move_toward(leave_point, speed, delta)
 	_sprite.play(&"walk", velocity)
+	if leave_kind == "roost":
+		# Flies into the leaves and is gone: fades out over the last stretch.
+		_sprite.modulate = Color(1, 1, 1, clampf((to.length() - 6.0) / 50.0, 0.0, 1.0))
 	# Stuck behind a wall? Report it instead of pushing forever.
 	_stuck_t += delta
 	if _stuck_t >= 2.5:
@@ -457,11 +495,15 @@ func _enter_roost() -> void:
 	target = null
 	_twitch_t = randf_range(3.0, 8.0)
 	_sprite.modulate = Color.WHITE
-	_sprite.play(&"hang", Vector2.ZERO, true)
+	# By day a bat is not seen at all: it is up in the leaves (owner, 2026-10-09).
+	if _sprite.visible:
+		Fx.leaves(global_position, data.hang_height)
+	_sprite.visible = false
 
 
 ## Already hanging (a realm that loads by day).
 func start_roosting() -> void:
+	_sprite.visible = false  # a scene that loads by day shows no hanging bat
 	height = data.hang_height
 	_enter_roost()
 	_apply_height()
@@ -472,13 +514,15 @@ func _process_roost(delta: float) -> void:
 	_twitch_t -= delta
 	if _twitch_t <= 0.0:
 		_twitch_t = randf_range(4.0, 9.0)
-		twitch()
+		twitch()  # unseen: only a faint rustle, now and then
 
 
 ## A small shiver of the wings (hanging bats now and then, and as the cue
 ## that dusk is waking them).
 func twitch() -> void:
-	if state == State.ROOST and data.anims.has(&"twitch"):
+	if state == State.ROOST and data.roosts:
+		Fx.leaves(global_position, data.hang_height)  # the canopy shivers, nothing shows
+	elif state == State.ROOST and data.anims.has(&"twitch"):
 		_sprite.play(&"twitch", Vector2.ZERO, true)
 
 

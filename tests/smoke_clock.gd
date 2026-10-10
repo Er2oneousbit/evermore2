@@ -70,10 +70,15 @@ func _run() -> void:
 	scene.queue_free()
 	await _frames(5)
 	# The yard has no enemies (they live in the arena): night misses and the
-	# dog's nose are proved on the arena's always-there rats.
+	# dog's nose are proved on a rat placed in the arena.
 	var arena: Node = load(ARENA_HD).instantiate()
 	add_child(arena)
 	await _frames(10)
+	# The arena's rats are day-schedule ones now (they leave at dusk), so night
+	# misses and the dog's nose are proved on one placed by hand that ignores the clock.
+	var fixed_rat := Enemy.create(load("res://data/enemies/rat.tres"), Vector2(1750, 1540))
+	fixed_rat.clock_rule = "unchanged"
+	arena.get_node("Yard/World").add_child(fixed_rat)
 	_check(Clock.mode == "free", "the arena runs the clock free, so day and night happen there (%s)" % Clock.mode)
 	await _test_night_misses(arena)
 	await _test_dog_nose(arena)
@@ -612,7 +617,7 @@ func _test_prologue_held() -> void:
 # -----------------------------------------------------------------------------
 func _rat() -> Enemy:
 	for e in get_tree().get_nodes_in_group("enemy"):
-		# Only the arena's always-there rats: the day/night ones leave at dusk.
+		# Only a rat that ignores the clock: the day/night ones leave at dusk.
 		if e is Enemy and not (e as Enemy).health.is_dead() and (e as Enemy).data.name_key == "enemy_rat" 				and (e as Enemy).clock_rule != "follow_clock":
 			return e
 	return null

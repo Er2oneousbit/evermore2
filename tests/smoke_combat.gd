@@ -34,6 +34,7 @@ const ARENA_HD := "res://realms/test/combat_arena_hd.tscn"
 const RAT := preload("res://data/enemies/rat.tres")
 const STICK := preload("res://data/weapons/stick.tres")
 const BAT := preload("res://data/enemies/bat.tres")
+const SKELETON := preload("res://data/enemies/skeleton.tres")
 
 ## Circling bats may accelerate this fast at most (px/s^2); the old weave
 ## piled velocity on every frame (thousands).
@@ -52,6 +53,7 @@ func _run() -> void:
 	_test_difficulty()
 	await _test_swing()
 	await _test_enemy_behavior()
+	await _test_skeleton()
 	await _test_bat()
 	await _test_talk_beats_attack()
 	await _test_hd()
@@ -202,6 +204,46 @@ func _test_enemy_behavior() -> void:
 	_check(near.state == Enemy.State.DEAD, "a rat at 0 HP dies")
 	await _wait(2.0)
 	_check(not is_instance_valid(near), "a dead rat is removed after its death animation")
+	arena.queue_free()
+	await _frames(2)
+
+
+func _test_skeleton() -> void:
+	# The night enemy: slower and tougher than a rat, a longer telegraph, a swing
+	# (slash anim) that lands on its hit frame, and a crumble when it dies.
+	_check(SKELETON.hp > RAT.hp and SKELETON.chase_speed < RAT.chase_speed and SKELETON.windup_seconds > RAT.windup_seconds,
+			"a skeleton is slower, tougher and telegraphs longer than a rat")
+	_check(SKELETON.active == "night" and SKELETON.arrives_by == "rise" and SKELETON.leaves_by == "sink",
+			"it comes out at night, rising from the ground and sinking back")
+	for a in [&"idle", &"walk", &"attack", &"die", &"rise", &"sink"]:
+		_check(SKELETON.anims.has(a), "the skeleton has a '%s' animation" % a)
+	var arena := await _load(ARENA)
+	var kid: Kid = arena.get_node("World/Kid")
+	var dog: Dog = arena.get_node("World/Dog")
+	_clear_enemies()
+	dog.global_position = kid.global_position + Vector2(-60, 0)
+	dog.set_physics_process(false)
+	kid.set_physics_process(false)
+	var sk := Enemy.create(SKELETON, kid.global_position + Vector2(SKELETON.aggro_radius - 30, 0))
+	arena.get_node("World").add_child(sk)
+	await _wait(0.3)
+	_check(sk.is_active(), "a skeleton within aggro range wakes up")
+	var kid_hp := kid.health.hp
+	var saw_windup := false
+	var saw_swing := false
+	for i in 60 * 6:
+		await get_tree().physics_frame
+		saw_windup = saw_windup or sk.state == Enemy.State.WINDUP
+		saw_swing = saw_swing or (sk.state == Enemy.State.ATTACK and sk._sprite.current == &"attack")
+		if kid.health.hp < kid_hp:
+			break
+	_check(saw_windup, "the skeleton telegraphs (WINDUP) before its swing")
+	_check(saw_swing, "its swing plays the attack animation")
+	_check(kid.health.hp < kid_hp and kid.health.hp >= kid_hp - roundi(SKELETON.damage), "the swing hurts the kid for its damage at most")
+	sk.get_node("Hurtbox").receive(HitInfo.make(999.0, kid.global_position, sk.global_position, 0.0, "player", kid))
+	_check(sk.state == Enemy.State.DEAD and sk._sprite.current == &"die", "a skeleton at 0 HP crumbles (die animation)")
+	await _wait(2.5)
+	_check(not is_instance_valid(sk), "and is removed afterwards")
 	arena.queue_free()
 	await _frames(2)
 
@@ -357,14 +399,25 @@ func _test_talk_beats_attack() -> void:
 
 
 func _test_hd() -> void:
+	Clock.hold("day", 0.0)  # rats are the day enemies: pin it (the clock is global and free elsewhere)
+	# An arena an earlier section left standing keeps its own night shift going.
+	for c in get_children():
+		if String(c.name).begins_with("CombatArena"):
+			c.queue_free()
+	await _frames(3)
 	var scene: Node = load(ARENA_HD).instantiate()
 	add_child(scene)
 	await _frames(12)
 	var hd: HdView = scene.get_node("HdView")
 	var rats := get_tree().get_nodes_in_group("enemy")
 	var yard: Node = scene.get_node("Yard")
-	var n_enemies: int = "".join(yard.layout).count("r") + "".join(yard.layout).count("x") + yard.cfg("ENEMY_ROOSTS").size()
-	_check(n_enemies >= 25 and rats.size() == n_enemies, "the big arena has %d enemies (rats, day rats, roosting bats), found %d" % [n_enemies, rats.size()])
+	var kinds := {}
+	for e in rats:
+		var id: String = (e as Enemy).data.resource_path.get_file().get_basename()
+		kinds[id] = int(kinds.get(id, 0)) + 1
+	var n_enemies: int = "".join(yard.layout).count("x") + yard.cfg("ENEMY_ROOSTS").size()
+	_check(n_enemies >= 25 and rats.size() == n_enemies, "the big arena has %d enemies (day rats + oak bats), found %d %s" % [n_enemies, rats.size(), kinds])
+	_check(not kinds.has("skeleton") or Clock.is_night(), "skeletons only at night")
 	var mirrored := 0
 	for r in rats:
 		if scene.get_node_or_null("HdView/" + String(r.name)) != null:

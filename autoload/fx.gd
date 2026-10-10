@@ -132,12 +132,23 @@ func scent_puff(world_pos: Vector2, color: Color) -> void:
 
 
 ## Clods of dirt flying up (the dog digging).
-func dirt(world_pos: Vector2) -> void:
+func dirt(world_pos: Vector2, count := 6) -> void:
 	var d := _Dirt.new()
 	d.world_pos = world_pos
-	for i in 6:
+	for i in count:
 		d.bits.append(Vector3(randf_range(-40, 40), randf_range(-70, -35), randf_range(1.0, 2.0)))
 	_add_world_fx(d)
+
+
+## A few leaves shaken loose, drifting down (a bat leaving or entering the
+## oak's canopy); `height` px above the ground.
+func leaves(world_pos: Vector2, height := 40.0) -> void:
+	var l := _Leaves.new()
+	l.world_pos = world_pos
+	l.height = height
+	for i in 7:
+		l.bits.append(Vector3(randf_range(-16, 16), randf_range(-14, 2), randf_range(0.0, TAU)))
+	_add_world_fx(l)
 
 
 ## Wisps flowing from `from` (a node: they follow it) to `to` (a node or a
@@ -287,6 +298,23 @@ class _Dirt extends _WorldFx:
 		for b in bits:
 			var p := c + Vector2(b.x, b.y) * age + Vector2(0, 260.0 * age * age)
 			draw_rect(Rect2(p, Vector2(b.z, b.z)), col)
+
+
+## Leaves: small green flecks that sway as they sink.
+class _Leaves extends _WorldFx:
+	## x, y start offset (screen px) and a sway phase.
+	var bits: Array[Vector3] = []
+	var height := 40.0
+
+	func _init() -> void:
+		life = 1.0
+
+	func _draw() -> void:
+		var c := Fx.world_to_screen(world_pos, height)
+		for b in bits:
+			var p := c + Vector2(b.x + sin(age * 5.0 + b.z) * 5.0, b.y + 34.0 * age)
+			var col := Color(0.30, 0.52, 0.2, clampf(1.6 * (1.0 - age / life), 0.0, 1.0))
+			draw_rect(Rect2(p, Vector2(2, 2)), col)
 
 
 ## Wisps drift along the line from the dog to what he smells, wobbling side

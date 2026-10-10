@@ -58,6 +58,12 @@ const SOUNDS := {
 	# and a wing flap (the swing's whoosh, sped up).
 	"rustle":     {"files": ["step_grass_2", "step_grass_4", "step_grass_6"], "db": -11.0, "pitch": 0.2, "base": 0.8},
 	"wing_flap":  {"files": ["swing_1", "swing_3"], "db": -15.0, "pitch": 0.15, "base": 1.8},
+	# The skeleton: stone clacks and punches pitched up read as bones.
+	"bone_rattle": {"files": ["step_stone_2", "step_stone_4", "step_stone_6"], "db": -10.0, "pitch": 0.2, "base": 1.9},
+	"bone_clack":  {"files": ["hit_2", "hit_4"], "db": -5.0, "pitch": 0.1, "base": 1.5},
+	"bone_pain":   {"files": ["step_stone_1", "step_stone_3"], "db": -8.0, "pitch": 0.1, "base": 1.5},
+	"bone_crumble": {"files": ["step_stone_5", "step_stone_3", "step_stone_1"], "db": -8.0, "pitch": 0.12, "base": 0.8},
+	"grave_dirt":  {"files": ["dig"], "db": -9.0, "pitch": 0.08, "base": 0.75},
 	"rat_squeak": {"files": ["rat_squeak"], "db": -13.0, "pitch": 0.08},
 	"rat_pain":   {"files": ["rat_pain"], "db": -12.0, "pitch": 0.1},
 	"rat_death":  {"files": ["rat_death"], "db": -11.0, "pitch": 0.06},

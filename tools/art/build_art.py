@@ -29,7 +29,7 @@ USAGE:
   python3 tools/art/build_art.py --offline  build from the cache only
   python3 tools/art/build_art.py --list     list packs, licenses, cache status
   python3 tools/art/build_art.py --only props,dog   rebuild some steps only
-  Steps: tileset, props, shops, hd, dog, enemies, bat, items, weapons, faces, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
+  Steps: tileset, props, shops, hd, dog, enemies, skeleton, bat, items, weapons, faces, credits.     Needs: Python 3.9+, Pillow (pip install pillow)
 
 Written with help from Claude (Anthropic) via Claude Code.
 Made with love from your friendly hacker - er2oneousbit
@@ -566,6 +566,96 @@ def build_enemies():
         img.save(out_path("assets", "characters", "enemies", "rat", out))
 
 
+SKELETON_LAYERS = ("body/bodies/skeleton/", "head/heads/skeleton/adult/")
+SKELETON_CREDIT = (
+    'Skeleton (assets/characters/enemies/skeleton/skeleton_lpc.png)\n'
+    '==========================================================\n'
+    '\n'
+    "Universal LPC Spritesheet Character Generator layers 'Skeleton' body (body/bodies/skeleton/) and\n"
+    "'Skeleton' head (head/heads/skeleton/adult/), pinned to one commit of the generator's repository\n"
+    '(see LPC_GEN in tools/art/build_art.py). Authors: bluecarrot16, Napsio, JaidynReiman,\n'
+    'Johannes Sjolund (wulax), Stephen Challener (Redshrike).\n'
+    'Licenses offered by the layers: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0. This project uses them under\n'
+    'OGA-BY 3.0 (attribution only; no share-alike layer is used).\n'
+    'Sources: https://opengameart.org/content/lpc-skeleton\n'
+    '         https://opengameart.org/content/lpc-medieval-fantasy-character-sprites\n'
+    '         https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles\n'
+    '         https://opengameart.org/content/lpc-character-bases\n'
+    '\n'
+    'Modifications by this project (tools/art/build_art.py, build_skeleton): body and head composited,\n'
+    'walk / slash / hurt / idle frames re-laid into one row per direction (down, left, right, up),\n'
+    "and 8 'rise' frames built from the standing frame (pushed up out of the ground line, with a dirt mound).\n")
+
+
+def build_skeleton():
+    """The skeleton enemy: LPC generator 'skeleton' body + head layers (OGA-BY 3.0
+    offered), 64x64 frames. Output rows down/left/right/up (AnimalSprite order);
+    columns 0-8 walk, 9-14 slash (the swing), 15-20 hurt (the fall, played as the
+    death: it ends lying down), 21-22 idle, 23-30 rise (the standing frame
+    pushed up out of the ground line with a dirt mound, 8 steps; the director's
+    sink plays it backwards)."""
+    log("Enemies: the skeleton")
+    cache = os.path.join(CACHE, "lpc_generator")
+
+    def layer(path):
+        cached = os.path.join(cache, path)
+        if not os.path.isfile(cached):
+            if OFFLINE:
+                sys.exit(f"ERROR: {path} not cached and --offline was given.")
+            os.makedirs(os.path.dirname(cached), exist_ok=True)
+            with urllib.request.urlopen(LPC_GEN + path, timeout=120) as r, open(cached, "wb") as f:
+                shutil.copyfileobj(r, f)
+        return Image.open(cached).convert("RGBA")
+
+    def anim_sheet(name):
+        img = None
+        for folder in SKELETON_LAYERS:
+            part = layer(folder + name + ".png")
+            if img is None:
+                img = part
+            else:
+                img.alpha_composite(part)
+        return img
+
+    F = 64
+    FEET = 62
+    cols = {"walk": (0, 9), "slash": (9, 6), "hurt": (15, 6), "idle": (21, 2)}
+    rise_col, rise_n = 23, 8
+    out = Image.new("RGBA", (F * (rise_col + rise_n), F * 4), (0, 0, 0, 0))
+    lpc_row = {0: 2, 1: 1, 2: 3, 3: 0}  # our row (down, left, right, up) -> LPC row (up, left, down, right)
+    for name, (c0, n) in cols.items():
+        sheet = anim_sheet(name)
+        for row in range(4):
+            src_row = lpc_row[row] if sheet.height >= F * 4 else 0  # hurt has one row only
+            for i in range(n):
+                out.alpha_composite(sheet.crop((i * F, src_row * F, i * F + F, src_row * F + F)), ((c0 + i) * F, row * F))
+    dirt = [(92, 66, 40, 255), (122, 90, 56, 255), (66, 46, 30, 255)]
+    for row in range(4):
+        stand = out.crop((21 * F, row * F, 22 * F, row * F + F))
+        top, bottom = stand.getbbox()[1], FEET + 1
+        height = bottom - top
+        for k in range(rise_n):
+            frac = (k + 1) / rise_n
+            shift = int(round((1.0 - frac) * (height + 2)))
+            frame = Image.new("RGBA", (F, F), (0, 0, 0, 0))
+            frame.alpha_composite(stand, (0, shift))
+            px = frame.load()
+            for y in range(bottom, F):  # nothing below the ground line
+                for x in range(F):
+                    px[x, y] = (0, 0, 0, 0)
+            if k < rise_n - 1:  # the mound it pushes up, a little wider mid-rise
+                half = 5 + int(8 * (1.0 - abs(frac - 0.5) * 2.0))
+                for x in range(F // 2 - half, F // 2 + half + 1):
+                    depth = max(1, int(3 * (1.0 - abs(x - F // 2) / (half + 1)) + 0.5))
+                    for d in range(depth):
+                        y = FEET - d
+                        px[x, y] = dirt[(x * 7 + d * 3 + k) % 3]
+            out.alpha_composite(frame, ((rise_col + k) * F, row * F))
+    out.save(out_path("assets", "characters", "enemies", "skeleton", "skeleton_lpc.png"))
+    with open(out_path("credits", "enemies", "skeleton_credits.txt"), "w", newline="\n") as f:
+        f.write(SKELETON_CREDIT)
+
+
 def build_bat():
     """The bat (Bat Rework 1.3, S/W/E/N sheet: 48x64 frames, 3 flight frames per
     direction). Output is a 6-column sheet, rows down/left/right/up like the
@@ -781,7 +871,7 @@ def build_credits():
 
 
 STEPS = {"tileset": build_tileset, "props": build_props, "shops": build_shops, "hd": build_hd_textures, "dog": build_dog,
-         "enemies": build_enemies, "bat": build_bat, "items": build_items, "weapons": build_weapons, "faces": build_faces, "credits": build_credits}
+         "enemies": build_enemies, "skeleton": build_skeleton, "bat": build_bat, "items": build_items, "weapons": build_weapons, "faces": build_faces, "credits": build_credits}
 
 
 def main():
@@ -806,7 +896,7 @@ def main():
     unknown = [s for s in steps if s not in STEPS]
     if unknown:
         sys.exit(f"ERROR: unknown step(s) {unknown}. Choose from: {', '.join(STEPS)}")
-    if set(steps) - {"faces"}:   # faces only edits committed sheets, no packs needed
+    if set(steps) - {"faces", "skeleton"}:   # these need no packs (faces edits committed sheets; the skeleton fetches its own layers)
         ensure_packs(args.offline)
     for s in steps:
         STEPS[s]()
