@@ -32,16 +32,34 @@ extends Control
 const SCENE := "res://ui/title/title_screen.tscn"
 const BACKDROP := "res://realms/title/title_lot_hd.tscn"
 const FONT_FILE := preload("res://assets/fonts/Cinzel.ttf")
-## Where the camera rests (meters; the gate's gap is at column 19, row 7).
-const FOCUS_BASE := Vector3(19.5, 0.0, 9.6)
+## The intro's camera (meters; the gate's gap is at column 19, row 7, so the
+## street is south of z = 11): it starts low and looking at the road, then
+## rises a little and tilts up over the fence into the night sky. tilt_deg
+## is positive looking up. The end pose puts the horizon ~10% under the
+## screen center: sky on top, the fence and lot as a band below.
+const POSE_START := {"pos": Vector3(19.5, 0.8, 15.8), "tilt_deg": -20.0, "fov": 40.0}
+const POSE_END := {"pos": Vector3(19.5, 1.0, 14.8), "tilt_deg": 9.5, "fov": 40.0}
+## The scroll takes this long (seconds) on the first visit of a session.
+const INTRO_LEN := 10.0
 ## Seconds before the logo starts to fade in, how long it takes, and when
-## "Press any key" shows up.
-const LOGO_DELAY := 0.6
+## "Press any key" shows up, measured from the start of the screen: the first
+## time (the logo arrives as the scroll settles) and on a repeat visit.
+const LOGO_DELAY := 7.2
 const LOGO_FADE := 2.4
-const PROMPT_AT := 3.4
+const PROMPT_AT := 10.4
+const LOGO_DELAY_AGAIN := 0.4
+const LOGO_FADE_AGAIN := 1.4
+const PROMPT_AT_AGAIN := 2.0
+## After a skip, the camera needs this long to reach its resting pose.
+const SKIP_LEN := 0.7
+const SKY_SHADER := preload("res://assets/shaders/night_sky.gdshader")
 const GOLD := Color(0.95, 0.85, 0.6)
 
-enum Phase { LOGO, MENU, SUB }
+enum Phase { INTRO, LOGO, MENU, SUB }
+
+## True once the scrolling intro has played (or been skipped) this session:
+## coming back via "Quit to title" goes straight to the settled title.
+static var intro_played := false
 
 ## The menu entries, in order.
 const ITEMS := [
@@ -52,7 +70,9 @@ const ITEMS := [
 	{"id": "quit", "label": "Quit"},
 ]
 
-var phase := Phase.LOGO
+var phase := Phase.INTRO
+## How far the scroll has got, 0 to 1 (eased into the pose).
+var scroll := 0.0
 var menu_buttons := {}
 var logo_label: Label
 var subtitle_label: Label
@@ -69,6 +89,8 @@ var _flow: NewGameFlow
 var _settings: SettingsMenu
 var _building := true
 var _tweens: Array[Tween] = []
+var _skip_from := 0.0
+var _skip_t := -1.0
 var _blocked_pause := false
 
 
@@ -97,9 +119,17 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	_age += delta
 	_t += delta
-	if is_instance_valid(_hd):
-		# A slow, wide drift: a few meters side to side, a little in depth.
-		_hd.focus_override = FOCUS_BASE + Vector3(sin(_t * 0.11) * 3.2, 0.0, cos(_t * 0.08) * 0.6)
+	if phase == Phase.INTRO:
+		if _skip_t >= 0.0:
+			_skip_t += delta
+			scroll = lerpf(_skip_from, 1.0, minf(_skip_t / SKIP_LEN, 1.0))
+			if _skip_t >= SKIP_LEN:
+				_finish_intro()
+		else:
+			scroll = minf(_age / INTRO_LEN, 1.0)
+			if scroll >= 1.0:
+				_finish_intro()
+	_apply_pose()
 
 
 # -----------------------------------------------------------------------------
@@ -122,6 +152,23 @@ static func heading_font(weight: int) -> Font:
 # -----------------------------------------------------------------------------
 # Backdrop
 # -----------------------------------------------------------------------------
+## The camera for a scroll position: eased between the two poses, plus a
+## faint sway once settled so the picture never freezes.
+func pose_at(p: float) -> Dictionary:
+	var e := p * p * p * (p * (p * 6.0 - 15.0) + 10.0)  # smootherstep
+	var pos: Vector3 = (POSE_START["pos"] as Vector3).lerp(POSE_END["pos"], e)
+	var tilt: float = lerpf(POSE_START["tilt_deg"], POSE_END["tilt_deg"], e)
+	var sway := clampf((p - 0.85) / 0.15, 0.0, 1.0)
+	pos.x += sin(_t * 0.17) * 0.35 * sway
+	tilt += sin(_t * 0.23) * 0.18 * sway
+	return {"pos": pos, "tilt_deg": tilt, "fov": lerpf(POSE_START["fov"], POSE_END["fov"], e)}
+
+
+func _apply_pose() -> void:
+	if is_instance_valid(_hd):
+		_hd.set_camera_pose(pose_at(scroll))
+
+
 func _add_backdrop() -> void:
 	var scene := load(BACKDROP) as PackedScene
 	var back := scene.instantiate()
@@ -136,7 +183,11 @@ func _add_backdrop() -> void:
 		a.process_mode = Node.PROCESS_MODE_DISABLED
 	(realm.get_node("World/Kid") as Kid).light_on = false
 	_hd = back.get_node("HdView") as HdView
-	_hd.focus_override = FOCUS_BASE
+	var sky := ShaderMaterial.new()
+	sky.shader = SKY_SHADER
+	_hd.set_sky_material(sky)
+	scroll = 1.0 if intro_played else 0.0
+	_apply_pose()
 	_hd.snap_camera()
 
 
@@ -197,13 +248,21 @@ func _build() -> void:
 	prompt_label.text = "Press any key"
 	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	prompt_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Mid-screen, as in the original ("Press START" under the logo, over the sky).
+	prompt_label.anchor_left = 0.5
+	prompt_label.anchor_right = 0.5
+	prompt_label.anchor_top = 0.5
+	prompt_label.anchor_bottom = 0.5
+	prompt_label.offset_left = -120
+	prompt_label.offset_right = 120
+	prompt_label.offset_top = -10
+	prompt_label.offset_bottom = 10
 	prompt_label.add_theme_font_size_override("font_size", 14)
 	prompt_label.add_theme_color_override("font_color", Color(0.92, 0.92, 1.0))
 	prompt_label.add_theme_color_override("font_outline_color", Color(0.02, 0.02, 0.08))
 	prompt_label.add_theme_constant_override("outline_size", 4)
 	prompt_label.modulate.a = 0.0
-	bottom.add_child(prompt_label)
+	_layout.add_child(prompt_label)
 
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -310,15 +369,12 @@ func _menu_button(item: Dictionary) -> Button:
 # The intro and the menu
 # -----------------------------------------------------------------------------
 func _start_intro() -> void:
-	var t := create_tween()
-	_tweens.append(t)
-	t.tween_interval(LOGO_DELAY)
-	t.tween_property(logo_label, "modulate:a", 1.0, LOGO_FADE)
-	if subtitle_label:
-		t.tween_property(subtitle_label, "modulate:a", 1.0, 1.4)
-	t.tween_interval(maxf(0.0, PROMPT_AT - LOGO_DELAY - LOGO_FADE - 1.4))
-	t.tween_property(prompt_label, "modulate:a", 1.0, 0.8)
-	t.tween_callback(_pulse_prompt)
+	var again := intro_played
+	if again:
+		phase = Phase.LOGO
+	_logo_timeline(LOGO_DELAY_AGAIN if again else LOGO_DELAY,
+			LOGO_FADE_AGAIN if again else LOGO_FADE,
+			PROMPT_AT_AGAIN if again else PROMPT_AT)
 	# The glows breathe for as long as the screen is up.
 	for l: Label in [logo_label, subtitle_label]:
 		if l == null:
@@ -327,6 +383,40 @@ func _start_intro() -> void:
 		var gt := create_tween().set_loops()
 		gt.tween_property(g, "modulate:a", 0.35, 2.2).set_trans(Tween.TRANS_SINE)
 		gt.tween_property(g, "modulate:a", 1.0, 2.2).set_trans(Tween.TRANS_SINE)
+
+
+## The logo fades in at `delay`, the prompt shows at `prompt_at`, then pulses.
+func _logo_timeline(delay: float, fade: float, prompt_at: float) -> void:
+	var t := create_tween()
+	_tweens.append(t)
+	t.tween_interval(delay)
+	t.tween_property(logo_label, "modulate:a", 1.0, fade)
+	var sub_fade := fade * 0.5
+	if subtitle_label:
+		t.tween_property(subtitle_label, "modulate:a", 1.0, sub_fade)
+	t.tween_interval(maxf(0.0, prompt_at - delay - fade - sub_fade))
+	t.tween_property(prompt_label, "modulate:a", 1.0, 0.8)
+	t.tween_callback(_pulse_prompt)
+
+
+## A key during the scroll: glide to the resting pose (SKIP_LEN) and bring the
+## logo and prompt up quickly. The next key opens the menu.
+func skip_intro() -> void:
+	if phase != Phase.INTRO or _skip_t >= 0.0:
+		return
+	_skip_from = scroll
+	_skip_t = 0.0
+	for t in _tweens:
+		t.kill()
+	_tweens.clear()
+	_logo_timeline(0.1, 0.6, 1.0)
+
+
+func _finish_intro() -> void:
+	intro_played = true
+	scroll = 1.0
+	phase = Phase.LOGO
+	_skip_t = -1.0
 
 
 func _pulse_prompt() -> void:
@@ -339,7 +429,7 @@ func _pulse_prompt() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if phase != Phase.LOGO or _age < 0.3 or Travel.busy:
+	if (phase != Phase.LOGO and phase != Phase.INTRO) or _age < 0.3 or Travel.busy:
 		return
 	var any := false
 	if event is InputEventKey:
@@ -347,7 +437,11 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventJoypadButton or event is InputEventMouseButton:
 		any = event.pressed
 	if any:
-		reveal_menu()
+		# During the scroll a key only skips it; the menu needs another.
+		if phase == Phase.INTRO:
+			skip_intro()
+		else:
+			reveal_menu()
 		get_viewport().set_input_as_handled()
 
 
