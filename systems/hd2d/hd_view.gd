@@ -83,12 +83,13 @@ const WOOD_POST := preload("res://assets/textures/hd/wood_post.png")
 ## Readability lesson (golden hour, 2026-10-07): a low sun into thick fog
 ## scattered toward the camera washed the whole screen yellow and drained the
 ## sprites. Keep the sun above ~30 degrees, fog near the day value, shadows lifted.
+const MOON_COLOR := Color(0.58, 0.68, 1.0)
 const PRESETS := {
 	# Morning (2026-10-09): soft and cool. A lower sun than day but kept above
 	# 30 degrees, a pale sky, cool ambient and a light mist (fog a little over
 	# day's, pale blue so it can't go yellow). Brighter than golden: readable.
 	"morning": {
-		"sun_color": Color(0.9, 0.93, 1.0), "sun_energy": 1.15, "sun_elev": 36.0, "sun_yaw": 0.0, "shadow_opacity": 0.4,
+		"sun_color": Color(0.9, 0.93, 1.0), "sun_energy": 1.15, "moon_color": MOON_COLOR, "moon_energy": 0.0, "shadow_opacity": 0.4,
 		"ambient": Color(0.66, 0.74, 0.96), "ambient_energy": 0.85,
 		"sky_top": Color(0.42, 0.58, 0.86), "sky_horizon": Color(0.86, 0.9, 0.98),
 		"fog_density": 0.006, "fog_albedo": Color(0.88, 0.93, 1.0),
@@ -97,7 +98,7 @@ const PRESETS := {
 		"water_glow": 0.28, "phone_glow": 0.0, "actor_lift": 0.1,
 	},
 	"day": {
-		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "sun_elev": 68.0, "sun_yaw": 0.0, "shadow_opacity": 0.45,
+		"sun_color": Color(1.0, 0.97, 0.92), "sun_energy": 1.45, "moon_color": MOON_COLOR, "moon_energy": 0.0, "shadow_opacity": 0.45,
 		"ambient": Color(0.62, 0.7, 0.88), "ambient_energy": 0.75,
 		"sky_top": Color(0.32, 0.55, 0.92), "sky_horizon": Color(0.78, 0.87, 0.96),
 		"fog_density": 0.0025, "fog_albedo": Color(0.92, 0.95, 1.0),
@@ -106,7 +107,7 @@ const PRESETS := {
 		"water_glow": 0.3, "phone_glow": 0.0, "actor_lift": 0.08,
 	},
 	"golden": {
-		"sun_color": Color(1.0, 0.76, 0.52), "sun_energy": 1.75, "sun_elev": 42.0, "sun_yaw": 0.0, "shadow_opacity": 0.5,
+		"sun_color": Color(1.0, 0.76, 0.52), "sun_energy": 1.75, "moon_color": MOON_COLOR, "moon_energy": 0.0, "shadow_opacity": 0.5,
 		"ambient": Color(0.56, 0.56, 0.78), "ambient_energy": 0.82,
 		"sky_top": Color(0.34, 0.4, 0.76), "sky_horizon": Color(1.0, 0.66, 0.42),
 		"fog_density": 0.003, "fog_albedo": Color(1.0, 0.86, 0.7),
@@ -115,7 +116,7 @@ const PRESETS := {
 		"water_glow": 0.24, "phone_glow": 0.0, "actor_lift": 0.12,
 	},
 	"night": {
-		"sun_color": Color(0.58, 0.68, 1.0), "sun_energy": 0.28, "sun_elev": 52.0, "sun_yaw": 0.0, "shadow_opacity": 0.6,
+		"sun_color": Color(0.58, 0.68, 1.0), "sun_energy": 0.0, "moon_color": MOON_COLOR, "moon_energy": 0.28, "shadow_opacity": 0.6,
 		"ambient": Color(0.18, 0.22, 0.42), "ambient_energy": 0.7,
 		"sky_top": Color(0.02, 0.03, 0.09), "sky_horizon": Color(0.06, 0.09, 0.18),
 		"fog_density": 0.008, "fog_albedo": Color(0.5, 0.6, 0.95),
@@ -160,6 +161,7 @@ var focus_override: Variant = null
 var camera_pose: Variant = null
 var _target := Vector3.ZERO
 var _sun: DirectionalLight3D
+var _moon: DirectionalLight3D
 var _flash: SpotLight3D
 var _phone: OmniLight3D
 var _env: Environment
@@ -193,8 +195,18 @@ var _y_scale := 1.0
 var _map_m := Rect2()
 var _materials: Dictionary = {}
 var _quads: Dictionary = {}
+## The look at the clock's hour (_to), the look on screen (_applied) and, only
+## during an F2 crossfade, where it started (_from) and how far along (_xf).
 var _from: Dictionary = {}
 var _to: Dictionary = {}
+var _applied: Dictionary = {}
+var _xf := 1.0
+var _look_hour := -1.0
+## Re-sample the look when the hour moved this much (finer than a visible step).
+const LOOK_STEP_HOURS := 0.004
+## An hour gap bigger than this in one step is a jump (F2, @time), not running.
+const JUMP_HOURS := 0.5
+const JUMP_BLEND := 0.8
 var _tween: Tween
 var _prop_count := 0
 
@@ -234,7 +246,7 @@ func _ready() -> void:
 
 	# Fade as long as the clock asks (long when it moves on by itself).
 	EventBus.time_of_day_changed.connect(func(t: String) -> void: _apply_time(t, Clock.last_blend))
-	_apply_time(_atmo.time_name, 0.0)
+	_update_look(true)
 	_apply_graphics()
 	Settings.changed.connect(_on_setting_changed)
 	set_enabled(Settings.get_value("view") == "hd2d")
@@ -345,6 +357,7 @@ func _process(delta: float) -> void:
 		var scent: Variant = actor.get("scent")
 		if scent != null and a[3] == "Sprite":
 			s3.set_instance_shader_parameter("scent", scent)
+	_update_look()
 	_follow_camera(delta)
 	_aim_flashlight()
 	# Particles live in world space; keep their spawn boxes over the view.
@@ -960,6 +973,17 @@ func _build_environment() -> void:
 	_sun.light_angular_distance = 0.8
 	_sun.light_volumetric_fog_energy = 1.0
 	add_child(_sun)
+	# The moon takes the light over after sunset (DayLight): same shadow rules,
+	# bluish and dim, its own aim.
+	_moon = DirectionalLight3D.new()
+	_moon.name = "Moon"
+	_moon.shadow_enabled = true
+	_moon.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	_moon.directional_shadow_max_distance = 70.0
+	_moon.shadow_blur = 1.2
+	_moon.light_angular_distance = 0.8
+	_moon.light_volumetric_fog_energy = 1.0
+	add_child(_moon)
 
 
 func _build_particles() -> void:
@@ -1031,33 +1055,78 @@ func _build_clouds() -> void:
 # -----------------------------------------------------------------------------
 # Time of day
 # -----------------------------------------------------------------------------
-func _apply_time(time_name: String, seconds: float) -> void:
-	if not PRESETS.has(time_name):
+## The EventBus announced a new phase. The look does not jump with it any more
+## (it follows Clock.hour(), see _update_look); a JUMP (F2, @time) is spotted by
+## the hour gap there and crossfaded.
+func _apply_time(_time_name: String, _seconds: float) -> void:
+	_update_look(_look_hour < 0.0)
+
+
+## The whole look at an hour: the preset table blended by hour plus the
+## computed light poses (the sun's travel, the moon after dark). Everything in
+## one dictionary so a crossfade can lerp it as a whole.
+static func look_for(hour: float) -> Dictionary:
+	var v := DayLight.sample(PRESETS, hour)
+	var sp := DayLight.sun_pose(hour)
+	var mp := DayLight.moon_pose(hour)
+	v["sun_elev"] = sp["elev"]
+	v["sun_yaw"] = sp["yaw"]
+	v["moon_elev"] = mp["elev"]
+	v["moon_yaw"] = mp["yaw"]
+	v["sun_energy"] = float(v["sun_energy"]) * DayLight.sun_env(hour)
+	v["moon_energy"] = float(v["moon_energy"]) * DayLight.moon_env(hour)
+	return v
+
+
+## Follow the clock: re-sample the look when the hour moved. A big gap is a
+## jump (F2): crossfade from what is on screen instead of popping.
+func _update_look(force := false) -> void:
+	var h := Clock.hour()
+	var gap := DayLight.hour_gap(_look_hour, h) if _look_hour >= 0.0 else 0.0
+	if not force and absf(gap) < LOOK_STEP_HOURS:
 		return
-	_from = _to.duplicate()
-	_to = PRESETS[time_name]
-	if _tween:
-		_tween.kill()
-	if seconds <= 0.0 or _from.is_empty():
+	var jumped := _look_hour >= 0.0 and absf(gap) > JUMP_HOURS and Clock.last_blend > 0.0
+	if jumped:
+		_from = _applied.duplicate()
+	_look_hour = h
+	_to = look_for(h)
+	if jumped:
+		if _tween:
+			_tween.kill()
+		_xf = 0.0
+		var secs := minf(Clock.last_blend, JUMP_BLEND)
+		_tween = create_tween()
+		_tween.tween_method(_set_xf, 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE)
+	elif _xf >= 1.0 or _from.is_empty() or _tween == null or not _tween.is_running():
+		_xf = 1.0
+		_from = {}
 		_blend(1.0)
 	else:
-		_tween = create_tween()
-		_tween.tween_method(_blend, 0.0, 1.0, seconds).set_trans(Tween.TRANS_SINE)
+		_blend(_xf)
 	_pollen.emitting = _to["pollen"] > 0.0
 	_fireflies.emitting = _to["fireflies"] > 0.0
 
 
-## t = 0..1 between the previous mood (_from) and the new one (_to).
+func _set_xf(t: float) -> void:
+	_xf = t
+	_blend(t)
+
+
+## t = 0..1 between the previous mood (_from, only during a jump crossfade)
+## and the live look at the clock's hour (_to).
 func _blend(t: float) -> void:
-	var v := {}
-	for k: String in _to:
-		var a: Variant = _from.get(k, _to[k])
-		var b: Variant = _to[k]
-		v[k] = a.lerp(b, t) if a is Color else lerpf(a, b, t)
+	var v: Dictionary = _to if t >= 1.0 or _from.is_empty() else DayLight.mix(_from, _to, t)
+	_applied = v
 	_sun.light_color = v["sun_color"]
 	_sun.light_energy = v["sun_energy"]
+	_sun.visible = v["sun_energy"] > 0.001
 	_sun.rotation = Vector3(-deg_to_rad(v["sun_elev"]), deg_to_rad(v["sun_yaw"]), 0.0)
 	_sun.shadow_opacity = v["shadow_opacity"]
+	_moon.light_color = v["moon_color"]
+	_moon.light_energy = v["moon_energy"]
+	_moon.visible = v["moon_energy"] > 0.001
+	_moon.rotation = Vector3(-deg_to_rad(v["moon_elev"]), deg_to_rad(v["moon_yaw"]), 0.0)
+	_moon.shadow_opacity = v["shadow_opacity"]
 	_env.ambient_light_color = v["ambient"]
 	_env.ambient_light_energy = v["ambient_energy"]
 	_sky_mat.sky_top_color = v["sky_top"]

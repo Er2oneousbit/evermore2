@@ -4,8 +4,9 @@
 # WHAT:  A small dome of sky whose colour follows the time (pale blue by day,
 #        warm orange at dawn and dusk, navy with twinkling stars at night).
 #        Behind it a wheel carries the sun and the moon opposite each other:
-#        the sun rises on the left at 6:00, tops the dial at noon and sets on
-#        the right at 18:00; the moon is on the far side of the wheel, so it
+#        the sun rises on the left at DayLight.SUNRISE (5:30), tops the dial at
+#        noon and sets on the right at DayLight.SUNSET (18:30), the same hours
+#        the world's sun does; the moon is on the far side of the wheel, so it
 #        tops the dial at midnight. The wheel turns smoothly with Clock.hour().
 #        Tick marks sit on the rim at 6, 9, 12, 15 and 18 (the 6s and 12 a bit
 #        longer). Every 3 game hours the clock crosses one: it lights up and a
@@ -100,10 +101,11 @@ func badges() -> Array[String]:
 
 
 # --- Pure helpers (tests call these) -----------------------------------------
-## Angle of the sun from straight up, clockwise, in radians: noon 0, 18:00 a
-## quarter turn right, midnight pi.
+## Angle of the sun from straight up, clockwise, in radians: noon 0, the
+## sunset a quarter turn right, midnight pi. The sun crosses the horizon at the
+## SAME hours as the 3D sun (DayLight.SUNRISE / SUNSET), so dial and world agree.
 static func sun_angle(hour: float) -> float:
-	return (hour - 12.0) / 24.0 * TAU
+	return DayLight.sun_angle(hour)
 
 
 ## Where the sun (or the moon, opposite it) sits relative to the wheel's
@@ -115,7 +117,7 @@ static func body_offset(hour: float, moon := false) -> Vector2:
 
 ## [zenith, horizon] colours of the sky at an hour.
 static func sky_colors(hour: float) -> Array:
-	var e := cos(sun_angle(hour))  # sun height: 1 noon, 0 at 6 and 18, -1 midnight
+	var e := cos(sun_angle(hour))  # sun height: 1 noon, 0 at sunrise and sunset, -1 midnight
 	var a: Array
 	var b: Array
 	var t: float

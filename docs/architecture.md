@@ -331,7 +331,7 @@ node (tests use it with no realm at all). Atmosphere is only the look.
   `out` direction). follow_clock spawners are registered with the realm's
   `DayNightDirector` instead of being spawned. `EnemyData` "Day and night":
   `active` (always/day/night; morning and golden count as day), `leaves_by`
-  (burrow/edge/fade/roost), `arrives_by` (offscreen/burrow/drop/rise/fade),
+  (burrow/edge/fade/roost/sink), `arrives_by` (offscreen/burrow/drop/rise/fade),
   `sound_cue`, `flies`/`fly_height`, `respawn_seconds`, `roosts`/`hang_height`.
   * `populate()` fills the realm for the current phase on load, no ceremony.
   * `Clock.phase_changed` queues staggered jobs (game time): leave / recall,
@@ -451,7 +451,7 @@ it and confirming the test fails:
 | `tests/smoke_ring.tscn` | no | Equipment data and rules (only owned pieces that fit, the weapon slot never empty, armor adding up and cutting damage, a new weapon's swing and charge), the demo kit once, the ring menu (pause, tabs, one step per push, hold to spin, instant change and its panel, Tab to the dog, Esc, not mid-conversation, HD-2D placement) |
 | `tests/smoke_rings.tscn` | no | The Items, Alchemy and Party rings (use, cast, cost, experience and levels, stances, Stay put), quick slots (assign, move, fire on whoever you drive, notices, not mid-conversation), the D-pad moving to quick slots and old saves, dialogue keys |
 | `tests/smoke_clock.tscn` | no | The clock: phase order and wrap on game time, the long fade, pause, hold/set/release, F7/F9; the yard runs free, has no enemies, and its HD look fades; the prologue holds (and @time keeps it held); shops open/closed by the clock, the shutter, one item per phase, set_rule; night misses (in the arena) only outside the beam (2D cone and HD spotlight, seeded dice, "Miss", no damage); the dog's scent glow only at night while driving him |
-| `tests/smoke_enemy_clock.tscn` | no | The day/night enemy swap in the combat arena (14 rats, 9 oak roosts; the yard has none): rats out and bats hanging by day, a rat respawns by its burrow; at dusk the idle rat leaves and is removed only invisible or off camera, the fighting rat stays, no respawn at night, the bats drop one at a time after dark with a cue; at dawn bats hang up again and the rats return staggered |
+| `tests/smoke_enemy_clock.tscn` | no | The day/night enemy swap in the combat arena (22 rats, 22 skeleton spawns, 9 oak roosts; the yard has none): rats out by day, no skeleton, bats unseen in the oaks; a rat respawns by its burrow; at dusk the idle rat leaves and is removed only invisible or off camera, the fighting rat stays, no respawn at night, the skeletons rise one at a time after dark (rise animation, dirt cue) and the bats fly out of the canopy with a cue; at dawn the skeletons sink back, the bats fly in and vanish, and the rats return staggered |
 | `tests/smoke_travel.tscn` | no | Walking between maps: the fresh prologue plays its intro; dog-driven street -> yard (entry spot and facing, HP, charge, leader, Stay put carried, clock hold released, both cameras snapped, no bounce back from the arrival exit); Esc mid-swap; yard -> arena -> yard (kit not doubled); back to the street with no intro and the clock held |
 | `tests/smoke_realm_trees.tscn` | no | no tree (PropData.tree) on or beside a path in the street, yard and arena, apron woods included; no LAYOUT tree dropped |
 | `tests/smoke_hd.tscn` | no | HD-2D view mirrors every prop/fence/actor, depth tie order, camera on map, F6 swap, time of day reaches 3D lights |

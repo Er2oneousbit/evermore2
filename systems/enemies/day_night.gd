@@ -8,12 +8,13 @@
 #        and golden hour count as day):
 #          - dusk: day enemies stop respawning; idle ones go to the nearest
 #            exit (a burrow, the map edge, ...) and are removed only once the
-#            camera can't see them (or after sinking into a hole in plain view,
-#            which is a visible reason). Ones in combat (aggro'd or hit lately)
-#            stay until killed or calm. Bats, which hang in their oaks by day,
-#            drop out of the trees and fly.
-#          - dawn: the reverse. Bats fly back and hang up; day enemies come
-#            back out of their holes.
+#            camera can't see them (or after sinking into a hole or the ground
+#            in plain view, which is a visible reason). Ones in combat (aggro'd or hit lately)
+#            stay until killed or calm. Bats, which spend the day unseen in
+#            their oaks, fly out of the canopy and about.
+#          - dawn: the reverse. Bats fly back into the leaves and vanish; day
+#            enemies come back out of their holes; night ones (skeletons,
+#            leaves_by "sink") go back down into the ground, staggered.
 #          - night enemies are brought in with their own entrance
 #            (EnemyData.arrives_by): "offscreen" waits until the spawn point is
 #            out of view; burrow / drop / rise / fade play a visible entrance
@@ -350,8 +351,8 @@ func _start_leave(s: Dictionary) -> void:
 	match kind:
 		"roost":
 			point = s["home"]
-		"fade":
-			pass
+		"fade", "sink":
+			pass  # in place: it fades / goes down into the ground where it stands
 		_:
 			var ex := _pick_exit(s, e, kind)
 			if ex.is_empty():

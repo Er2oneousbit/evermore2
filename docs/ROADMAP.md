@@ -45,7 +45,8 @@ the orange shelter tag).
 * The save file keeps the kid's gender and both names (the title screen's New Game asks them); Continue on the title screen is greyed out until the save system below exists
 * Better foliage/tree sway (owner: the rigid one-block sway still looks bad): e.g. a few hand-made sway frames per tree, or a smooth sub-pixel sway with the new texel filtering
 * Find character and animal art with 8 directions (diagonals) for the kid and the dog: LPC only has 4; the owner wants 45-degree poses if a matching set exists
-* Night-only enemies and items (the hook is there: `ENEMY_CLOCK` / `"clock"` per spawner)
+* Night-only items (night-only enemies exist now: the skeletons)
+* Collision for decorative props placed by buildings (the shops' barrel and crate have none), when the real game's props are built
 * Save system (human-readable JSON), dialogue, the hub (The Mansion That Was), the prologue
 * The realms (being redesigned, see design-bible.md section 8)
 * Player 2 controls the dog; rebinding, accessibility (text size, colorblind swaps, shake toggle)
@@ -85,6 +86,17 @@ the orange shelter tag).
 | 2026-10-06 | **32 px tiles, 640x360 base view** (was 16 px / 384x216), to use the LPC library |
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
+
+## Done: lighting follows the clock; skeletons
+
+Owner: "The sun dial doesn't match the actual lighting." and "Replace the rats with skeletons" (then: skeletons by night, rats by day, and bats not visible in the trees by day). Version stays 0.5.0.
+
+- **Lighting cause (confirmed):** the look jumped between four presets (a 6 s fade) at the phase starts 5/11/17/20, while the dial put the sun at 6:00 and 18:00 and the 3D sun never moved. At 19:00 the dial had the sun set and the world was golden; at 5:00 the world was morning and the dial pre-dawn.
+- **Fix:** `systems/atmosphere/day_light.gd` (`DayLight`): the look is blended between hourly keyframes (night 2, 4:30; morning 6:30, 9; day 12, 16; golden 17:30; night 20:30), for the 3D look (`HdView`, now `look_for(hour)`) and the 2D grade (`Atmosphere`). The sun and the moon are two lights: sunrise 5:30, sunset 18:30 (one pair of constants, used by the dial too), the sun climbs an arc from 30 to 68 degrees with a small east-to-west yaw swing (shadows still fall north), fades in over the first hour and out over the last, and the moon light takes over after sunset. The kid's flashlight follows the hour. Phases (morning/day/golden/night) still switch at 5/11/17/20 for shops, enemies, music and ambience. F2 jumps to the next phase start with a quick crossfade; a held clock (prologue) holds the look.
+- **Measured** (`smoke_clock`, 96 samples over 24 h): the dial's sun and moon are above the horizon exactly when the world's are (0 disagreements; with the dial on its old 6/18 formula 4 of 96 differ), no light is on while its body is below the horizon, the sun never steps more than 0.45 energy in ten game minutes (old code: one jump of the whole difference), its elevation steps under 2.5 degrees, nothing pops at the golden phase change, and no value in either table jumps by hour.
+- **Skeletons:** `data/enemies/skeleton.tres` (32 HP, 7 damage, walks 30 and chases 58 against the rat's 18 HP, 5 damage, 40 and 85; a 0.7 s telegraph with a bone rattle, then a claw swing; respawns after 60 s). Art: the Universal LPC generator's "Skeleton" body and head layers (OGA-BY 3.0 offered; no share-alike layer), composed by `tools/art/build_art.py` (`skeleton`): walk, slash, hurt (the crumble, ending in a pile of bones), idle, and eight "rise" frames built from the standing frame (pushed up out of the ground line, with a dirt mound; the sink plays them backwards). Sounds are the existing CC0 stone steps and punches pitched up, plus the dig for the cue (no new files).
+- **Arena:** day = giant rats only (the always-out `r` rats became day-schedule `x` rats, 22 with burrows); night = 22 skeletons (`z`) that rise out of the ground at dusk (`arrives_by` "rise": dirt cue a second ahead, never before the dark delay, one at a time) and sink back at dawn (`leaves_by` "sink", new), plus the 9 bats. Bats are not drawn by day at all (the roost is logical only): at dusk each flies out of the oak's canopy in a shower of leaves, at dawn it flies back in, fades into the leaves and is gone.
+- **Tests:** `smoke_clock` (the 24 h agreement, smoothness, F2 blend, held look, phases at 5/11/17/20), `smoke_visuals`, `smoke_hd` (the moon), `smoke_enemy_clock` (no rats always out, no skeleton by day, bats unseen by day; skeletons rise staggered with the rise animation and sink at dawn, never removed in view; bats show themselves flying out), `smoke_combat` (a skeleton wakes, telegraphs, swings, crumbles). Sabotages: the dial back on the old formula fails the agreement test; HdView not following the hour fails the moon takeover; the director not recalling skeletons at dawn leaves them standing.
 
 ## Done: the mansion on the title, and creepy music
 

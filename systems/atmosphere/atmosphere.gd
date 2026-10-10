@@ -106,6 +106,14 @@ var _particle_layer: CanvasLayer
 var _pollen: CPUParticles2D
 var _fireflies: CPUParticles2D
 var _tween: Tween
+## The look at the clock's hour (_to), what is on screen (_applied) and, during
+## a jump crossfade only, where it started (_from) and how far along (_xf).
+var _to: Dictionary = {}
+var _from: Dictionary = {}
+var _applied: Dictionary = {}
+var _xf := 1.0
+var _look_hour := -1.0
+const LOOK_STEP_HOURS := 0.004
 
 
 func _ready() -> void:
@@ -122,8 +130,8 @@ func _ready() -> void:
 	Clock.phase_changed.connect(_apply)
 	_apply(Clock.phase, 0.0)
 	Settings.changed.connect(func(key: String, _v: Variant) -> void:
-		if key == "brightness" and presets.has(time_name):
-			_modulate.color = _bright(presets[time_name]["tint"]))
+		if key == "brightness" and not _applied.is_empty():
+			_modulate.color = _bright(_applied["tint"]))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -132,6 +140,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
+	_update_look()
 	# Particles live in world space; keep their spawn box centered on the view.
 	var cam := get_viewport().get_camera_2d()
 	if cam:
@@ -157,39 +166,71 @@ func set_time(new_time: String, seconds := 0.8) -> void:
 	Clock.jump(new_time, seconds)
 
 
-## The clock moved on: fade the look to `new_time` and announce it.
-func _apply(new_time: String, seconds: float) -> void:
+## The clock moved on to a new PHASE: announce it (music, ambience, shops and
+## the like key on the names). The look itself follows the hour continuously
+## (_update_look), so nothing fades here; a jump is crossfaded there.
+func _apply(new_time: String, _seconds: float) -> void:
 	if not presets.has(new_time):
 		Debug.log_warn("Atmosphere: no preset for time of day '%s'" % new_time)
 		return
 	time_name = new_time
-	var p: Dictionary = presets[new_time]
-	if _tween:
-		_tween.kill()
-	var params := {
-		"saturation": p["saturation"], "contrast": p["contrast"],
-		"shadow_tint": p["shadow_tint"], "highlight_tint": p["highlight_tint"],
-		"shaft_strength": p["shafts"], "shaft_color": p["shaft_color"],
-		"vignette_strength": p["vignette"], "vignette_color": p["vignette_color"],
-		"cloud_strength": p.get("clouds", 0.0),
-	}
-	if seconds <= 0.0:
-		_modulate.color = _bright(p["tint"])
-		for key: String in params:
-			_grade_mat.set_shader_parameter(key, params[key])
-		_pollen.modulate.a = p["pollen"]
-		_fireflies.modulate.a = p["fireflies"]
-	else:
-		_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
-		_tween.tween_property(_modulate, "color", _bright(p["tint"]), seconds)
-		for key: String in params:
-			_tween.tween_property(_grade_mat, "shader_parameter/" + key, params[key], seconds)
-		_tween.tween_property(_pollen, "modulate:a", p["pollen"], seconds)
-		_tween.tween_property(_fireflies, "modulate:a", p["fireflies"], seconds)
-	_pollen.emitting = p["pollen"] > 0.0
-	_fireflies.emitting = p["fireflies"] > 0.0
+	_update_look(_look_hour < 0.0)
 	EventBus.time_of_day_changed.emit(new_time)
 	Debug.log_verbose("Atmosphere: time of day -> %s" % new_time)
+
+
+## Re-sample the mood at the clock's hour (DayLight blends the presets between
+## keyframes). A big hour gap is a jump (F2, @time): crossfade from what is on
+## screen over the jump's blend instead of popping.
+func _update_look(force := false) -> void:
+	var h := Clock.hour()
+	var gap := DayLight.hour_gap(_look_hour, h) if _look_hour >= 0.0 else 0.0
+	if not force and absf(gap) < LOOK_STEP_HOURS:
+		return
+	var jumped := _look_hour >= 0.0 and absf(gap) > DayLight.JUMP_HOURS and Clock.last_blend > 0.0
+	if jumped:
+		_from = _applied.duplicate()
+	_look_hour = h
+	_to = DayLight.sample(presets, h)
+	if jumped:
+		if _tween:
+			_tween.kill()
+		_xf = 0.0
+		var secs := minf(Clock.last_blend, blend_seconds)
+		_tween = create_tween().set_trans(Tween.TRANS_SINE)
+		_tween.tween_method(_set_xf, 0.0, 1.0, maxf(secs, 0.05))
+	elif _tween != null and _tween.is_running():
+		_blend(_xf)
+	else:
+		_xf = 1.0
+		_from = {}
+		_blend(1.0)
+
+
+func _set_xf(t: float) -> void:
+	_xf = t
+	_blend(t)
+	if t >= 1.0:
+		_from = {}
+
+
+func _blend(t: float) -> void:
+	var p: Dictionary = _to if t >= 1.0 or _from.is_empty() else DayLight.mix(_from, _to, t)
+	_applied = p
+	_modulate.color = _bright(p["tint"])
+	_grade_mat.set_shader_parameter("saturation", p["saturation"])
+	_grade_mat.set_shader_parameter("contrast", p["contrast"])
+	_grade_mat.set_shader_parameter("shadow_tint", p["shadow_tint"])
+	_grade_mat.set_shader_parameter("highlight_tint", p["highlight_tint"])
+	_grade_mat.set_shader_parameter("shaft_strength", p["shafts"])
+	_grade_mat.set_shader_parameter("shaft_color", p["shaft_color"])
+	_grade_mat.set_shader_parameter("vignette_strength", p["vignette"])
+	_grade_mat.set_shader_parameter("vignette_color", p["vignette_color"])
+	_grade_mat.set_shader_parameter("cloud_strength", p.get("clouds", 0.0))
+	_pollen.modulate.a = p["pollen"]
+	_fireflies.modulate.a = p["fireflies"]
+	_pollen.emitting = p["pollen"] > 0.0
+	_fireflies.emitting = p["fireflies"] > 0.0
 
 
 ## The world tint with the player's brightness (Settings) applied.

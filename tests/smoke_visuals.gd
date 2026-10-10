@@ -99,7 +99,7 @@ func _test_atmosphere() -> void:
 
 	for t: String in Atmosphere.TIME_ORDER:
 		atm.set_time(t, 0.0)
-		var p: Dictionary = Atmosphere.PRESETS[t]
+		var p: Dictionary = DayLight.sample(Atmosphere.PRESETS, Clock.hour())
 		var tint: CanvasModulate = atm.get_node("WorldTint")
 		_check(tint.color.is_equal_approx(p["tint"]), "%s: tint %s != %s" % [t, tint.color, p["tint"]])
 		var pollen: CPUParticles2D = atm.get_node("AmbientParticles/Pollen")

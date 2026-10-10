@@ -65,14 +65,19 @@ comparison. Nothing in gameplay code knows which view is on.
 
 ### Mood per time of day (`HdView.PRESETS`)
 
-Four moods, in clock order: **morning** (soft and cool: pale sun at 36°,
-cool ambient, a light pale-blue mist, a little less saturation, still
-brighter than golden), **day**, **golden** and **night**. The clock fades
-between them over several seconds.
+Four moods, in clock order: **morning** (soft and cool: pale sun, cool
+ambient, a light pale-blue mist, a little less saturation, still brighter
+than golden), **day**, **golden** and **night**. They are keyframes, not
+states: `DayLight` (`systems/atmosphere/day_light.gd`) blends them by
+`Clock.hour()` (night 2 and 4:30, morning 6:30 and 9, day 12 and 16, golden
+17:30, night 20:30), so the light changes continuously. The sun rises at 5:30
+and sets at 18:30 (the sky dial uses the same two hours), climbing an arc
+from 30° to 68° with a small yaw swing; after sunset the moon light (its own
+`Moon` light, `moon_energy`) takes over.
 
 | Knob | What it does |
 |---|---|
-| `sun_color/energy/elev/yaw` | The key light. The sun sits in front (camera side), so shadows fall straight back, north (owner, 2026-10-08). Shadows stay light (`shadow_opacity` ~0.5) and short (sun 68° by day, 42° at golden hour): they must never hide a character |
+| `sun_color/energy`, `moon_color/energy` | The key lights (their aim comes from `DayLight`: elevation never below 30° while the sun is up, yaw within 14°). The sun sits in front (camera side), so shadows fall back, north (owner, 2026-10-08). Shadows stay light (`shadow_opacity` ~0.5) and short: they must never hide a character |
 | `ambient` | Fill light. Keep it **cooler** than the sun: warm light + cool shadow is what reads as "golden hour" |
 | `fog_density/albedo` | Volumetric fog: light shafts through the trees. A little goes a long way (0.0025-0.008) |
 | `exposure/saturation/contrast` | Final grade |

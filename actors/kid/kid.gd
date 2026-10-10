@@ -96,7 +96,7 @@ const SHEETS := {
 	"boy": preload("res://assets/characters/kid/kid_lpc.png"),
 	"girl": preload("res://assets/characters/kid_girl/kid_girl_lpc.png"),
 }
-const LIGHT_ENERGY_BY_TIME := {"morning": 0.0, "day": 0.0, "golden": 0.35, "night": 1.3}
+const LIGHT_ENERGY_BY_TIME := {"morning": {"e": 0.0}, "day": {"e": 0.0}, "golden": {"e": 0.35}, "night": {"e": 1.3}}
 ## Seconds to fade the flashlight when the time of day changes.
 const LIGHT_FADE := 0.6
 ## Chest height of the flashlight (phone held up in front).
@@ -166,7 +166,7 @@ func _ready() -> void:
 	_flashlight.enabled = light_on
 	_apply_gender(GameState.kid_gender)
 	EventBus.kid_gender_changed.connect(_apply_gender)
-	EventBus.time_of_day_changed.connect(_on_time_of_day_changed)
+	_update_flashlight(0.0, true)
 	_build_weapon_layers()
 	equip(weapon)
 	_apply_equipment("kid")
@@ -369,10 +369,11 @@ func in_beam_2d(point: Vector2) -> bool:
 	return absf(face.angle_to(to)) <= deg_to_rad(BEAM_HALF_ANGLE_DEG)
 
 
-func _on_time_of_day_changed(time_name: String) -> void:
-	var energy: float = LIGHT_ENERGY_BY_TIME.get(time_name, LIGHT_ENERGY_BY_TIME["night"])
-	# Fade with the sky (the clock's own changes take several seconds).
-	create_tween().tween_property(_flashlight, "energy", energy, maxf(LIGHT_FADE, Clock.last_blend))
+## The flashlight follows the HOUR like the sky does (DayLight blends the table
+## between keyframes), and eases toward it so a jump (F2) fades in LIGHT_FADE.
+func _update_flashlight(delta: float, snap := false) -> void:
+	var want: float = DayLight.sample(LIGHT_ENERGY_BY_TIME, Clock.hour())["e"]
+	_flashlight.energy = want if snap else move_toward(_flashlight.energy, want, delta * 1.3 / LIGHT_FADE)
 
 
 func _physics_process(delta: float) -> void:
@@ -431,6 +432,7 @@ func _physics_process(delta: float) -> void:
 	_update_animation(input_dir != Vector2.ZERO)
 	_footsteps(delta)
 	_update_weapon_layers()
+	_update_flashlight(delta)
 
 	# Flashlight sits slightly ahead of the kid, at chest height.
 	_flashlight.position = facing * light_offset + Vector2(0, LIGHT_HEIGHT)

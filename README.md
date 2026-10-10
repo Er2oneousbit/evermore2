@@ -55,8 +55,8 @@ for Windows or Linux. No engine needed: unzip and run.
 > real content come later.
 
 Inside: `Evermore2.exe` opens the title screen (New Game starts the prologue; Debug picks any map), `Combat arena.bat` the fight
-in a big countryside with giant rats, rats that go home at dusk and bats in
-the oaks (also on Hard), `Test yard.bat` the yard where a whole day goes by in 24 minutes (two shops,
+in a big countryside with giant rats by day, skeletons that rise from the ground at dusk and bats from
+the oaks by night (also on Hard), `Test yard.bat` the yard where a whole day goes by in 24 minutes (two shops,
 one that closes at night, no enemies). The three are joined by paths: follow the
 prologue street's road east to the yard, and the yard's shop street north to
 the arena. The

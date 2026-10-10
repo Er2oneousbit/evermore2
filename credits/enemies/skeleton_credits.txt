@@ -1,0 +1,17 @@
+Skeleton (assets/characters/enemies/skeleton/skeleton_lpc.png)
+==========================================================
+
+Universal LPC Spritesheet Character Generator layers 'Skeleton' body (body/bodies/skeleton/) and
+'Skeleton' head (head/heads/skeleton/adult/), pinned to one commit of the generator's repository
+(see LPC_GEN in tools/art/build_art.py). Authors: bluecarrot16, Napsio, JaidynReiman,
+Johannes Sjolund (wulax), Stephen Challener (Redshrike).
+Licenses offered by the layers: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0. This project uses them under
+OGA-BY 3.0 (attribution only; no share-alike layer is used).
+Sources: https://opengameart.org/content/lpc-skeleton
+         https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+         https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+         https://opengameart.org/content/lpc-character-bases
+
+Modifications by this project (tools/art/build_art.py, build_skeleton): body and head composited,
+walk / slash / hurt / idle frames re-laid into one row per direction (down, left, right, up),
+and 8 'rise' frames built from the standing frame (pushed up out of the ground line, with a dirt mound).
