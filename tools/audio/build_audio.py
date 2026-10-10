@@ -147,6 +147,19 @@ PACKS = {
         "url": OGA + "JRPG%20Music%20Pack%20%235%20%5BAction%5D%20by%20Juhani%20Junkala.zip",
         "page": "https://opengameart.org/content/jrpg-pack-5-action",
     },
+    "music_box": {
+        "title": "4 Music Box Tracks (the spooky waltz)", "author": "Aureolus_Omicron", "license": "CC0",
+        "url": OGA + "4_music_box_tracks_ogg.zip", "page": "https://opengameart.org/content/4-music-box-tracks",
+    },
+    "dungeon_ambience": {
+        "title": "Loopable Dungeon Ambience (its low wind, drips filtered out)", "author": "JaggedStone",
+        "license": "CC0", "url": OGA + "dungeon_ambient_1_0.ogg",
+        "page": "https://opengameart.org/content/loopable-dungeon-ambience",
+    },
+    "wind_whoosh": {
+        "title": "Wind Whoosh Loop (gusts)", "author": "SketchMan3", "license": "CC0",
+        "url": OGA + "wind%20woosh%20loop.ogg", "page": "https://opengameart.org/content/wind-whoosh-loop",
+    },
 }
 
 # -----------------------------------------------------------------------------
@@ -210,7 +223,9 @@ MUSIC = {
     # day = yard + tropical (upbeat), night = lot + innocence (quiet).
     "tropical": ("jrpg_exploration", "Exploration6 - Tropical Island.ogg"),
     "innocence": ("jrpg_calm", "Calm6 - Innocence.ogg"),
-    "title": ("jrpg_exploration", "Exploration4 - Prairie Nights.ogg"),   # the title screen
+    # The title screen: a slow, lonely music box waltz, a little spooky (the
+    # mansion looms over it). Released as a seamless loop, copied as is.
+    "mansion": ("music_box", "musicbox1_spooky_waltz.ogg"),
 }
 
 
@@ -260,6 +275,11 @@ AMBIENCE = {
     "day": ("birds_wind", "Birds%20and%20Wind%20-%20Ambient_1.ogg", 3.0),
     "night": ("crickets", "crickets_1.mp3", 0.6),
 }
+
+## The title's wind (see build_wind): a low bed, gusts on top. (pack, file).
+WIND_BED = ("dungeon_ambience", "dungeon_ambient_1_0.ogg")
+WIND_GUSTS = ("wind_whoosh", "wind woosh loop.ogg")
+WIND_XFADE = 4.0
 
 
 # -----------------------------------------------------------------------------
@@ -371,6 +391,34 @@ def make_loop(data, sr, xfade):
     return body
 
 
+def build_wind(offline):
+    """The title's wind: the dungeon loop's low rumble (low-passed at 700 Hz,
+    which drops its water drips) with the 6 s gust loop tiled over it at
+    random offsets and swelling slowly, then looped like the other ambience.
+    Seeded, so a rebuild gives the same bytes."""
+    bed, sr = sf.read(source(*WIND_BED, offline), always_2d=True)
+    spec = np.fft.rfft(bed, axis=0)
+    freq = np.fft.rfftfreq(len(bed), 1.0 / sr)
+    spec *= (1.0 / (1.0 + (freq / 700.0) ** 4))[:, None]
+    bed = np.fft.irfft(spec, n=len(bed), axis=0)
+    bed /= max(np.abs(bed).max(), 1e-6)
+    gust, gsr = sf.read(source(*WIND_GUSTS, offline), always_2d=True)
+    assert gsr == sr, "bed and gusts must share a sample rate"
+    gust = gust / max(np.abs(gust).max(), 1e-6)
+    rng = np.random.default_rng(11)
+    layer = np.zeros_like(bed)
+    pos = 0
+    while pos < len(layer):
+        n = min(len(gust), len(layer) - pos)
+        w = np.hanning(len(gust))[:n, None]
+        layer[pos:pos + n] += gust[:n] * w
+        pos += int(len(gust) * rng.uniform(0.35, 0.6))
+    t = np.arange(len(layer)) / sr
+    swell = 0.5 + 0.5 * np.sin(2 * np.pi * t / 17.0 + 1.0) * np.sin(2 * np.pi * t / 29.0)
+    layer *= (0.12 + 0.4 * swell)[:, None]
+    return bed * 0.6 + layer, sr
+
+
 def write_ogg(data, sr, out, channels=1):
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
@@ -451,6 +499,11 @@ def build(offline):
         data *= 10 ** (-3.0 / 20) / max(np.abs(data).max(), 1e-6)  # peak -3 dBFS
         write_ogg(data, sr, os.path.join(AMBIENCE_OUT, name + ".ogg"), channels=2)
         print("  amb   %s" % name)
+    data, sr = build_wind(offline)
+    data = make_loop(data, sr, WIND_XFADE)
+    data *= 10 ** (-3.0 / 20) / max(np.abs(data).max(), 1e-6)
+    write_ogg(data, sr, os.path.join(AMBIENCE_OUT, "wind.ogg"), channels=2)
+    print("  amb   wind (mixed)")
     write_credits()
 
 
@@ -469,6 +522,8 @@ def write_credits():
                 used.setdefault(key, []).append(f"{name}.ogg  <-  {rel} (one layer)")
     for name, (key, rel, _x) in AMBIENCE.items():
         used.setdefault(key, []).append(f"ambience/{name}.ogg  <-  {rel} (looped)")
+    for key in (WIND_BED, WIND_GUSTS):
+        used.setdefault(key[0], []).append(f"ambience/wind.ogg  <-  {key[1]} (mixed and looped)")
     lines = ["Audio used by Secret of Evermore 2: Return to Evermore",
              "Rebuilt by tools/audio/build_audio.py. Every source below is CC0 (public domain);",
              "credit is given anyway, with thanks. Sound effects are trimmed, mixed to mono and",

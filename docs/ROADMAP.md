@@ -86,6 +86,15 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Done: the mansion on the title, and creepy music
+
+Owner: "Good start, but where is the mansion and where is the creepy music... The setup should be a foreshadowing of what is to come." Version stays 0.5.0.
+
+- **The mansion:** the scroll now ends on the Ruffleberg mansion on a hill 28 m behind the lot, centered under the logo, with the moon (moved, a bit larger) rising just behind its roof. `systems/hd2d/mansion_building.gd` (`MansionBuilding3D`): hall with a steep front gable and a crooked dormer, a lower wing, a ten-sided tower with a leaning cone roof, three chimneys, dark window panes, a hill and a dark apron, seven dead trees. Materials are `assets/shaders/mansion.gdshader`: the LPC shop wall and roof tiles (texel-AA, triplanar) tinted nearly black with a moon rim light on edges (flat ground gets none: at a grazing angle it glowed like snow). One gable window glows sickly green and flickers (the lab, Carltron); a tower window lights candle-warm for about 2 s every 19 s. Both are pure functions of time and a seed (`lab_level`, `attic_level`), plus a faint green light on the gable.
+- **Framing:** the apron woods north of the lot are off for the title (`APRON_ROWS := 0`) and the big oaks and bushes in the north rows are gone; they hid the house. "Press any key" moved down into the dark band over the fence and is bigger and brighter (pulses between 0.6 and 1).
+- **Music and ambience:** the title theme is the spooky waltz from "4 Music Box Tracks" (Aureolus_Omicron, CC0), as `mansion.ogg`; "Prairie Nights" is gone. The ambience is the new "haunted" set: `wind.ogg`, the low rumble of "Loopable Dungeon Ambience" (JaggedStone, CC0, low-passed at 700 Hz to drop the drips) with "Wind Whoosh Loop" (SketchMan3, CC0) tiled over it and slowly swelling, looped seamlessly. No owl or creak: OpenGameArt had no CC0 one. The prologue's music is unchanged.
+- **Measured:** checked at 2560x1440 and 3440x1440 (screenshot_title; the mansion, the moon and the window read at both, the tower stays clear of the logo). `smoke_title` now checks the mansion's parts, no coplanar faces (1 cm), the lab flicker (range, seeded, live), the tower window, the music and the ambience; sabotages: constant light fails the flicker checks, moving the pane 3 cm back fails the coplanar check. `smoke_audio` loads the new files.
+
 ## Done: a title intro and a dog that sits
 
 Owner: the original opens on a ~10 s scrolling scene that lands on the title; its dog sits when idle and sometimes sniffs and wanders for no reason. Version stays 0.5.0.

@@ -38,7 +38,7 @@ func _run() -> void:
 	get_tree().current_scene = holder
 	_check(ProjectSettings.get_setting("application/run/main_scene") == TitleScreen.SCENE, "the title is the main scene")
 	_check(Debug.start_scene_for(PackedStringArray(["--yard"])) != "", "--yard still bypasses the title")
-	for leg: Callable in [_test_intro, _test_build, _test_reveal, _test_debug_settings, _test_new_game, _test_returns]:
+	for leg: Callable in [_test_intro, _test_build, _test_mansion, _test_reveal, _test_debug_settings, _test_new_game, _test_returns]:
 		await leg.call()
 		if not _failures.is_empty():
 			break
@@ -102,6 +102,106 @@ func _test_build() -> void:
 	_check(PauseMenu.blocked, "the pause menu is blocked on the title")
 	_check(t.phase == TitleScreen.Phase.LOGO and not t._menu_box.visible, "the menu is hidden until a key is pressed")
 	t.activate("quit")  # in the logo phase this must do nothing (the test is still running)
+
+
+## The mansion on the hill, its flickering lab window, and the eerie sound.
+func _test_mansion() -> void:
+	await _go_title()
+	var t := _title()
+	var m := t.mansion
+	_check(m != null and m.is_inside_tree(), "the title builds the mansion")
+	for n in ["Hall", "HallRoof", "Wing", "Tower", "TowerRoof", "Hill", "Apron", "LabWindow", "AtticWindow", "Trees"]:
+		_check(m.get_node_or_null(n) != null, "the mansion has %s" % n)
+	_check(m.get_node("Trees").get_child_count() >= 5, "with dead trees around it")
+	var bad := _no_coplanar_faces(m)
+	_check(bad.is_empty(), "mansion: no coplanar faces within 1 cm (z-fight): %s" % ", ".join(bad))
+	# The lab light is a pure function of time and the seed: it stutters and
+	# blacks out now and then, is the same on every run, differs by seed.
+	var lo := 1.0
+	var hi := 0.0
+	var same := true
+	var differs := false
+	var t_s := 0.0
+	while t_s < 60.0:
+		var v := MansionBuilding3D.lab_level(t_s, 1995)
+		lo = minf(lo, v)
+		hi = maxf(hi, v)
+		same = same and v == MansionBuilding3D.lab_level(t_s, 1995)
+		differs = differs or v != MansionBuilding3D.lab_level(t_s, 7)
+		t_s += 0.05
+	_check(hi > 0.7 and lo < 0.1, "the lab window flickers (range %.2f to %.2f over a minute)" % [lo, hi])
+	_check(same and differs, "the flicker is seeded: same seed, same light; another seed differs")
+	var lit := 0.0
+	var dark := 0.0
+	t_s = 0.0
+	while t_s < 38.0:
+		var a := MansionBuilding3D.attic_level(t_s, 1995)
+		lit += 1.0 if a > 0.0 else 0.0
+		dark += 1.0 if a == 0.0 else 0.0
+		t_s += 0.05
+	_check(lit > 0.0 and dark > lit, "the tower window lights briefly and goes dark")
+	# Running: the lab window follows the light over game time.
+	var seen := {}
+	for i in 240:
+		await get_tree().physics_frame
+		seen[snappedf(m.lab_glow(), 0.01)] = true
+	_check(seen.size() > 3, "the live lab glow changes over time (%d levels)" % seen.size())
+	_check(Audio.music_name == "mansion", "the title plays the creepy music box (%s)" % Audio.music_name)
+	_check(Audio.ambience_set == "haunted" and Audio.ambience_name == "wind", "with wind for ambience (%s/%s)" % [Audio.ambience_set, Audio.ambience_name])
+
+
+## Z-fighting guard (as in smoke_hd for the shops): no two boxes, gables or
+## panes of the mansion that face the same way may lie within 1 cm of each
+## other and overlap. Faces are rebuilt from each mesh's transform.
+func _no_coplanar_faces(b: Node3D) -> PackedStringArray:
+	var faces: Array = []   # [name, normal, center, u, v, hu, hv, (triangle)]
+	for mi: MeshInstance3D in b.get_children().filter(func(n: Node) -> bool: return n is MeshInstance3D):
+		var basis := mi.transform.basis.orthonormalized()
+		if mi.mesh is BoxMesh:
+			var size := (mi.mesh as BoxMesh).size * mi.scale
+			for axis in 3:
+				for sgn in [-1.0, 1.0]:
+					var n: Vector3 = basis[axis] * sgn
+					if n.y < -0.99 and absf(mi.position.y - size.y * 0.5) < 1e-4:
+						continue  # a bottom standing on the ground
+					var u: Vector3 = basis[(axis + 1) % 3]
+					var v: Vector3 = basis[(axis + 2) % 3]
+					faces.append([mi.name, n, mi.position + n * size[axis] * 0.5, u, v,
+							size[(axis + 1) % 3] * 0.5, size[(axis + 2) % 3] * 0.5])
+		elif mi.mesh is PrismMesh:
+			var ps := (mi.mesh as PrismMesh).size
+			for sgn in [-1.0, 1.0]:
+				var n: Vector3 = basis[2] * sgn
+				faces.append([mi.name, n, mi.position + n * ps.z * 0.5, basis[0], basis[1], ps.x * 0.5, ps.y * 0.5, true])
+		elif mi.mesh is QuadMesh:
+			var q := (mi.mesh as QuadMesh).size
+			faces.append([mi.name, basis[2], mi.position, basis[0], basis[1], q.x * 0.5, q.y * 0.5])
+	var bad := PackedStringArray()
+	for i in faces.size():
+		for j in range(i + 1, faces.size()):
+			var fa: Array = faces[i]
+			var fb: Array = faces[j]
+			if (fa[1] as Vector3).dot(fb[1]) < 0.9998:
+				continue
+			if absf((fa[1] as Vector3).dot((fb[2] as Vector3) - (fa[2] as Vector3))) >= 0.01:
+				continue
+			if _face_overlap(fa, fb) or _face_overlap(fb, fa):
+				bad.append("%s/%s" % [fa[0], fb[0]])
+	return bad
+
+
+func _face_overlap(a: Array, b: Array) -> bool:
+	for i in 15:
+		for j in 15:
+			var p: Vector3 = (a[2] as Vector3) + (a[3] as Vector3) * (a[5] * (2.0 * (i + 0.5) / 15.0 - 1.0)) \
+					+ (a[4] as Vector3) * (a[6] * (2.0 * (j + 0.5) / 15.0 - 1.0))
+			var d: Vector3 = p - (b[2] as Vector3)
+			var half_u: float = b[5]
+			if b.size() > 7:  # a triangle: narrows to the apex
+				half_u *= 1.0 - (d.dot(b[4]) + b[6]) / (2.0 * b[6])
+			if absf(d.dot(b[3])) < half_u - 1e-4 and absf(d.dot(b[4])) < b[6] - 1e-4:
+				return true
+	return false
 
 
 func _test_reveal() -> void:

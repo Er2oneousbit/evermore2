@@ -53,6 +53,12 @@ const PROMPT_AT_AGAIN := 2.0
 ## After a skip, the camera needs this long to reach its resting pose.
 const SKIP_LEN := 0.7
 const SKY_SHADER := preload("res://assets/shaders/night_sky.gdshader")
+## The Ruffleberg mansion: on its hill 28 m behind the lot's north edge, in
+## line with the gate. The moon sits just behind its roof (a direction from
+## the camera: 4 degrees right of center, 15.5 up), so the house is backlit.
+const MANSION_POS := Vector3(19.5, 3.5, -28.0)
+const MOON_DIR := Vector3(0.0672, 0.267, -0.961)
+const MOON_SIZE := 0.05
 const GOLD := Color(0.95, 0.85, 0.6)
 
 enum Phase { INTRO, LOGO, MENU, SUB }
@@ -77,6 +83,9 @@ var menu_buttons := {}
 var logo_label: Label
 var subtitle_label: Label
 var prompt_label: Label
+
+## The mansion on its hill (a child of the HdView); its lab window flickers.
+var mansion: MansionBuilding3D
 
 var _hd: HdView
 var _t := 0.0
@@ -185,7 +194,13 @@ func _add_backdrop() -> void:
 	_hd = back.get_node("HdView") as HdView
 	var sky := ShaderMaterial.new()
 	sky.shader = SKY_SHADER
+	sky.set_shader_parameter("moon_dir", MOON_DIR)
+	sky.set_shader_parameter("moon_size", MOON_SIZE)
 	_hd.set_sky_material(sky)
+	mansion = MansionBuilding3D.new()
+	mansion.name = "Mansion"
+	mansion.position = MANSION_POS
+	_hd.add_child(mansion)
 	scroll = 1.0 if intro_played else 0.0
 	_apply_pose()
 	_hd.snap_camera()
@@ -248,19 +263,19 @@ func _build() -> void:
 	prompt_label.text = "Press any key"
 	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Mid-screen, as in the original ("Press START" under the logo, over the sky).
+	# Low, in the dark band above the fence: the mansion owns the middle.
 	prompt_label.anchor_left = 0.5
 	prompt_label.anchor_right = 0.5
 	prompt_label.anchor_top = 0.5
 	prompt_label.anchor_bottom = 0.5
 	prompt_label.offset_left = -120
 	prompt_label.offset_right = 120
-	prompt_label.offset_top = -10
-	prompt_label.offset_bottom = 10
-	prompt_label.add_theme_font_size_override("font_size", 14)
-	prompt_label.add_theme_color_override("font_color", Color(0.92, 0.92, 1.0))
+	prompt_label.offset_top = 96
+	prompt_label.offset_bottom = 120
+	prompt_label.add_theme_font_size_override("font_size", 17)
+	prompt_label.add_theme_color_override("font_color", Color(1.0, 0.98, 0.9))
 	prompt_label.add_theme_color_override("font_outline_color", Color(0.02, 0.02, 0.08))
-	prompt_label.add_theme_constant_override("outline_size", 4)
+	prompt_label.add_theme_constant_override("outline_size", 6)
 	prompt_label.modulate.a = 0.0
 	_layout.add_child(prompt_label)
 
@@ -424,7 +439,7 @@ func _pulse_prompt() -> void:
 		return
 	var p := create_tween().set_loops()
 	_tweens.append(p)
-	p.tween_property(prompt_label, "modulate:a", 0.25, 0.9).set_trans(Tween.TRANS_SINE)
+	p.tween_property(prompt_label, "modulate:a", 0.6, 0.9).set_trans(Tween.TRANS_SINE)
 	p.tween_property(prompt_label, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
 
 
