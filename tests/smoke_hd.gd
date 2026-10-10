@@ -117,9 +117,9 @@ func _run() -> void:
 	# --- 5. Time of day reaches the 3D lights ------------------------------------
 	atmo.set_time("night", 0.0)
 	await _wait(1.0)
-	var sun: DirectionalLight3D = hd.get_node("Sun")
-	var want: float = HdView.PRESETS["night"]["sun_energy"]
-	_check(absf(sun.light_energy - want) < 0.01, "night sun energy %.2f, expected %.2f" % [sun.light_energy, want])
+	var sun: DirectionalLight3D = hd.get_node("Moon")
+	var want: float = HdView.look_for(Clock.hour())["moon_energy"]
+	_check(want > 0.2 and absf(sun.light_energy - want) < 0.01, "night moon energy %.2f, expected %.2f" % [sun.light_energy, want])
 	var flies: GPUParticles3D = hd.get_node("Fireflies")
 	_check(flies.emitting, "fireflies should be on at night")
 

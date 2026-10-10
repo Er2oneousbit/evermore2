@@ -213,12 +213,14 @@ func _test_dial() -> void:
 	_check(noon_moon.y > 0.0, "and the moon is under the dial then (%s)" % noon_moon)
 	var mid_moon := SkyDial.body_offset(0.0, true)
 	_check(mid_moon.distance_to(Vector2(0, -SkyDial.WHEEL_R)) < 0.01, "the moon is at the top at midnight (%s)" % mid_moon)
-	_check(SkyDial.body_offset(6.0).x < -SkyDial.WHEEL_R + 0.01 and absf(SkyDial.body_offset(6.0).y) < 0.01, "the sun rises on the left at 6:00")
-	_check(SkyDial.body_offset(18.0).x > SkyDial.WHEEL_R - 0.01 and absf(SkyDial.body_offset(18.0).y) < 0.01, "and sets on the right at 18:00")
+	_check(SkyDial.body_offset(DayLight.SUNRISE).x < -SkyDial.WHEEL_R + 0.01 and absf(SkyDial.body_offset(DayLight.SUNRISE).y) < 0.01,
+			"the sun rises on the left at the world's sunrise (%.1f)" % DayLight.SUNRISE)
+	_check(SkyDial.body_offset(DayLight.SUNSET).x > SkyDial.WHEEL_R - 0.01 and absf(SkyDial.body_offset(DayLight.SUNSET).y) < 0.01,
+			"and sets on the right at the world's sunset (%.1f)" % DayLight.SUNSET)
 	_check(SkyDial.body_offset(9.0).y < -5.0 and SkyDial.body_offset(9.0).x < 0.0, "at 9:00 it is climbing, left of the top")
 	_check(SkyDial.body_offset(3.0).distance_to(-SkyDial.body_offset(3.0, true)) < 0.01, "the moon is always opposite the sun")
 	var day_sky: Color = SkyDial.sky_colors(13.0)[1]
-	var dusk_sky: Color = SkyDial.sky_colors(18.0)[1]
+	var dusk_sky: Color = SkyDial.sky_colors(DayLight.SUNSET)[1]
 	var night_sky: Color = SkyDial.sky_colors(1.0)[0]
 	_check(day_sky.b > 0.9 and dusk_sky.r > dusk_sky.b + 0.4 and night_sky.b < 0.25, "pale blue by day, orange at dusk, navy at night")
 	_check(SkyDial.star_alpha(13.0) == 0.0 and SkyDial.star_alpha(1.0) == 1.0, "stars only at night")
@@ -327,22 +329,118 @@ func _test_yard_fades(scene: Node) -> void:
 	var atmo: Atmosphere = scene.get_node("Yard/Atmosphere")
 	var hd: HdView = scene.get_node("HdView")
 	_check(Clock.mode == "free", "the test yard runs the clock free (%s)" % Clock.mode)
+	Clock.paused = true  # we step the clock by hand below
 	atmo.set_time("day", 0.0)
 	await _frames(5)
 	var sun: DirectionalLight3D = hd.get_node("Sun")
-	var day_e: float = HdView.PRESETS["day"]["sun_energy"]
-	var gold_e: float = HdView.PRESETS["golden"]["sun_energy"]
-	_check(absf(sun.light_energy - day_e) < 0.01, "day sun to start (%.2f)" % sun.light_energy)
-	Clock.advance(Clock.phase_seconds())  # day runs out
-	_check(atmo.time_name == "golden", "the look follows the clock (%s)" % atmo.time_name)
+	var moon: DirectionalLight3D = hd.get_node("Moon")
+	var day_e: float = HdView.look_for(Clock.hour())["sun_energy"]
+	_check(absf(sun.light_energy - day_e) < 0.01 and day_e > 1.0, "day sun to start (%.2f vs %.2f)" % [sun.light_energy, day_e])
+
+	# The look follows the HOUR: step 11:00 -> 20:30 in ten-minute strides across
+	# the golden phase change (17:00) and watch the sun: no jump anywhere, and the
+	# elevation travels (owner, 2026-10-09: the sun dial doesn't match the lighting).
+	var last_e := sun.light_energy
+	var last_el := sun.rotation_degrees.x
+	var worst_e := 0.0
+	var worst_el := 0.0
+	var crossed_17 := 0.0
+	var elevs: Array[float] = []
+	while Clock.hour() < 20.5:
+		var was := Clock.phase
+		Clock.advance(Clock.hour_seconds() / 6.0)
+		await _frames(2)
+		worst_e = maxf(worst_e, absf(sun.light_energy - last_e))
+		worst_el = maxf(worst_el, absf(sun.rotation_degrees.x - last_el))
+		if was != Clock.phase and Clock.phase == "golden":
+			crossed_17 = absf(sun.light_energy - last_e)
+			_check(absf(Clock.hour() - 17.0) < 0.2, "golden starts at 17:00 (%.2f)" % Clock.hour())
+		last_e = sun.light_energy
+		last_el = sun.rotation_degrees.x
+		elevs.append(-sun.rotation_degrees.x)
+	_check(worst_e < 0.45, "the sun's energy never jumps (worst ten-minute step %.2f)" % worst_e)
+	_check(worst_el < 2.5, "the sun's elevation moves smoothly (worst step %.2f deg)" % worst_el)
+	_check(crossed_17 < 0.1, "nothing pops at the golden phase change (%.3f)" % crossed_17)
+	_check(elevs.max() > 55.0 and elevs.min() >= 29.9, "the sun climbs and sinks but stays above 30 degrees (%.1f..%.1f)" % [elevs.min(), elevs.max()])
+	_check(moon.light_energy > 0.05 and sun.light_energy < 0.01, "after dusk the moon light has taken over (moon %.2f, sun %.2f)" % [moon.light_energy, sun.light_energy])
+
+	# Phases still switch at their hours for gameplay.
+	Clock.hold("morning", 0.0)
+	var starts := {"day": 11.0, "golden": 17.0, "night": 20.0, "morning": 5.0}
+	var prev := {"day": "morning", "golden": "day", "night": "golden", "morning": "night"}
+	for ph: String in starts:
+		Clock.hold(prev[ph], 0.0)
+		var left := (float(Clock.PHASE_START[ph]) - float(Clock.PHASE_START[prev[ph]]))
+		left = fposmod(left, 24.0)
+		Clock.advance((left - 0.01) * Clock.hour_seconds())
+		var before := Clock.phase
+		Clock.advance(0.02 * Clock.hour_seconds())
+		_check(before == prev[ph] and Clock.phase == ph, "%s starts at %02d:00 (was %s, now %s)" % [ph, int(starts[ph]), before, Clock.phase])
+
+	# F2 crossfades quickly from the look on screen to the new hour's look.
+	Clock.hold("day", 0.0)
+	await _frames(5)
+	var before_e := sun.light_energy
+	Clock.next_phase(0.8)
+	await _frames(6)
+	var target_e: float = HdView.look_for(Clock.hour())["sun_energy"]
+	_check(absf(sun.light_energy - before_e) < absf(target_e - before_e) - 0.05 or absf(target_e - before_e) < 0.1,
+			"F2 starts a blend, no pop (%.2f from %.2f toward %.2f)" % [sun.light_energy, before_e, target_e])
+	await _wait(1.2)
+	_check(absf(sun.light_energy - target_e) < 0.02, "and lands on the new phase's start in under 1.5 s (%.2f vs %.2f)" % [sun.light_energy, target_e])
+	# A held clock holds the look.
+	var held_e := sun.light_energy
 	await _wait(1.0)
-	_check(sun.light_energy > day_e + 0.01 and sun.light_energy < gold_e - 0.01,
-			"a second in, the sun is mid-fade (%.2f between %.2f and %.2f)" % [sun.light_energy, day_e, gold_e])
-	await _wait(Clock.FADE_SECONDS)
-	_check(absf(sun.light_energy - gold_e) < 0.01, "and lands on golden after the fade (%.2f)" % sun.light_energy)
-	# Morning has its own look in both views, sun kept above 30 degrees.
+	_check(absf(sun.light_energy - held_e) < 0.001, "a held clock holds the look")
+	Clock.release()
+	Clock.paused = false
+
+	# Dial and world agree: over 24 h the world's sun is above the horizon exactly
+	# when the dial's sun is, and the moon likewise.
+	var disagreements := 0
+	var lit_while_down := 0
+	var n := 0
+	var h := 0.1
+	while h < 24.0:
+		n += 1
+		var dial_up := SkyDial.body_offset(h).y < 0.0
+		var dial_moon_up := SkyDial.body_offset(h, true).y < 0.0
+		var look := HdView.look_for(h)
+		var sp := DayLight.sun_pose(h)
+		var mp := DayLight.moon_pose(h)
+		if dial_up != sp["up"] or dial_moon_up != mp["up"] or dial_up == dial_moon_up:
+			disagreements += 1
+		if (look["sun_energy"] > 0.001 and not dial_up) or (look["moon_energy"] > 0.001 and not dial_moon_up):
+			lit_while_down += 1
+		if sp["up"] and sp["elev"] < 29.9:
+			lit_while_down += 1
+		h += 0.25
+	_check(disagreements == 0, "dial and world agree on sun and moon over 24 h (%d of %d samples differ)" % [disagreements, n])
+	_check(lit_while_down == 0, "a light is never on while its body is below the dial's horizon (%d)" % lit_while_down)
+	# The look is smooth by hour for every number in both views' tables.
+	var worst := 0.0
+	var key_at := ""
+	var prev_look := HdView.look_for(0.0)
+	var prev_2d := DayLight.sample(Atmosphere.PRESETS, 0.0)
+	h = 0.05
+	while h < 24.0:
+		for pair in [[prev_look, HdView.look_for(h)], [prev_2d, DayLight.sample(Atmosphere.PRESETS, h)]]:
+			for k: String in pair[1]:
+				var a: Variant = pair[0][k]
+				var b: Variant = pair[1][k]
+				var d: float = (absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b)) if a is Color else absf(a - b)
+				var scale: float = 1.0 if (a is Color or k == "sun_elev" or k == "moon_elev" or k == "sun_yaw" or k == "moon_yaw") else maxf(absf(b), absf(a)) + 0.3
+				if k.ends_with("elev") or k.ends_with("yaw"):
+					continue  # a body below the horizon is unlit and may re-aim (energy is checked)
+				if d / scale > worst:
+					worst = d / scale
+					key_at = "%s at %.2f" % [k, h]
+		prev_look = HdView.look_for(h)
+		prev_2d = DayLight.sample(Atmosphere.PRESETS, h)
+		h += 0.05
+	_check(worst < 0.35, "no value in the look jumps by hour (worst %.2f, %s)" % [worst, key_at])
+	# Morning has its own look in both views.
 	_check(HdView.PRESETS.has("morning") and Atmosphere.PRESETS.has("morning"), "a morning preset in both views")
-	_check(HdView.PRESETS["morning"]["sun_elev"] >= 30.0, "morning sun above 30 degrees")
 
 
 func _test_shops(_scene: Node) -> void:
