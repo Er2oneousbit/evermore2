@@ -39,6 +39,7 @@ ingredients and alchemists), the dog's look (notched floppy ear, one ear up,
 the orange shelter tag).
 
 ## Later
+* Real sitting frames for the dog: the LPC animal sheet has no sit, so the idle sit is built from the standing frame and reads as a crouch (owner: in the original the idle dog sits)
 
 * A better idle animation for the kid and NPCs (the LPC breathing frame opened a gap between shirt and trousers; the 1 px bob replacement was removed by the owner)
 * The save file keeps the kid's gender and both names (the title screen's New Game asks them); Continue on the title screen is greyed out until the save system below exists
