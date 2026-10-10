@@ -30,9 +30,12 @@ func _run() -> void:
 	get_tree().current_scene = holder
 	get_tree().change_scene_to_file(TitleScreen.SCENE)
 	await get_tree().scene_changed
-	await _secs(2.0)
-	await _shot("title_logo")
-	await _secs(2.5)
+	# The first visit plays the ~10 s scroll: frames along the way.
+	var played := 0.0
+	for at: float in [0.5, 3.0, 5.0, 7.5, 9.5, 12.5]:
+		await _secs(at - played)
+		played = at
+		await _shot("intro_%04.1f" % at)
 	var title := get_tree().current_scene as TitleScreen
 	title.reveal_menu()
 	await _secs(1.5)

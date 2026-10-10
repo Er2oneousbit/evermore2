@@ -153,6 +153,11 @@ var _cam: Camera3D
 ## A point (Vector3, meters) the camera looks at instead of the leader: the
 ## title screen's slow drift. null = follow the leader.
 var focus_override: Variant = null
+## A free camera for the title intro, a Dictionary {"pos": Vector3, "tilt_deg":
+## float (+ looks up), "fov": float} or null for the normal follow camera. It
+## skips the map clamp (the intro looks over the fence, level with the street)
+## and turns the tilt-shift off (its distances assume the 21 m diorama view).
+var camera_pose: Variant = null
 var _target := Vector3.ZERO
 var _sun: DirectionalLight3D
 var _flash: SpotLight3D
@@ -263,7 +268,7 @@ func _apply_graphics() -> void:
 	var attrs := _cam.attributes as CameraAttributesPractical
 	var dof: bool = caps["dof"] and Settings.get_value("tilt_shift")
 	attrs.dof_blur_far_enabled = dof
-	attrs.dof_blur_near_enabled = dof
+	attrs.dof_blur_near_enabled = dof and camera_pose == null
 	var shadows: String = Settings.get_value("shadows")
 	_sun.shadow_enabled = shadows != "off"
 	_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if shadows == "low" \
@@ -800,6 +805,28 @@ func _build_camera() -> void:
 	_place_camera()
 
 
+## Swap the sky for a custom material (the title's starry night). The
+## per-time presets keep tuning the old procedural one, harmlessly.
+func set_sky_material(mat: Material) -> void:
+	_env.sky.sky_material = mat
+
+
+## Take the title intro's free camera (or give it back with null).
+func set_camera_pose(pose: Variant) -> void:
+	camera_pose = pose
+	if not is_instance_valid(_cam):
+		return
+	var attrs := _cam.attributes as CameraAttributesPractical
+	if pose == null:
+		_cam.rotation = Vector3(-deg_to_rad(camera_pitch_deg), 0.0, 0.0)
+		_cam.fov = camera_fov
+	else:
+		attrs.dof_blur_near_enabled = false
+		attrs.dof_blur_far_distance = 40.0
+		attrs.dof_blur_far_transition = 25.0
+	_place_camera()
+
+
 ## Jump the camera straight to the leader (after a teleport, a scene load...).
 func snap_camera() -> void:
 	_target = _clamp_to_map(_leader3d().position if focus_override == null else focus_override)
@@ -818,6 +845,12 @@ func _leader3d() -> Sprite3D:
 
 
 func _follow_camera(delta: float) -> void:
+	if camera_pose != null:
+		# Particles and shadows key off _target: a point a few meters ahead.
+		var p: Vector3 = camera_pose["pos"]
+		_target = Vector3(p.x, 0.0, p.z - 6.0)
+		_place_camera()
+		return
 	var want := _clamp_to_map(_leader3d().position if focus_override == null else focus_override)
 	_target = _target.lerp(want, 1.0 - exp(-camera_smoothing * delta))
 	_place_camera()
@@ -864,7 +897,12 @@ func _ground_offset(screen_v: float) -> float:
 
 func _place_camera() -> void:
 	var pitch := deg_to_rad(camera_pitch_deg)
-	_cam.position = _target + Vector3(0.0, sin(pitch), cos(pitch)) * camera_distance
+	if camera_pose != null:
+		_cam.position = camera_pose["pos"]
+		_cam.rotation = Vector3(deg_to_rad(camera_pose["tilt_deg"]), 0.0, 0.0)
+		_cam.fov = camera_pose.get("fov", camera_fov)
+	else:
+		_cam.position = _target + Vector3(0.0, sin(pitch), cos(pitch)) * camera_distance
 	if _shake_left > 0.0:
 		_shake_left -= get_process_delta_time()
 		var k := maxf(_shake_left / _shake_time, 0.0)

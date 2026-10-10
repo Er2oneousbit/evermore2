@@ -644,8 +644,61 @@ def build_dog():
                 px[x, y] = STRIPE + (a,)
             elif c in palette:
                 px[x, y] = palette[c] + (a,)
+    sheet = add_dog_sit_frames(sheet)
+    shadow = add_dog_sit_frames(shadow, copy_only=True)
     sheet.save(out_path("assets", "characters", "dog", "dog_lpc.png"))
     shadow.save(out_path("assets", "characters", "dog", "dog_lpc_shadow.png"))
+
+
+def add_dog_sit_frames(sheet, copy_only=False):
+    """The animal pack has no sit, so two columns are built from the standing
+    frame (frame 0 of each direction row): column 8 = sitting, column 9 =
+    halfway down. Side views: the rump drops and the hind legs fold away
+    (clipped at the paw line) so the back slopes; front/back views: a slice of
+    the body is cut out and the top comes down, squatting him. The shadow
+    sheet just repeats its standing frame. Idempotent (does nothing if the
+    sheet already has the columns)."""
+    F, FEET = 48, 43
+    if sheet.width >= F * 10:
+        return sheet
+    out = Image.new("RGBA", (F * 10, sheet.height), (0, 0, 0, 0))
+    out.paste(sheet, (0, 0))
+    for row in range(sheet.height // F):
+        f0 = sheet.crop((0, row * F, F, row * F + F))
+        for col, drop in ((8, 5), (9, 2)):
+            if copy_only:
+                out.paste(f0, (col * F, row * F))
+                continue
+            l, t, r, b = f0.getbbox()
+            frame = Image.new("RGBA", (F, F), (0, 0, 0, 0))
+            if row in (1, 2):
+                # rear is on the right when facing left (row 1), on the left for row 2
+                split = l + int((r - l) * (0.42 if row == 1 else 0.58))
+                rear = (lambda x: x >= split) if row == 1 else (lambda x: x < split)
+                fp, rp = f0.load(), f0.load()
+                dst = frame.load()
+                for x in range(F):
+                    # a short ramp so the back slopes instead of stepping
+                    d = drop if rear(x) else 0
+                    if abs(x - split) <= 3:
+                        d = drop // 2
+                    for y in range(F):
+                        px = fp[x, y]
+                        if px[3] == 0:
+                            continue
+                        ny = y + d
+                        if ny < FEET:
+                            dst[x, ny] = px
+                        elif d == 0:
+                            dst[x, ny if ny < F else F - 1] = px
+            else:
+                cut0 = t + int((b - t) * 0.50)
+                top = f0.crop((0, 0, F, cut0))
+                low = f0.crop((0, cut0 + drop, F, F))
+                frame.paste(low, (0, cut0 + drop))
+                frame.alpha_composite(top, (0, drop))
+            out.paste(frame, (col * F, row * F))
+    return out
 
 
 def build_faces():

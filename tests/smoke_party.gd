@@ -53,6 +53,7 @@ func _run() -> void:
 	await _test_talking()
 	await _test_hd()
 	await _test_running()
+	await _test_idle()
 	GameState.kid_stance = "offensive"
 	GameState.dog_stance = "offensive"
 	if _failures.is_empty():
@@ -415,6 +416,80 @@ func _test_hd() -> void:
 	var to_dog := absf(t.x - HdView.to3(dog.global_position).x)
 	var to_kid := absf(t.x - HdView.to3(kid.global_position).x)
 	_check(to_dog < to_kid, "the HD-2D camera follows the dog after a switch (%.2f m from him, %.2f m from the kid)" % [to_dog, to_kid])
+	scene.queue_free()
+	await _frames(2)
+
+
+## Idle like the original: the dog sits after standing still, stands when the
+## kid moves, sniffs and strolls now and then (seeded) without ever pointing,
+## barking or digging, sits on Stay put, and sits when you drive him and stop.
+func _test_idle() -> void:
+	var scene: Node = load(ARENA_HD).instantiate()
+	add_child(scene)
+	await _frames(12)
+	_clear_enemies()
+	GameState.dog_stance = "offensive"
+	var hd: HdView = scene.get_node("HdView")
+	var kid: Kid = scene.get_node("Yard/World/Kid")
+	var dog: Dog = scene.get_node("Yard/World/Dog")
+	var sprite: AnimalSprite = dog.get_node("Sprite")
+	var barks: Array = []
+	var on_sound := func(s: String) -> void:
+		if s == "dog_bark" or s == "dig":
+			barks.append(s)
+	Audio.played.connect(on_sound)
+	dog.idle.rng.seed = 11
+	dog.idle.sniff_gap = Vector2(1.0, 1.5)
+	dog.global_position = kid.global_position + Vector2(30, 0)
+	await _wait(1.0)
+	_check(not dog.idle.sitting(), "he doesn't sit the moment he stops (%s)" % dog.idle.mode)
+	await _wait(DogIdle.SIT_AFTER + 0.4)
+	_check(dog.idle.sitting() and sprite.current == &"sit", "after a couple of seconds still, he sits")
+	var d3: Sprite3D = hd._mirrored.get(dog.get_instance_id())
+	_check(d3 != null and d3.frame_coords.x == 8, "the HD-2D copy shows the sitting frame (column %s)" % (d3.frame_coords.x if d3 else -1))
+	# The kid walks off: he stands and follows.
+	Input.action_press("move_right")
+	await _wait(1.2)
+	_check(not dog.idle.sitting() and sprite.current != &"sit", "he stands up when the kid moves")
+	Input.action_release("move_right")
+	# Ambient sniff and stroll (sniff gap 1-1.5 s): never points, barks or digs.
+	var waited := 0.0
+	var max_from_kid := 0.0
+	var nose_busy := false
+	while waited < 20.0 and (dog.idle.sniffs < 2 or dog.idle.strolls < 1):
+		await _frames(1)
+		waited += 1.0 / 60.0
+		nose_busy = nose_busy or dog.nose.mode != Nose.Mode.NONE
+		max_from_kid = maxf(max_from_kid, dog.global_position.distance_to(kid.global_position))
+	_check(dog.idle.sniffs >= 2 and dog.idle.strolls >= 1, "he sniffs and strolls on his own (%d sniffs, %d strolls, %.0f s)" % [dog.idle.sniffs, dog.idle.strolls, waited])
+	_check(not nose_busy and barks.is_empty(), "with nothing to find he never points, barks or digs")
+	_check(max_from_kid <= DogIdle.MAX_FROM_LEADER + 40.0, "and stays near the kid (%.0f px at most)" % max_from_kid)
+	await _wait(6.0)
+	_check(dog.idle.sitting() or dog.idle.ambient(), "he settles down again afterwards (%s)" % dog.idle.mode)
+	# Stay put: he sits there and never wanders.
+	dog.idle.sniff_gap = Vector2(30.0, 40.0)
+	_tap("partner_stay")
+	await _frames(2)
+	_check(Party.staying, "(setup) Stay put")
+	for i in 80:
+		await _frames(10)
+		if dog.idle.sitting():
+			break
+	_check(dog.idle.sitting(), "he sits while staying (%s, state %s, kid v %s, target %s)" % [dog.idle.mode, dog.get_state_name(), kid.velocity, dog.brain.target])
+	_tap("partner_stay")
+	# Driving the dog: he sits after a while without input, stands on input.
+	dog.idle.interrupt()
+	Party.switch_control()
+	await _frames(2)
+	_check(dog.controlled, "(setup) driving the dog")
+	await _wait(DogIdle.DRIVEN_SIT_AFTER + 0.6)
+	_check(dog.idle.sitting() and sprite.current == &"sit", "a driven dog sits after a while without input")
+	Input.action_press("move_down")
+	await _wait(0.3)
+	Input.action_release("move_down")
+	_check(not dog.idle.sitting(), "and stands when you move him")
+	Audio.played.disconnect(on_sound)
+	Party.switch_control()
 	scene.queue_free()
 	await _frames(2)
 

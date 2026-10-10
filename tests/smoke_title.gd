@@ -38,7 +38,7 @@ func _run() -> void:
 	get_tree().current_scene = holder
 	_check(ProjectSettings.get_setting("application/run/main_scene") == TitleScreen.SCENE, "the title is the main scene")
 	_check(Debug.start_scene_for(PackedStringArray(["--yard"])) != "", "--yard still bypasses the title")
-	for leg: Callable in [_test_build, _test_reveal, _test_debug_settings, _test_new_game, _test_returns]:
+	for leg: Callable in [_test_intro, _test_build, _test_reveal, _test_debug_settings, _test_new_game, _test_returns]:
 		await leg.call()
 		if not _failures.is_empty():
 			break
@@ -49,6 +49,43 @@ func _run() -> void:
 		for f in _failures:
 			printerr("[TEST] FAIL  ", f)
 		get_tree().quit(1)
+
+
+## The first visit of a session scrolls up from the street into the sky; any
+## key skips to the settled title (logo + prompt, no menu yet); a later visit
+## starts settled.
+func _test_intro() -> void:
+	TitleScreen.intro_played = false
+	await _go_title()
+	var t := _title()
+	_check(t.phase == TitleScreen.Phase.INTRO, "the first visit plays the intro")
+	var cam := (t._hd as HdView).camera()
+	var start_tilt := cam.rotation.x
+	var start_y := cam.position.y
+	for i in 120:
+		await get_tree().physics_frame
+	_check(cam.rotation.x > start_tilt + deg_to_rad(1.0), "the camera tilts up over time (%.1f deg -> %.1f)" % [rad_to_deg(start_tilt), rad_to_deg(cam.rotation.x)])
+	_check(cam.position.y > start_y, "and rises a little")
+	_check(t.logo_label.modulate.a < 0.05, "the logo has not appeared yet")
+	_check(t.scroll > 0.1 and t.scroll < 0.5, "the scroll is under way (%.2f)" % t.scroll)
+	var key := InputEventKey.new()
+	key.keycode = KEY_SPACE
+	key.pressed = true
+	Input.parse_input_event(key)
+	for i in 120:
+		await get_tree().physics_frame
+	_check(t.phase == TitleScreen.Phase.LOGO and not t._menu_box.visible, "a key skips to the settled title, not the menu")
+	_check(is_equal_approx(t.scroll, 1.0), "the scroll has landed")
+	_check(cam.rotation.x > deg_to_rad(8.0), "the camera ended tilted up at the sky (%.1f deg)" % rad_to_deg(cam.rotation.x))
+	for i in 150:
+		await get_tree().physics_frame
+	_check(t.logo_label.modulate.a > 0.95 and t.prompt_label.modulate.a > 0.2, "the logo and the prompt come up after a skip")
+	_check(TitleScreen.intro_played, "the session remembers the intro played")
+	# A second visit goes straight to the settled title.
+	await _go_title()
+	t = _title()
+	_check(t.phase == TitleScreen.Phase.LOGO and is_equal_approx(t.scroll, 1.0), "a second visit skips the intro")
+	_check((t._hd as HdView).camera().rotation.x > deg_to_rad(8.0), "and starts on the settled view")
 
 
 func _test_build() -> void:
