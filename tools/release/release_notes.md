@@ -2,7 +2,24 @@
 as they get built, and this release is updated in place as they're polished.
 The story, the realms and the real content come later.
 
-## New in this update
+## New in this update (v0.6)
+
+* **A title screen**: the game opens on a slow 10-second climb up the
+  Ruffleberg lot's path to the mansion on its hill, a flickering green window
+  in the dark and a music-box waltz (any key skips). New Game asks you to be a
+  boy or a girl, name the kid and name the dog
+* **A sky dial** at the top of the screen: its sun and moon turn with the
+  clock, and the world's light follows the same hours, from dawn to a moonlit
+  night. The item slots moved to the bottom
+* **The combat arena at night**: rats by day, and at dusk skeletons rise out
+  of the ground while bats fly out of the oaks
+* **The dog sits** when you stop, and now and then gets up to sniff around
+* **Faces**: a tiny nose and mouth when characters face you
+* **Sharper and steadier**: sharp text at any resolution, the picture fills
+  ultrawide screens, and the shops, tree groves and tree tops no longer
+  shimmer or flicker
+
+## Added in v0.5
 
 * **Play as a girl or a boy**: the start menu's "Play as" picks the kid's look,
   and the dialogue (he/she, son/daughter) follows

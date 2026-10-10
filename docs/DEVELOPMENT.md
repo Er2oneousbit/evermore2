@@ -383,9 +383,9 @@ the prologue slice (10 s on the "To be continued" card) go to the title. The las
 
 * `main` is always green. Work happens on a branch, merged to `main` with a
   merge commit ("Merge <what>: <summary>"). No pull requests.
-* **Versions are frozen** at the value in `project.godot`
-  (`application/config/version`, shown in the F3 overlay) while the game is
-  being designed. Changes don't bump it.
+* **Versions only move at a release** (v0.4.0, v0.5.0 and v0.6.0 so far), when the owner asks. The value
+  in `project.godot` (`application/config/version`, shown in the F3 overlay and on the title screen)
+  stays put between releases; ordinary changes don't bump it.
 * **Progress** goes in [ROADMAP.md](ROADMAP.md): when a piece of work lands, add
   a "Done: <milestone>" entry at the top of the Done list (what changed, what
   was measured, test results).
