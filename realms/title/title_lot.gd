@@ -5,7 +5,9 @@
 #        street (realms/podunk/ruffleberg_lot.gd): the lot's iron fence with a
 #        dirt path running through its gap (the gate), oaks and tall grass, the
 #        road in front. Night, fireflies and fog come from the HdView night
-#        preset, the crickets from the "outdoor" ambience, the theme from MUSIC.
+#        preset, the wind from the "haunted" ambience, the music box from MUSIC.
+#        The Ruffleberg mansion itself is built by TitleScreen (MansionBuilding3D);
+#        the oaks and bushes north of the fence are gone so it shows.
 # WHY:   The title screen wants a live HD-2D picture, not a flat image, and
 #        reusing the real realm would drag in the prologue's story, NPCs and
 #        HUD. TitleScreen hides the kid and dog (every realm needs them) and
@@ -18,13 +20,13 @@
 extends AsciiRealm
 
 const LAYOUT: Array[String] = [
-	"vvTvvv.vvvTvvvv.vvvvTvvv.vvvTvvvvv.vTv",
-	"vvvvvvTvvvvvvvTvvvvvvvvTvvvvvvvTvvvvvv",
-	".vTvvvvvvTvvvvvvvvvvvvvvvvvTvvvvvvTvv.",
-	"vvvvvTvvvvvvvTvvvvvvvvvvTvvvvvvTvvvvvv",
-	"vTvvvvvvTvvvvvvvvvv:vvvvvvvvvvTvvvvvTv",
-	"vvvvBvvvvvvvBvvvvvv:vvvvvvvBvvvvvvvvvv",
-	"vvBvvvvvBvvvvvvvvvv:vvvvvvvvvvBvvvvBvv",
+	"vvTvvv.vvvvvvvv.vvvvvvvv.vvvvvvvvv.vTv",
+	"vvvvvvTvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+	".vTvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvTvv.",
+	"vvvvvTvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+	"vTvvvvvvvvvvvvvvvvv:vvvvvvvvvvvvvvvvTv",
+	"vvvvBvvvvvvvvvvvvvv:vvvvvvvvvvvvvvvvvv",
+	"vvBvvvvvvvvvvvvvvvv:vvvvvvvvvvvvvvvBvv",
 	"%%%%%%%%%%%%%%%%%%%:%%%%%%%%%%%%%%%%%%",
 	"#..................:.................#",
 	"#....s.............:.......f.....s...#",
@@ -39,7 +41,10 @@ const LAYOUT: Array[String] = [
 ]
 
 const REALM_NAME_KEY := "place_ruffleberg_lot"
-const MUSIC := "title"
+const MUSIC := "mansion"
+const AMBIENCE := "haunted"
+## No woods north of the lot: the mansion stands there, and the oaks hid it.
+const APRON_ROWS := 0
 const CLOCK_MODE := "hold"
 const TERRAIN_BY_CHAR := {":": "Dirt"}
 const FENCES := {"#": "Wood Fence", "%": "Metal Fence"}
