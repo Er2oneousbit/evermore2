@@ -37,6 +37,9 @@ const ANIMS := {
 	# The bite's beats, held by the dog's attack code: head low, then stretched.
 	&"crouch": {"row": 0, "frames": [4], "fps": 1.0, "loop": true},
 	&"leap":   {"row": 0, "frames": [1], "fps": 1.0, "loop": true},
+	# Sitting: the pack has no sit, so build_art.py adds two columns built from
+	# the standing frame (9 = halfway down, 8 = sat), and the anim holds on 8.
+	&"sit":    {"row": 0, "frames": [9, 8], "fps": 6.0, "loop": false},
 }
 
 

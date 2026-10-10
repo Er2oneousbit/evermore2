@@ -122,6 +122,8 @@ var running := false
 var follower: Follower
 var brain: PartnerBrain
 var nose: Nose
+## Cosmetic idling: sits when nothing's going on, ambient sniffs and strolls.
+var idle: DogIdle
 
 ## Follow state (Follower), kept here for the overlay and tests.
 var state: State:
@@ -179,6 +181,7 @@ func _ready() -> void:
 		Debug.log_verbose("Dog state -> %s" % s))
 	brain = PartnerBrain.new(self)
 	nose = Nose.new(self)
+	idle = DogIdle.new(self)
 	charge = ChargeMeter.new(weapon.max_level, weapon.seconds_per_level)
 	run = Running.new(charge, run_charge_drain)
 	health.died.connect(_on_died)
@@ -230,6 +233,7 @@ func _physics_process(delta: float) -> void:
 		var moving := stick != Vector2.ZERO
 		running = run.tick(delta, run.wants_run(moving, delta), moving)
 		want = stick * (run_speed if running else move_speed)
+		idle.think_driven(delta, not moving and not nose.busy())
 	else:
 		run.tick(delta, false, false)  # the AI doesn't run on his charge
 	if not controlled and is_instance_valid(follower.target):
@@ -246,6 +250,12 @@ func _physics_process(delta: float) -> void:
 				want = sniffing
 		else:
 			nose.cancel()
+		# Nothing real going on (no fight, no find, no talk): he may sit and
+		# sniff about. Anything real wins and stands him up.
+		if brain.target != null or nose.mode != Nose.Mode.NONE or Dialogue.is_active():
+			idle.interrupt()
+		else:
+			want = idle.think(delta, want, not staying)
 	if controlled:
 		nose.cancel()
 	if want != Vector2.ZERO and not _attacking:
@@ -286,6 +296,7 @@ func _apply_equipment(who: String) -> void:
 func attack() -> bool:
 	if _attacking or downed or is_digging() or Dialogue.is_active():
 		return false
+	idle.interrupt()
 	var spent := charge.spend()
 	_swing_mult = spent[0]
 	_swing_level = spent[1]
@@ -395,6 +406,7 @@ func is_attacking() -> bool:
 
 ## Called by his Hurtbox when a hit lands.
 func on_hit(info: HitInfo, _dealt: int) -> void:
+	idle.interrupt()
 	Audio.play_at("dog_whine" if health.is_dead() else "dog_yelp", global_position)
 	velocity += info.knockback
 	_sprite.modulate = Color(1.0, 0.45, 0.45)
@@ -412,6 +424,7 @@ func revive(fraction := 0.3) -> void:
 
 func _on_died() -> void:
 	downed = true
+	idle.interrupt()
 	_attacking = false
 	_atk = Atk.NONE
 	_set_hop(0.0)
@@ -455,6 +468,7 @@ func _paws(delta: float) -> void:
 func dig(spot: HiddenItem) -> bool:
 	if downed or _attacking or is_digging() or not is_instance_valid(spot):
 		return false
+	idle.interrupt()
 	_dig_find = spot
 	_dig_left = DIG_SECONDS
 	_dirt_left = 0.0
@@ -519,6 +533,7 @@ func _pop_toward(hole: Vector2) -> Vector2:
 func sniff() -> bool:
 	if downed or _attacking or is_digging() or _sniff_left > 0.0:
 		return false
+	idle.interrupt()
 	_sniff_left = SNIFF_SECONDS
 	_sprite.speed_scale = 1.0
 	_sprite.play(&"sniff", facing, true)
@@ -579,6 +594,16 @@ func _update_animation(delta: float) -> void:
 		_sprite.speed_scale = 1.0
 		if nose.busy():
 			_sprite.play(&"idle", facing)  # pointing at his find
+			return
+		if idle.sitting():
+			# Sits facing the kid (or the way he last looked, when driven).
+			var seat := facing
+			if not controlled and is_instance_valid(follower.target):
+				seat = global_position.direction_to(follower.target.global_position)
+			_sprite.play(&"sit", seat)
+			return
+		if idle.sniffing():
+			_sprite.play(&"sniff", facing)
 			return
 		if not controlled and Party.stance_of(self) == "search":
 			_idle_time += delta

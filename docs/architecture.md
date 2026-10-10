@@ -254,6 +254,9 @@ Kid / Dog each frame:
                   enemy worth fighting? (awake, near the leader / within reach)
                      -> approach, face, attack() when the charge is ready
                   else -> Follower.steer()  (the breadcrumb follow below)
+              Dog only, nothing real going on: DogIdle may replace the velocity
+                  (sit after 2.5 s still, ambient sniff + short stroll); fights,
+                  Nose finds, dialogue and hits call idle.interrupt()
 ```
 
 ### Hidden items and the nose
@@ -436,7 +439,7 @@ it and confirming the test fails:
 | Test | Needs a display? | Checks |
 |---|---|---|
 | `tests/run_all.sh` / `.ps1` | no | Runs every headless test below in one go |
-| `tests/smoke_title.tscn` | no | The title screen (logo, menu, Continue skipped, any key, Settings, Debug), New Game through gender and both names (typing rules, empty rejected, defaults), the prologue starting with the names, slice end and pause "Quit to title" returning |
+| `tests/smoke_title.tscn` | no | The title screen (the scrolling intro, a key skips it, a second visit starts settled; logo, menu, Continue skipped, any key, Settings, Debug), New Game through gender and both names (typing rules, empty rejected, defaults), the prologue starting with the names, slice end and pause "Quit to title" returning |
 | `tests/smoke_follow.tscn` | no | Dog follow AI on the pen route, stay command, night + flashlight, the kid's feel (+10% speeds, steady facing, smooth reversals, a kept stride) |
 | `tests/smoke_visuals.tscn` | no | LPC animation rows, Atmosphere presets/particles, Prop building |
 | `tests/smoke_dialogue.tscn` | no | .dlg parsing and errors, the runner (choices, flags, conditions, commands, loop guard), every game script loads, talking to Maya in 2D and HD-2D |

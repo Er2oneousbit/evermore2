@@ -59,6 +59,7 @@ func _run() -> void:
 	await _test_driving_the_dog()
 	await _test_secret_and_persistence()
 	await _test_interruptions()
+	await _test_idle_yields_to_a_find()
 	await _test_validation()
 	GameState.dog_stance = "offensive"
 	if _failures.is_empty():
@@ -412,6 +413,33 @@ func _test_interruptions() -> void:
 	await _frames(3)
 	_check(not is_instance_valid(p), "it's picked up once the talking ends")
 	GameState.dog_stance = "offensive"
+	s.queue_free()
+	await _frames(2)
+
+
+## The dog's cosmetic sitting and ambient sniffing never beat the real thing:
+## sat down mid-sniff next to a buried key, he still goes, points, barks, digs.
+func _test_idle_yields_to_a_find() -> void:
+	GameState._flags.clear()
+	var s := await _load()
+	var kid: Kid = s.get_node("Yard/World/Kid")
+	var dog: Dog = s.get_node("Yard/World/Dog")
+	var key := _hidden_at(KEY_CELL)
+	_place(kid, key.global_position + Vector2(0, 40), Vector2.UP)
+	_place(dog, key.global_position + Vector2(-60, 30))
+	dog.warp_to_target()
+	_place(dog, key.global_position + Vector2(-60, 30))
+	GameState.dog_stance = "offensive"
+	dog.idle.mode = DogIdle.Mode.SIT
+	_sounds.clear()
+	var went := false
+	for i in 400:
+		await _frames(1)
+		went = went or dog.nose.mode == Nose.Mode.GO
+		if dog.is_digging():
+			break
+	_check(went and dog.is_digging(), "a sitting dog still goes for a real hidden item and digs it")
+	_check(not dog.idle.sitting() and _sounds.has("dog_bark"), "he got up for it and barked")
 	s.queue_free()
 	await _frames(2)
 
