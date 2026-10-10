@@ -157,7 +157,7 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
   "A Place I Call Home" (dinner), "Childhood Friends" (the dare),
   "Grasslands" (the test yard, day), "Tropical Island" (day), "Childhood
   Friends" (night), "Innocence" (night), "Preparing For Battle" (the combat arena),
-  "Prairie Nights" (the title screen)
+  (the title screen now uses the music box below)
 * **Font**: Cinzel by the Cinzel Project Authors (<https://github.com/NDISCOVER/Cinzel>),
   SIL Open Font License 1.1, used for the title screen and its menus
   (`assets/fonts/Cinzel.ttf`, licence text in `credits/fonts/OFL-Cinzel.txt`)
@@ -179,6 +179,12 @@ and it's given anyway, with thanks. Cut, mixed to mono and normalized by
   steps ([OpenGameArt](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone))
 * **Birds and Wind - Ambient** by Spring Spring: the daytime ambience
   ([OpenGameArt](https://opengameart.org/content/birds-and-wind-ambient-birds-wind-and-synth))
+* **4 Music Box Tracks** by Aureolus_Omicron (CC0): the spooky waltz, the
+  title screen's music ([OpenGameArt](https://opengameart.org/content/4-music-box-tracks))
+* **Loopable Dungeon Ambience** by JaggedStone (CC0, low-passed) and **Wind
+  Whoosh Loop** by SketchMan3 (CC0): mixed into the title's wind
+  ([dungeon](https://opengameart.org/content/loopable-dungeon-ambience),
+  [whoosh](https://opengameart.org/content/wind-whoosh-loop))
 * **Crickets Ambient Noise** by Wolfgang_ (attribution notice: Ted Kerr): the
   night ambience ([OpenGameArt](https://opengameart.org/content/crickets-ambient-noise-loopable))
 * **Forest bird sounds** by pauliuw: the occasional bird by day

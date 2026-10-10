@@ -9,6 +9,7 @@
 #          Audio.set_ambience("outdoor")                  birds by day, crickets
 #                                                         at night (follows the
 #                                                         time of day by itself)
+#          Audio.set_ambience("haunted")                  wind (the title screen)
 #          Audio.set_music_set("outdoor")                 music that follows the
 #                                                         time of day too: two
 #                                                         day and two night tracks,
@@ -85,7 +86,7 @@ const SOUNDS := {
 ## Music name -> file in MUSIC_DIR. The tracks loop seamlessly.
 const MUSIC := {
 	"home": "home", "lot": "lot", "yard": "yard", "arena": "arena",
-	"tropical": "tropical", "innocence": "innocence", "title": "title",
+	"tropical": "tropical", "innocence": "innocence", "mansion": "mansion",
 }
 ## A music set -> the track list for each time of day. Going INTO a time picks
 ## the next track of its list (so day, night, day plays the other day track).
@@ -124,10 +125,12 @@ const EMOTION_VOICE := {
 const AMBIENCE_DIR := "res://assets/audio/ambience/"
 ## Ambience loop -> [file in AMBIENCE_DIR, volume dB]. Both sit about 10 dB
 ## under the music (measured: day -24 dBFS, night -19 dBFS before this).
-const AMBIENCE := {"day": ["day", -6.0], "night": ["night", -11.0]}
+## "wind" is the title screen's: low and steady, the mansion's night.
+const AMBIENCE := {"day": ["day", -6.0], "night": ["night", -11.0], "wind": ["wind", -8.0]}
 ## A kind of place -> which loop for each time of day ("" = none).
 const AMBIENCE_SETS := {
 	"outdoor": {"morning": "day", "day": "day", "golden": "day", "night": "night"},
+	"haunted": {"morning": "wind", "day": "wind", "golden": "wind", "night": "wind"},
 }
 ## Outdoors by day, a bird calls every so often (seconds, random in between),
 ## from somewhere around the camera (px).
