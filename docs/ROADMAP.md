@@ -23,10 +23,19 @@ Carltron waking) into the first realm.
 
 ## Next up (suggested order)
 
-0. **v0.6: the title screen** (built, see Done; the owner asks for the release): the
-   game opens on a live HD-2D title with New Game (boy or girl, name the kid,
-   name the dog), Settings, Debug, Quit and a greyed-out Continue until the
-   save system exists (see Later).
+0. **The rebrand** (owner, 2026-10-10): the game becomes *Mystery of Nevermore:
+   Return to the Dream*, with new names for Carltron, Professor Ruffleberg,
+   Podunk and Evermore (a list is waiting for the owner's pick), the README,
+   release notes and credits no longer calling it a *Secret of Evermore*
+   sequel, the exe and downloads renamed, and the GitHub repo renamed (the
+   owner does that in GitHub's settings, then the remote here is updated).
+   One builder, tests for the new names, a full pass of dialogue and docs.
+0b. **The title's mansion art**: the Victorian silhouette now on the title
+   looked cheap next to the original's gloomy stone estate. A stone-estate
+   rebuild exists on the local, unpushed branch `title-estate` (pixel-textured
+   facade, steps, gate, flagstone path, turning orrery) but its statues look
+   like tiki totems, so it is parked until hero art exists (see Later: art
+   brief and hero art).
 1. **The rest of the prologue**: the mansion tutorial (foyer, library, study,
    kitchen, lab), the torn clipping, Carltron waking, the flash. Needs interior
    tiles and HD-2D height (stairs, a basement). Dinner deserves a real kitchen
@@ -39,6 +48,9 @@ ingredients and alchemists), the dog's look (notched floppy ear, one ear up,
 the orange shelter tag).
 
 ## Later
+* **An art brief and hero art** (owner: "that 90's game looks better than this 2026 game"): the game's code, lighting and tools are ahead of its art. Write a style guide and shot list (palette, pixel scale, camera angle: the mansion facade, statues, portraits, the kid's idle and 8-direction sprites, a real sitting dog), then get those pieces drawn by a pixel artist or AI-assisted and cleaned up; place a painted facade in the 3D scene as one lit picture
+* A real owl or creak sound for the title's ambience (none found as CC0), and real music-box and ambience listening passes (the title tracks were picked from their descriptions)
+* Check Dex's line `{man|girl}` in the prologue reads right for both
 * Real sitting frames for the dog: the LPC animal sheet has no sit, so the idle sit is built from the standing frame and reads as a crouch (owner: in the original the idle dog sits)
 
 * A better idle animation for the kid and NPCs (the LPC breathing frame opened a gap between shirt and trousers; the 1 px bob replacement was removed by the owner)
@@ -57,6 +69,9 @@ the orange shelter tag).
 
 | Date | Decision |
 |---|---|
+| 2026-10-10 | **Rebrand to *Mystery of Nevermore: Return to the Dream*** (owner: "that shouldn't draw attention of lawyers"). Full scope: the title, new names for Carltron, Ruffleberg, Podunk and Evermore, no more "sequel to Secret of Evermore" wording, the exe, downloads and the GitHub repo renamed. Not legal advice: the story's names and the Square Enix disclaimer pointed straight at the original, so the title alone wasn't enough. Names are awaiting the owner's pick |
+| 2026-10-10 | **The title's mansion is a gloomy stone estate, not a Victorian house** (owner, from screenshots of the original: caryatid-style statues, gargoyle over the door, guardian statues by wide steps, an orrery, stone gate pillars with broken gates, a flagstone path). Procedural boxes looked cheap; the fix is hero art (see Later), not more code |
+| 2026-10-09 | **Rats by day, skeletons by night; bats hidden in the canopy by day** (owner). Skeletons rise from the ground at dusk and sink at dawn; bats fly out of the oaks at dusk and back in at dawn; lighting follows the clock by the hour and the sky dial's sun and moon agree with the world's |
 | 2026-10-09 | **The title screen is the next milestone (v0.6) and the new main scene** (owner). A live HD-2D backdrop (the Ruffleberg lot's iron gate at night: fireflies, light fog, a slow camera drift, crickets), the logo "Secret of Evermore 2" with "Return to Evermore" beneath, a pulsing "Press any key", then New Game / Continue (greyed out: no saves yet, see the save system under Later) / Settings / Debug (the debug start menu, visible while it's a tech demo) / Quit, with a title theme from the CC0 JRPG packs. New Game asks boy or girl, the kid's name (letter grid or keyboard, about 10 letters), the dog's name (Biscuit), then starts the prologue from the beginning. The pause menu gets "Quit to title" and the slice end returns to the title. `--yard` / `--arena` still skip it |
 | 2026-10-09 | **Play as a girl or a boy; the dialogue adapts** (owner: "main character should be a choice between girl or boy... framework to auto change dialogue based on that"). The story is the same either way (Carltron sees Dad's face in the kid's). Text uses tokens (`{he}`, `{son}`, `{boy\|girl}`...), one resolver for dialogue, HUD and names. Changes the design-bible Lead row |
 | 2026-10-09 | **A sky dial clock at the top centre, the quick slots at the bottom centre, unequal phase hours** (owner). One real minute is one game hour; morning 5:00-11:00, day 11:00-17:00, golden 17:00-20:00, night 20:00-5:00 (a longer night, OK'd). The dial shows the sun and moon opposite each other on a turning wheel;; no clock text at all (owner) |
@@ -87,6 +102,20 @@ the orange shelter tag).
 | 2026-10-06 | **Any monitor shape**, 16:9 to 48:9 and Steam Deck, pixel-perfect: integer scaling that fills the window, no black bars |
 | (design bible) | Story, cast, realms, dog forms and Mission 1 are locked in [design-bible.md](design-bible.md) section 2 |
 
+## Released: v0.6.0 (2026-10-10)
+
+The title screen milestone, plus what came with it: a title screen with a
+10 s scrolling intro, the mansion on its hill and a music-box waltz; New Game
+(boy or girl, name the kid and the dog) and dialogue that adapts; the sky dial
+clock with the hotbar at the bottom; lighting that follows the clock by the
+hour; rats by day and skeletons by night in a big 100 x 56 arena, bats that
+fly out of the oaks at dusk; faces; a dog that sits and sniffs about when
+idle; sharp text, full-width ultrawide, and no more shimmer or flicker in the
+shops, groves and tree tops. Milestones: lighting and skeletons, the title
+mansion and music, the title intro and the sitting dog, the title screen,
+play as a girl or a boy, faces, groves and idle, playtest fixes 2, the big
+arena, the sky dial, shimmer, tree tops, sharp text.
+
 ## Done: lighting follows the clock; skeletons
 
 Owner: "The sun dial doesn't match the actual lighting." and "Replace the rats with skeletons" (then: skeletons by night, rats by day, and bats not visible in the trees by day). Version stays 0.5.0.
@@ -106,6 +135,7 @@ Owner: "Good start, but where is the mansion and where is the creepy music... Th
 - **Framing:** the apron woods north of the lot are off for the title (`APRON_ROWS := 0`) and the big oaks and bushes in the north rows are gone; they hid the house. "Press any key" moved down into the dark band over the fence and is bigger and brighter (pulses between 0.6 and 1).
 - **Music and ambience:** the title theme is the spooky waltz from "4 Music Box Tracks" (Aureolus_Omicron, CC0), as `mansion.ogg`; "Prairie Nights" is gone. The ambience is the new "haunted" set: `wind.ogg`, the low rumble of "Loopable Dungeon Ambience" (JaggedStone, CC0, low-passed at 700 Hz to drop the drips) with "Wind Whoosh Loop" (SketchMan3, CC0) tiled over it and slowly swelling, looped seamlessly. No owl or creak: OpenGameArt had no CC0 one. The prologue's music is unchanged.
 - **Measured:** checked at 2560x1440 and 3440x1440 (screenshot_title; the mansion, the moon and the window read at both, the tower stays clear of the logo). `smoke_title` now checks the mansion's parts, no coplanar faces (1 cm), the lab flicker (range, seeded, live), the tower window, the music and the ambience; sabotages: constant light fails the flicker checks, moving the pane 3 cm back fails the coplanar check. `smoke_audio` loads the new files.
+* Superseded in spirit (owner, 2026-10-10): this Victorian silhouette looked cheap next to the original's stone estate; see the 0b item in Next up and the decision row
 
 ## Done: a title intro and a dog that sits
 

@@ -21,8 +21,8 @@ Windows
                              street, the test yard or the combat arena, the
                              start time and Normal/Hard
   Combat arena.bat           The combat arena: a big countryside (100 x 56
-                             tiles) with giant rats, rats that go home at
-                             dusk and bats that roost in the oaks
+                             tiles): giant rats by day, skeletons and bats
+                             by night
   Combat arena (Hard).bat    The same on Hard
   Test yard.bat              The test yard: shops, hidden items and a
                              clock that runs (no enemies here)
@@ -120,5 +120,5 @@ Day and night: in the test yard and the combat arena a day lasts 24 minutes
 (F9 speeds it up). The corner store closes at night; the all-night stand
 doesn't. At night the kid misses more outside his flashlight beam, the dog
 smells enemies (they glow while you drive him), and in the arena rats go
-home and bats drop out of the oaks.
+home while skeletons rise out of the ground and bats fly out of the oaks.
 Watch for a bat's squeak and dip before it dives: step aside.
